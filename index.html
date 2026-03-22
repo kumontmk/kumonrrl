@@ -486,18 +486,18 @@
     
     <div class="toast" id="toast"></div>
     
+    <script src="books-data.js"></script>
     <script>
-        // Sample book data - will be replaced with your actual list
-        let books = JSON.parse(localStorage.getItem('kumonLibraryBooks')) || [
-            { id: 1, title: "The Great Gatsby", author: "F. Scott Fitzgerald", genre: "Classic", location: "Shelf A1", status: "available", borrower: null, borrowDate: null },
-            { id: 2, title: "1984", author: "George Orwell", genre: "Dystopian", location: "Shelf A2", status: "borrowed", borrower: "John Doe", borrowDate: "2024-03-15" },
-            { id: 3, title: "To Kill a Mockingbird", author: "Harper Lee", genre: "Classic", location: "Shelf B1", status: "available", borrower: null, borrowDate: null },
-            { id: 4, title: "The Catcher in the Rye", author: "J.D. Salinger", genre: "Classic", location: "Shelf B2", status: "available", borrower: null, borrowDate: null },
-            { id: 5, title: "Harry Potter and the Sorcerer's Stone", author: "J.K. Rowling", genre: "Fantasy", location: "Shelf C1", status: "borrowed", borrower: "Jane Smith", borrowDate: "2024-03-18" },
-            { id: 6, title: "The Hobbit", author: "J.R.R. Tolkien", genre: "Fantasy", location: "Shelf C2", status: "available", borrower: null, borrowDate: null }
-        ];
+        // Load books from Excel data or localStorage
+        let books = JSON.parse(localStorage.getItem('kumonLibraryBooks')) || libraryBooks || [];
         
         let nextId = books.length > 0 ? Math.max(...books.map(b => b.id)) + 1 : 1;
+        
+        // Initialize if first time
+        if (!localStorage.getItem('kumonLibraryBooks')) {
+            saveBooks();
+            showToast(`Loaded ${books.length} books from Kumon Library`, 'info');
+        }
         
         function saveBooks() {
             localStorage.setItem('kumonLibraryBooks', JSON.stringify(books));

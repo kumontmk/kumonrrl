@@ -40,7 +40,7 @@
         .controls input[type="text"], .controls select { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; transition: all 0.2s; flex: 1; min-width: 150px; }
         .controls input:focus, .controls select:focus { outline: none; border-color: #60a5fa; background: rgba(30, 58, 138, 0.7); }
         
-        /* Admin Panel - FIXED */
+        /* Admin Panel - FIXED GLITCHES */
         .admin-panel { 
             background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); 
             padding: 1.5rem; 
@@ -48,16 +48,29 @@
             margin-bottom: 2rem; 
             border: 1px solid #3b82f6;
             position: relative;
-            overflow: visible;
+            overflow: hidden; /* Contains stray background artifacts */
             width: 100%;
+            background-clip: padding-box;
         }
+        
+        /* Kill any ghost pseudo-elements */
+        .admin-panel::before, .admin-panel::after,
+        .admin-panel h3::before, .admin-panel h3::after,
+        .btn::before, .btn::after {
+            display: none !important;
+            content: none !important;
+        }
+
         .admin-panel h3 { 
             color: #60a5fa; margin-bottom: 1rem; font-size: 1.2rem;
             display: flex; align-items: center; gap: 0.5rem;
+            border-left: none !important; /* Remove any inherited borders */
         }
         
         /* Form Grid - Mobile Optimized */
-        .admin-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .admin-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1rem; overflow: visible; }
+        .admin-form > * { min-width: 0; /* Allow shrinking to fix text truncation */ }
+        
         .admin-form input[type="text"] { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; width: 100%; }
         .admin-form input::placeholder { color: #93c5fd; }
         .admin-form input:focus { outline: none; border-color: #60a5fa; }
@@ -66,15 +79,17 @@
         input[type="file"] { 
             padding: 0.75rem; background: rgba(30, 58, 138, 0.5); color: #93c5fd; 
             border: 2px dashed #3b82f6; border-radius: 8px; cursor: pointer; font-size: 0.9rem; width: 100%;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         input[type="file"]::file-selector-button { 
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; 
             padding: 0.5rem 1rem; border: none; border-radius: 4px; margin-right: 1rem; cursor: pointer; font-weight: 500;
+            white-space: nowrap;
         }
         input[type="file"]::file-selector-button:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
         
         /* Button Container - Fixed Overlap */
-        .admin-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+        .admin-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; width: 100%; }
         .admin-actions .btn { flex: 1 1 auto; min-width: 120px; white-space: nowrap; }
         
         .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
@@ -163,7 +178,7 @@
     <!-- Login Modal -->
     <div class="login-overlay" id="loginOverlay">
         <div class="login-box">
-            <h2>🔐 Admin Login</h2>
+            <h2> Admin Login</h2>
             <p>Enter password to manage library</p>
             <input type="password" id="passwordInput" placeholder="Enter password" maxlength="10">
             <button class="btn btn-primary" onclick="login()" style="width: 100%;">Login as Admin</button>
@@ -218,7 +233,7 @@
             
             <!-- Admin Panel -->
             <div class="admin-panel admin-only">
-                <h4>Admin: Add New Book</h4>
+                <h3>⚡ Admin: Add New Book</h3>
                 <div class="admin-form">
                     <input type="text" id="newBookTitle" placeholder="Book Title">
                     <input type="text" id="newBookAuthor" placeholder="Author">
@@ -227,7 +242,7 @@
                     <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, C)">
                     <input type="file" id="newBookCover" accept="image/*" capture="environment" title="Upload or take photo">
                 </div>
-                <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
+                <p class="camera-hint"> On mobile: tap to choose file OR take photo with camera</p>
                 <p id="imageSizeWarning" class="image-warning">️ Large images may fail to save. Images are auto-compressed to 300px @ 20% quality.</p>
                 <div class="admin-actions">
                     <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Add Book</button>
@@ -479,7 +494,7 @@
             const book = books.find(b => b.id === pendingBorrowBookId);
             if (book) {
                 book.status = 'borrowed'; book.borrower = name; book.borrowerGrade = grade; book.borrowerLevel = level; book.borrowDate = new Date().toISOString().split('T')[0];
-                if (await saveBooks()) { closeBorrowModal(); renderBooks(); updateStats(); showToast(`📚 "${book.title}" borrowed by ${name} (${grade}, ${level})`, 'success'); }
+                if (await saveBooks()) { closeBorrowModal(); renderBooks(); updateStats(); showToast(` "${book.title}" borrowed by ${name} (${grade}, ${level})`, 'success'); }
             }
         }
         
@@ -532,7 +547,7 @@
                     ${book.status === 'borrowed' ? `<div style="margin-top:0.5rem;font-size:0.85rem;color:#93c5fd;"><span class="borrower-badge"> ${escapeHtml(book.borrower)}</span><br><small>Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><br><small>Since: ${book.borrowDate}</small></div>` : ''}
                     <div class="book-actions">
                         ${book.status === 'available' ? `<button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` : `<button class="btn btn-success" onclick="returnBook(${book.id})">✓ Return</button>`}
-                        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">🗑 Remove</button>
+                        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})"> Remove</button>
                     </div>
                 </div>
             `).join('');

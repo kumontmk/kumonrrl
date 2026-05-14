@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Login Modal -->
+    <!-- ══════════ LOGIN MODAL ══════════ -->
     <div class="login-overlay" id="loginOverlay">
         <div class="login-box">
             <h2>🔐 Admin Login</h2>
@@ -19,7 +19,7 @@
         </div>
     </div>
 
-    <!-- Borrow Modal (Admin) -->
+    <!-- ══════════ BORROW MODAL ══════════ -->
     <div class="modal-overlay" id="borrowModal">
         <div class="modal">
             <h3>📚 Borrow Book</h3>
@@ -36,12 +36,11 @@
         </div>
     </div>
 
-    <!-- Visitor Borrow Info Modal -->
+    <!-- ══════════ VISITOR BORROW MODAL ══════════ -->
     <div class="modal-overlay" id="visitorBorrowModal">
         <div class="modal">
             <h3>📚 Borrow a Book</h3>
             <p style="color:#64748b;margin-bottom:1rem;">To borrow books from our library, please:</p>
-            
             <div class="contact-info">
                 <h4>📍 Visit or Call Us</h4>
                 <p><strong>Kumon Taipa Mei Keng</strong></p>
@@ -52,11 +51,9 @@
                     MEI KENG FA UN RÉS-DO-CHÃO AU
                 </p>
             </div>
-            
             <p style="color:#64748b;margin:1.5rem 0 1rem;font-size:0.9rem;">
                 Or if you are an admin, you can log in to manage borrowings:
             </p>
-            
             <div class="modal-actions">
                 <button class="btn btn-primary" onclick="openLoginModalFromVisitor()">🔐 Login as Admin</button>
                 <button class="btn btn-small" onclick="closeVisitorBorrowModal()" style="background:#64748b">Close</button>
@@ -64,7 +61,7 @@
         </div>
     </div>
 
-    <!-- Add Book Modal (Admin Only) -->
+    <!-- ══════════ ADD BOOK MODAL ══════════ -->
     <div class="modal-overlay" id="addBookModal">
         <div class="modal">
             <h3>➕ Add New Book</h3>
@@ -85,10 +82,74 @@
         </div>
     </div>
 
-    <!-- Main App -->
+    <!-- ══════════ BOOK DETAIL MODAL ══════════ -->
+    <div class="detail-modal-overlay" id="detailModal">
+        <div class="detail-modal">
+            <button class="close-detail-btn" onclick="closeDetailModal()">✕</button>
+            <div class="detail-content">
+                <div class="detail-cover-full" id="detailCoverFull">
+                    <span class="placeholder-large">📘</span>
+                </div>
+                <div class="detail-info">
+                    <span class="detail-status" id="detailStatus">Available</span>
+                    <h2 class="detail-title" id="detailTitle">Book Title</h2>
+                    <p class="detail-author" id="detailAuthor">by Author Name</p>
+                    
+                    <div class="detail-meta-grid">
+                        <div class="detail-meta-item">
+                            <span class="meta-label">Genre</span>
+                            <span class="meta-value" id="detailGenre">Fiction</span>
+                        </div>
+                        <div class="detail-meta-item">
+                            <span class="meta-label">Location</span>
+                            <span class="meta-value" id="detailLocation">Shelf A3</span>
+                        </div>
+                        <div class="detail-meta-item">
+                            <span class="meta-label">RRL Level</span>
+                            <span class="meta-value" id="detailRRL">A</span>
+                        </div>
+                        <div class="detail-meta-item">
+                            <span class="meta-label">Book ID</span>
+                            <span class="meta-value" id="detailID">#1</span>
+                        </div>
+                    </div>
+
+                    <div class="borrower-section admin-only" id="detailBorrowerSection" style="display:none;">
+                        <h4>Borrower Information</h4>
+                        <div class="borrower-details">
+                            <div class="borrower-row">
+                                <span class="borrower-label">Name:</span>
+                                <span class="borrower-value" id="detailBorrowerName">-</span>
+                            </div>
+                            <div class="borrower-row">
+                                <span class="borrower-label">Grade:</span>
+                                <span class="borrower-value" id="detailBorrowerGrade">-</span>
+                            </div>
+                            <div class="borrower-row">
+                                <span class="borrower-label">Level:</span>
+                                <span class="borrower-value" id="detailBorrowerLevel">-</span>
+                            </div>
+                            <div class="borrower-row">
+                                <span class="borrower-label">Borrowed:</span>
+                                <span class="borrower-value" id="detailBorrowDate">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-actions-full">
+                        <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()">📚 Borrow Book</button>
+                        <button class="btn btn-success btn-large" id="detailReturnBtn" onclick="handleDetailReturn()" style="display:none;">✅ Return Book</button>
+                        <button class="btn btn-danger btn-large admin-only" onclick="handleDetailRemove()">🗑 Remove Book</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════ MAIN APP ══════════ -->
     <div id="mainApp">
         <header>
-            <div class="header-left">
+            <div class="header-left" onclick="goHome()" style="cursor: pointer;">
                 <img src="logo.png" alt="Kumon Taipa Mei Keng" class="header-logo">
                 <h1>Kumon RRL Online Library</h1>
             </div>
@@ -174,6 +235,7 @@
         let isAdmin = false;
         let pendingBorrowBookId = null;
         let pendingReturnBookId = null;
+        let selectedBookId = null;
         
         async function fetchWithRetry(url, options, retries = 3) {
             for (let i = 0; i < retries; i++) {
@@ -222,6 +284,11 @@
             const indicator = document.getElementById('modeIndicator');
             if (active) { app.classList.add('admin-mode'); indicator.textContent = '🔐 Admin Mode'; indicator.classList.add('admin'); }
             else { app.classList.remove('admin-mode'); indicator.textContent = '👥 Public View'; indicator.classList.remove('admin'); }
+            updateDetailModalVisibility();
+        }
+        
+        function updateDetailModalVisibility() {
+            if (selectedBookId) openBookDetail(selectedBookId);
         }
         
         function logout() { clearSession(); setAdminMode(false); showToast('Logged out - now in Public View', 'info'); }
@@ -230,12 +297,9 @@
         function openLoginModal() { document.getElementById('loginOverlay').classList.add('show'); document.getElementById('passwordInput').focus(); }
         function closeLoginModal() { document.getElementById('loginOverlay').classList.remove('show'); document.getElementById('loginError').style.display = 'none'; }
         
-        // Borrow Modal (Admin)
+        // Borrow Modal
         function openBorrowModal(bookId, bookTitle) {
-            if (!isAdmin) { 
-                openVisitorBorrowModal(bookId, bookTitle);
-                return; 
-            }
+            if (!isAdmin) { openVisitorBorrowModal(bookId, bookTitle); return; }
             pendingBorrowBookId = bookId;
             document.getElementById('borrowBookTitle').textContent = `"${bookTitle}"`;
             document.getElementById('borrowerName').value = '';
@@ -246,19 +310,13 @@
         }
         function closeBorrowModal() { document.getElementById('borrowModal').classList.remove('show'); pendingBorrowBookId = null; }
         
-        // Visitor Borrow Info Modal
+        // Visitor Borrow Modal
         function openVisitorBorrowModal(bookId, bookTitle) {
             pendingBorrowBookId = bookId;
             document.getElementById('visitorBorrowModal').classList.add('show');
         }
-        function closeVisitorBorrowModal() { 
-            document.getElementById('visitorBorrowModal').classList.remove('show'); 
-            pendingBorrowBookId = null; 
-        }
-        function openLoginModalFromVisitor() {
-            closeVisitorBorrowModal();
-            openLoginModal();
-        }
+        function closeVisitorBorrowModal() { document.getElementById('visitorBorrowModal').classList.remove('show'); pendingBorrowBookId = null; }
+        function openLoginModalFromVisitor() { closeVisitorBorrowModal(); openLoginModal(); }
         
         // Add Book Modal
         function openAddBookModal() {
@@ -272,21 +330,82 @@
         }
         function closeAddBookModal() { document.getElementById('addBookModal').classList.remove('show'); }
         
+        // Detail Modal
+        function openBookDetail(bookId) {
+            const book = books.find(b => b.id === bookId);
+            if (!book) return;
+            selectedBookId = bookId;
+            
+            const coverEl = document.getElementById('detailCoverFull');
+            coverEl.innerHTML = book.coverImage ? `<img src="${book.coverImage}" alt="${escapeHtml(book.title)}">` : '<span class="placeholder-large">📘</span>';
+            
+            document.getElementById('detailTitle').textContent = book.title;
+            document.getElementById('detailAuthor').textContent = `by ${book.author}`;
+            document.getElementById('detailGenre').textContent = book.genre || 'Uncategorized';
+            document.getElementById('detailLocation').textContent = book.location;
+            document.getElementById('detailRRL').textContent = book.rrlLevel || 'N/A';
+            document.getElementById('detailID').textContent = `#${book.id}`;
+            
+            const statusEl = document.getElementById('detailStatus');
+            statusEl.textContent = book.status === 'available' ? '✓ Available' : '📤 Borrowed';
+            statusEl.className = `detail-status ${book.status}`;
+            
+            const borrowerSection = document.getElementById('detailBorrowerSection');
+            if (book.status === 'borrowed' && book.borrower) {
+                borrowerSection.style.display = 'block';
+                document.getElementById('detailBorrowerName').textContent = book.borrower;
+                document.getElementById('detailBorrowerGrade').textContent = book.borrowerGrade || '-';
+                document.getElementById('detailBorrowerLevel').textContent = book.borrowerLevel || '-';
+                document.getElementById('detailBorrowDate').textContent = book.borrowDate || '-';
+            } else {
+                borrowerSection.style.display = 'none';
+            }
+            
+            document.getElementById('detailBorrowBtn').style.display = book.status === 'available' ? 'flex' : 'none';
+            document.getElementById('detailReturnBtn').style.display = book.status === 'borrowed' ? 'flex' : 'none';
+            
+            document.getElementById('detailModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('show');
+            document.body.style.overflow = '';
+            selectedBookId = null;
+        }
+        
+        function goHome() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function handleDetailBorrow() {
+            if (selectedBookId) {
+                const book = books.find(b => b.id === selectedBookId);
+                if (book) { closeDetailModal(); openBorrowModal(book.id, book.title); }
+            }
+        }
+        
+        function handleDetailReturn() {
+            if (selectedBookId) { returnBook(selectedBookId); closeDetailModal(); }
+        }
+        
+        function handleDetailRemove() {
+            if (selectedBookId) {
+                const book = books.find(b => b.id === selectedBookId);
+                if (book && confirm(`Remove "${book.title}"?`)) { removeBook(selectedBookId); closeDetailModal(); }
+            }
+        }
+        
         function login() {
             const password = document.getElementById('passwordInput').value;
             if (password === '1111') {
                 saveSession(); setAdminMode(true); closeLoginModal(); document.getElementById('passwordInput').value = '';
-                
                 if (pendingBorrowBookId) { 
                     const book = books.find(b => b.id === pendingBorrowBookId); 
                     if (book) openBorrowModal(book.id, book.title); 
                     pendingBorrowBookId = null; 
                 }
-                if (pendingReturnBookId) {
-                    returnBook(pendingReturnBookId);
-                    pendingReturnBookId = null;
-                }
-                
+                if (pendingReturnBookId) { returnBook(pendingReturnBookId); pendingReturnBookId = null; }
                 showToast('✅ Admin mode activated', 'success');
             } else {
                 document.getElementById('loginError').style.display = 'block';
@@ -412,26 +531,12 @@
         }
         
         async function returnBook(id) {
-            if (!isAdmin) {
-                pendingReturnBookId = id;
-                openLoginModal();
-                return;
-            }
-            
+            if (!isAdmin) { pendingReturnBookId = id; openLoginModal(); return; }
             const book = books.find(b => b.id === id);
             if (book) {
                 const info = `${book.borrower} (${book.borrowerGrade}, ${book.borrowerLevel})`;
-                book.status = 'available';
-                book.borrower = null;
-                book.borrowerGrade = null;
-                book.borrowerLevel = null;
-                book.borrowDate = null;
-                
-                if (await saveBooks()) {
-                    renderBooks();
-                    updateStats();
-                    showToast(`✅ "${book.title}" returned by ${info}`, 'success');
-                }
+                book.status = 'available'; book.borrower = null; book.borrowerGrade = null; book.borrowerLevel = null; book.borrowDate = null;
+                if (await saveBooks()) { renderBooks(); updateStats(); showToast(`✅ "${book.title}" returned by ${info}`, 'success'); }
             }
         }
         
@@ -471,7 +576,7 @@
             emptyState.style.display = 'none';
             
             grid.innerHTML = filteredBooks.map(book => `
-                <div class="book-card ${book.status}">
+                <div class="book-card ${book.status}" onclick="openBookDetail(${book.id})">
                     ${book.coverImage ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` : `<div class="book-cover">📘</div>`}
                     <div class="book-title">${escapeHtml(book.title)}</div>
                     <div class="book-author">by ${escapeHtml(book.author)}</div>
@@ -483,7 +588,7 @@
                     </div>
                     <span class="status-badge ${book.status}">${book.status === 'available' ? '✓ Available' : '📤 Borrowed'}</span>
                     ${book.status === 'borrowed' ? `<div style="margin-top:0.5rem;"><span class="borrower-badge">👤 ${escapeHtml(book.borrower)}</span><br><small style="color:#64748b;display:block;margin-top:0.25rem">Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><small style="color:#94a3b8;display:block">Since: ${book.borrowDate}</small></div>` : ''}
-                    <div class="book-actions">
+                    <div class="book-actions" onclick="event.stopPropagation()">
                         ${book.status === 'available' ? `<button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` : `<button class="btn btn-success" onclick="returnBook(${book.id})">✅ Return</button>`}
                         <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">🗑 Remove</button>
                     </div>
@@ -516,6 +621,10 @@
         document.getElementById('borrowModal')?.addEventListener('click', e => { if (e.target.id === 'borrowModal') closeBorrowModal(); });
         document.getElementById('addBookModal')?.addEventListener('click', e => { if (e.target.id === 'addBookModal') closeAddBookModal(); });
         document.getElementById('visitorBorrowModal')?.addEventListener('click', e => { if (e.target.id === 'visitorBorrowModal') closeVisitorBorrowModal(); });
+        document.getElementById('detailModal')?.addEventListener('click', e => { if (e.target.id === 'detailModal') closeDetailModal(); });
+        
+        // Close detail modal on Escape key
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetailModal(); });
     </script>
 </body>
 </html>

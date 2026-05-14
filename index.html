@@ -19,7 +19,7 @@
         </div>
     </div>
 
-    <!-- ══════════ BORROW MODAL ══════════ -->
+    <!-- ═════════ BORROW MODAL ══════════ -->
     <div class="modal-overlay" id="borrowModal">
         <div class="modal">
             <h3>📚 Borrow Book</h3>
@@ -73,7 +73,7 @@
                 <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, C)">
                 <input type="file" id="newBookCover" accept="image/*" capture="environment" title="Upload or take photo">
             </div>
-            <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
+            <p class="camera-hint"> On mobile: tap to choose file OR take photo with camera</p>
             <p id="imageSizeWarning" class="image-warning">⚠️ Large images may fail to save. Images are auto-compressed to 300px @ 20% quality.</p>
             <div class="modal-actions">
                 <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Save Book</button>
@@ -146,7 +146,7 @@
         </div>
     </div>
 
-    <!-- ══════════ MAIN APP ══════════ -->
+    <!-- ══════════ MAIN APP ═════════ -->
     <div id="mainApp">
         <header>
             <div class="header-left" onclick="goHome()" style="cursor: pointer;">
@@ -154,18 +154,19 @@
                 <h1>Kumon RRL Online Library</h1>
             </div>
             <div class="header-actions">
-                <span class="mode-indicator" id="modeIndicator">👥 Public View</span>
+                <span class="mode-indicator" id="modeIndicator"> Public View</span>
                 <button class="btn btn-small btn-logout admin-only" onclick="logout()">🚪 Logout</button>
             </div>
         </header>
         
         <!-- Banner Section -->
-        <div class="banner-section small">
+        <div class="banner-section">
             <img src="banner.jpg" alt="Library Banner" class="banner-image">
         </div>
         
         <div class="container">
-            <div class="stats">
+            <!-- Stats Container (Admin Only) -->
+            <div class="stats admin-only">
                 <div class="stat-card">
                     <h3>Total Books</h3>
                     <div class="number" id="totalBooks">0</div>
@@ -185,7 +186,7 @@
                 <p style="color:#64748b;margin:0; font-size: 1.1rem;">
                     👋 Welcome! Browse our library below. 
                     <button class="btn btn-small btn-login admin-only" onclick="openAddBookModal()" style="margin-left:0.75rem;vertical-align:middle">➕ Add Book</button>
-                    <button class="btn btn-small btn-login public-only" onclick="openLoginModal()" style="margin-left:0.75rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
+                    <button class="btn btn-small btn-login public-only" onclick="openLoginModal()" style="margin-left:0.75rem;vertical-align:middle"> Login to Borrow/Manage</button>
                 </p>
             </div>
             
@@ -219,10 +220,10 @@
             </div>
         </div>
 
-        <!-- ══════════ FOOTER ══════════ -->
+        <!-- ═════════ FOOTER ══════════ -->
         <footer class="site-footer">
             <div class="footer-content">
-                <p>📚 Kumon Taipa Mei Keng &nbsp;•&nbsp; 📞 <a href="tel:+85328831773">2883 1773</a></p>
+                <p> Kumon Taipa Mei Keng &nbsp;•&nbsp; 📞 <a href="tel:+85328831773">2883 1773</a></p>
             </div>
         </footer>
     </div>
@@ -537,7 +538,7 @@
             const book = books.find(b => b.id === pendingBorrowBookId);
             if (book) {
                 book.status = 'borrowed'; book.borrower = name; book.borrowerGrade = grade; book.borrowerLevel = level; book.borrowDate = new Date().toISOString().split('T')[0];
-                if (await saveBooks()) { closeBorrowModal(); renderBooks(); updateStats(); showToast(`📚 "${book.title}" borrowed by ${name} (${grade}, ${level})`, 'success'); }
+                if (await saveBooks()) { closeBorrowModal(); renderBooks(); updateStats(); showToast(` "${book.title}" borrowed by ${name} (${grade}, ${level})`, 'success'); }
             }
         }
         
@@ -588,7 +589,7 @@
             
             grid.innerHTML = filteredBooks.map(book => `
                 <div class="book-card ${book.status}" onclick="openBookDetail(${book.id})">
-                    ${book.coverImage ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` : `<div class="book-cover">📘</div>`}
+                    ${book.coverImage ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` : `<div class="book-cover"></div>`}
                     <div class="book-title">${escapeHtml(book.title)}</div>
                     <div class="book-author">by ${escapeHtml(book.author)}</div>
                     <div class="book-location">📍 ${escapeHtml(book.location)}</div>
@@ -598,7 +599,7 @@
                         <span>ID: ${book.id}</span>
                     </div>
                     <span class="status-badge ${book.status}">${book.status === 'available' ? '✓ Available' : '📤 Borrowed'}</span>
-                    ${book.status === 'borrowed' ? `<div style="margin-top:0.5rem;"><span class="borrower-badge">👤 ${escapeHtml(book.borrower)}</span><br><small style="color:#64748b;display:block;margin-top:0.25rem">Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><small style="color:#94a3b8;display:block">Since: ${book.borrowDate}</small></div>` : ''}
+                    ${book.status === 'borrowed' ? `<div style="margin-top:0.5rem;"><span class="borrower-badge"> ${escapeHtml(book.borrower)}</span><br><small style="color:#64748b;display:block;margin-top:0.25rem">Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><small style="color:#94a3b8;display:block">Since: ${book.borrowDate}</small></div>` : ''}
                     <div class="book-actions" onclick="event.stopPropagation()">
                         ${book.status === 'available' ? `<button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` : `<button class="btn btn-success" onclick="returnBook(${book.id})">✅ Return</button>`}
                         <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">🗑 Remove</button>

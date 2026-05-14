@@ -265,8 +265,18 @@
             font-size: 0.85rem;
             color: #60a5fa;
             margin-bottom: 1rem;
+            align-items: center;
         }
         
+        .rrl-badge {
+            background: rgba(96, 165, 250, 0.2);
+            color: #93c5fd;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-weight: bold;
+            border: 1px solid rgba(96, 165, 250, 0.4);
+        }
+
         .status-badge {
             display: inline-block;
             padding: 0.25rem 0.75rem;
@@ -417,7 +427,8 @@
         <div class="login-box">
             <h2>🔐 Kumon ERP Library</h2>
             <p>Enter password to access</p>
-            <input type="password" id="passwordInput" placeholder="Enter password (1111)" maxlength="10">
+            <!-- Removed the password hint from the placeholder here -->
+            <input type="password" id="passwordInput" placeholder="Enter password" maxlength="10">
             <button class="btn btn-primary" onclick="login()" style="width: 100%;">Login</button>
             <p id="loginError" style="color: #fca5a5; margin-top: 1rem; display: none;">Invalid password</p>
         </div>
@@ -455,6 +466,8 @@
                     <input type="text" id="newBookAuthor" placeholder="Author">
                     <input type="text" id="newBookGenre" placeholder="Genre">
                     <input type="text" id="newBookLocation" placeholder="Location (e.g., Shelf A3)">
+                    <!-- Added RRL Level Input Field -->
+                    <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, C)">
                 </div>
                 <button class="btn btn-primary" onclick="addBook()">Add Book</button>
             </div>
@@ -489,7 +502,7 @@
     <script src="books-data.js"></script>
     <script>
         // Load books from Excel data or localStorage
-        let books = JSON.parse(localStorage.getItem('kumonLibraryBooks')) || libraryBooks || [];
+        let books = JSON.parse(localStorage.getItem('kumonLibraryBooks')) || (typeof libraryBooks !== 'undefined' ? libraryBooks : []) || [];
         
         let nextId = books.length > 0 ? Math.max(...books.map(b => b.id)) + 1 : 1;
         
@@ -543,6 +556,8 @@
             const author = document.getElementById('newBookAuthor').value.trim();
             const genre = document.getElementById('newBookGenre').value.trim();
             const location = document.getElementById('newBookLocation').value.trim();
+            // Retrieve the RRL Level
+            const rrlLevel = document.getElementById('newBookRRL').value.trim();
             
             if (!title || !author || !location) {
                 showToast('Please fill in title, author, and location', 'error');
@@ -555,6 +570,7 @@
                 author: author,
                 genre: genre || 'Uncategorized',
                 location: location,
+                rrlLevel: rrlLevel || 'N/A', // Store RRL Level
                 status: 'available',
                 borrower: null,
                 borrowDate: null
@@ -570,6 +586,7 @@
             document.getElementById('newBookAuthor').value = '';
             document.getElementById('newBookGenre').value = '';
             document.getElementById('newBookLocation').value = '';
+            document.getElementById('newBookRRL').value = ''; // Clear RRL Input
             
             showToast(`"${title}" added successfully`);
         }
@@ -662,6 +679,9 @@
                     <div class="book-meta">
                         <span>${escapeHtml(book.genre)}</span>
                         <span>•</span>
+                        <!-- Display RRL Level here -->
+                        <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span>
+                        <span>•</span>
                         <span>ID: ${book.id}</span>
                     </div>
                     <span class="status-badge ${book.status}">
@@ -709,8 +729,8 @@
         document.getElementById('filterStatus').addEventListener('change', renderBooks);
         document.getElementById('sortBy').addEventListener('change', renderBooks);
         
-        // Add book on Enter key
-        ['newBookTitle', 'newBookAuthor', 'newBookGenre', 'newBookLocation'].forEach(id => {
+        // Add book on Enter key (Included newBookRRL)
+        ['newBookTitle', 'newBookAuthor', 'newBookGenre', 'newBookLocation', 'newBookRRL'].forEach(id => {
             document.getElementById(id).addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') addBook();
             });

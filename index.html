@@ -153,15 +153,16 @@
                 <img src="logo.png" alt="Kumon Taipa Mei Keng" class="header-logo">
                 <h1>Kumon RRL Online Library</h1>
             </div>
+            
             <div class="header-actions">
-                <!-- Mode Indicator: Hidden by default, shown in Admin Mode -->
+                <!-- Badge (Hidden by default) -->
                 <span class="mode-indicator" id="modeIndicator">🔐 Admin Mode</span>
                 
-                <!-- Login Button: Shown by default, hidden in Admin Mode -->
-                <button class="btn btn-small btn-login-action" onclick="openLoginModal()">🔐 Admin Login</button>
+                <!-- Login Button (Visible by default) -->
+                <button class="btn btn-login" onclick="openLoginModal()">🔐 Admin Login</button>
                 
-                <!-- Logout Button: Hidden by default, shown in Admin Mode -->
-                <button class="btn btn-small btn-logout-action" onclick="logout()">🚪 Logout</button>
+                <!-- Logout Button (Hidden by default) -->
+                <button class="btn btn-logout" onclick="logout()">🚪 Logout</button>
             </div>
         </header>
         
@@ -185,8 +186,8 @@
             <div class="public-notice">
                 <p style="color:#64748b;margin:0; font-size: 1.1rem;">
                     👋 Welcome! Browse our library below. 
-                    <button class="btn btn-small btn-login-action admin-only" onclick="openAddBookModal()" style="margin-left:0.75rem;vertical-align:middle">➕ Add Book</button>
-                    <button class="btn btn-small btn-login-action" onclick="openLoginModal()" style="margin-left:0.75rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
+                    <button class="btn btn-small btn-login admin-only" onclick="openAddBookModal()" style="margin-left:0.75rem;vertical-align:middle">➕ Add Book</button>
+                    <button class="btn btn-small btn-login public-only" onclick="openLoginModal()" style="margin-left:0.75rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
                 </p>
             </div>
             
@@ -294,8 +295,17 @@
             isAdmin = active;
             const app = document.getElementById('mainApp');
             const indicator = document.getElementById('modeIndicator');
-            if (active) { app.classList.add('admin-mode'); }
-            else { app.classList.remove('admin-mode'); }
+            
+            // Toggle class on the main app container
+            if (active) { 
+                app.classList.add('admin-mode'); 
+                indicator.textContent = '🔐 Admin Mode'; 
+                indicator.classList.add('admin'); 
+            } else { 
+                app.classList.remove('admin-mode'); 
+                indicator.textContent = '👥 Public View'; 
+                indicator.classList.remove('admin'); 
+            }
             updateDetailModalVisibility();
         }
         

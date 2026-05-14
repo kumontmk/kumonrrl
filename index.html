@@ -142,7 +142,7 @@
             border: 1px solid #3b82f6;
         }
         
-        .controls input, .controls select {
+        .controls input[type="text"], .controls select {
             padding: 0.75rem 1rem;
             border: 2px solid #3b82f6;
             border-radius: 8px;
@@ -185,7 +185,7 @@
             margin-bottom: 1rem;
         }
         
-        .admin-form input {
+        .admin-form input[type="text"] {
             padding: 0.75rem 1rem;
             border: 2px solid #3b82f6;
             border-radius: 8px;
@@ -202,6 +202,32 @@
             outline: none;
             border-color: #60a5fa;
         }
+
+        /* File Input Styling */
+        input[type="file"] {
+            padding: 0.5rem;
+            background: rgba(30, 58, 138, 0.5);
+            color: #93c5fd;
+            border: 2px dashed #3b82f6;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        input[type="file"]::file-selector-button {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            margin-right: 1rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
         
         /* Books Grid */
         .books-grid {
@@ -217,6 +243,8 @@
             border: 1px solid #3b82f6;
             transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
         
         .book-card:hover {
@@ -230,6 +258,22 @@
         
         .book-card.borrowed {
             border-left: 4px solid #f59e0b;
+        }
+
+        /* Cover Image */
+        .book-cover {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            background: rgba(30, 58, 138, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3b82f6;
+            font-size: 3rem;
+            border: 1px solid rgba(59, 130, 246, 0.3);
         }
         
         .book-title {
@@ -253,6 +297,7 @@
             font-size: 0.85rem;
             color: #bfdbfe;
             margin-bottom: 0.5rem;
+            align-self: flex-start;
         }
         
         .book-location::before {
@@ -285,6 +330,7 @@
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            align-self: flex-start;
         }
         
         .status-badge.available {
@@ -350,7 +396,8 @@
         .book-actions {
             display: flex;
             gap: 0.5rem;
-            margin-top: 1rem;
+            margin-top: auto; /* Push buttons to the bottom */
+            padding-top: 1rem;
         }
         
         .book-actions .btn {
@@ -427,7 +474,6 @@
         <div class="login-box">
             <h2>🔐 Kumon ERP Library</h2>
             <p>Enter password to access</p>
-            <!-- Removed the password hint from the placeholder here -->
             <input type="password" id="passwordInput" placeholder="Enter password" maxlength="10">
             <button class="btn btn-primary" onclick="login()" style="width: 100%;">Login</button>
             <p id="loginError" style="color: #fca5a5; margin-top: 1rem; display: none;">Invalid password</p>
@@ -466,10 +512,11 @@
                     <input type="text" id="newBookAuthor" placeholder="Author">
                     <input type="text" id="newBookGenre" placeholder="Genre">
                     <input type="text" id="newBookLocation" placeholder="Location (e.g., Shelf A3)">
-                    <!-- Added RRL Level Input Field -->
                     <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, C)">
+                    <!-- New File Input for Cover Page -->
+                    <input type="file" id="newBookCover" accept="image/*" title="Upload Cover Image">
                 </div>
-                <button class="btn btn-primary" onclick="addBook()">Add Book</button>
+                <button class="btn btn-primary" onclick="processAddBook()">Add Book</button>
             </div>
             
             <div class="controls">
@@ -513,7 +560,13 @@
         }
         
         function saveBooks() {
-            localStorage.setItem('kumonLibraryBooks', JSON.stringify(books));
+            try {
+                localStorage.setItem('kumonLibraryBooks', JSON.stringify(books));
+            } catch (e) {
+                // Catch LocalStorage QuotaExceeded errors
+                showToast('Storage limit reached! Cannot save image. Try clearing cache.', 'error');
+                console.error("Storage error: ", e);
+            }
         }
         
         function login() {
@@ -550,33 +603,51 @@
                 toast.classList.remove('show');
             }, 3000);
         }
-        
-        function addBook() {
+
+        // New wrapper to handle the file upload reading asynchronously
+        function processAddBook() {
             const title = document.getElementById('newBookTitle').value.trim();
             const author = document.getElementById('newBookAuthor').value.trim();
             const genre = document.getElementById('newBookGenre').value.trim();
             const location = document.getElementById('newBookLocation').value.trim();
-            // Retrieve the RRL Level
             const rrlLevel = document.getElementById('newBookRRL').value.trim();
             
             if (!title || !author || !location) {
                 showToast('Please fill in title, author, and location', 'error');
                 return;
             }
-            
+
+            const coverInput = document.getElementById('newBookCover');
+            const file = coverInput.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const coverBase64 = e.target.result;
+                    addBookToSystem(title, author, genre, location, rrlLevel, coverBase64);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // If no image is selected, pass null
+                addBookToSystem(title, author, genre, location, rrlLevel, null);
+            }
+        }
+        
+        function addBookToSystem(title, author, genre, location, rrlLevel, coverImage) {
             const newBook = {
                 id: nextId++,
                 title: title,
                 author: author,
                 genre: genre || 'Uncategorized',
                 location: location,
-                rrlLevel: rrlLevel || 'N/A', // Store RRL Level
+                rrlLevel: rrlLevel || 'N/A', 
+                coverImage: coverImage, // Save the image string
                 status: 'available',
                 borrower: null,
                 borrowDate: null
             };
             
-            books.push(newBook);
+            books.unshift(newBook); // Add to the beginning of the array so it shows up first
             saveBooks();
             updateStats();
             renderBooks();
@@ -586,7 +657,8 @@
             document.getElementById('newBookAuthor').value = '';
             document.getElementById('newBookGenre').value = '';
             document.getElementById('newBookLocation').value = '';
-            document.getElementById('newBookRRL').value = ''; // Clear RRL Input
+            document.getElementById('newBookRRL').value = ''; 
+            document.getElementById('newBookCover').value = ''; // Clear file input
             
             showToast(`"${title}" added successfully`);
         }
@@ -673,13 +745,18 @@
             
             grid.innerHTML = filteredBooks.map(book => `
                 <div class="book-card ${book.status}">
+                    <!-- Render image if exists, else show a fallback block -->
+                    ${book.coverImage 
+                        ? `<img src="${book.coverImage}" class="book-cover" alt="Cover for ${escapeHtml(book.title)}">` 
+                        : `<div class="book-cover">📘</div>`
+                    }
+                    
                     <div class="book-title">${escapeHtml(book.title)}</div>
                     <div class="book-author">by ${escapeHtml(book.author)}</div>
                     <div class="book-location">${escapeHtml(book.location)}</div>
                     <div class="book-meta">
                         <span>${escapeHtml(book.genre)}</span>
                         <span>•</span>
-                        <!-- Display RRL Level here -->
                         <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span>
                         <span>•</span>
                         <span>ID: ${book.id}</span>
@@ -729,10 +806,10 @@
         document.getElementById('filterStatus').addEventListener('change', renderBooks);
         document.getElementById('sortBy').addEventListener('change', renderBooks);
         
-        // Add book on Enter key (Included newBookRRL)
+        // Add book on Enter key for text inputs
         ['newBookTitle', 'newBookAuthor', 'newBookGenre', 'newBookLocation', 'newBookRRL'].forEach(id => {
             document.getElementById(id).addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') addBook();
+                if (e.key === 'Enter') processAddBook();
             });
         });
     </script>

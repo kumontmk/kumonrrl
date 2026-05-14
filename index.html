@@ -5,467 +5,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kumon ERP Library</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        /* ... [keep all your existing CSS exactly as is] ... */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #FFFFFF; color: #61CDFF; line-height: 1.6; min-height: 100vh; }
+        header { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 1.5rem 2rem; box-shadow: 0 4px 20px rgba(30, 58, 138, 0.4); }
+        header h1 { font-size: 1.8rem; display: flex; align-items: center; gap: 0.5rem; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .login-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 22, 40, 0.95); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .login-box { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 3rem; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4); width: 100%; max-width: 400px; text-align: center; }
+        .login-box h2 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .login-box p { color: #93c5fd; margin-bottom: 2rem; }
+        .login-box input { width: 100%; padding: 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(255,255,255,0.1); color: white; margin-bottom: 1rem; text-align: center; }
+        .login-box input::placeholder { color: #93c5fd; }
+        .login-box input:focus { outline: none; border-color: #60a5fa; background: rgba(255,255,255,0.15); }
+        .hidden { display: none !important; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 1.5rem; border-radius: 12px; text-align: center; border: 1px solid #3b82f6; }
+        .stat-card h3 { font-size: 0.9rem; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+        .stat-card .number { font-size: 2.5rem; font-weight: 700; color: white; }
+        .controls { background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; border: 1px solid #3b82f6; }
+        .controls input[type="text"], .controls select { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; transition: all 0.2s; }
+        .controls input:focus, .controls select:focus { outline: none; border-color: #60a5fa; background: rgba(30, 58, 138, 0.7); }
+        .controls input[type="text"] { flex: 1; min-width: 200px; }
+        .admin-panel { background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border: 1px solid #3b82f6; }
+        .admin-panel h3 { color: #60a5fa; margin-bottom: 1rem; font-size: 1.2rem; }
+        .admin-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .admin-form input[type="text"] { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; }
+        .admin-form input::placeholder { color: #93c5fd; }
+        .admin-form input:focus { outline: none; border-color: #60a5fa; }
+        input[type="file"] { padding: 0.5rem; background: rgba(30, 58, 138, 0.5); color: #93c5fd; border: 2px dashed #3b82f6; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
+        input[type="file"]::file-selector-button { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; margin-right: 1rem; cursor: pointer; font-weight: 500; }
+        input[type="file"]::file-selector-button:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
+        .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+        .book-card { background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); border-radius: 12px; padding: 1.5rem; border: 1px solid #3b82f6; transition: transform 0.2s, box-shadow 0.2s; position: relative; display: flex; flex-direction: column; }
+        .book-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(59, 130, 246, 0.3); }
+        .book-card.available { border-left: 4px solid #22c55e; }
+        .book-card.borrowed { border-left: 4px solid #f59e0b; }
+        .book-cover { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; background: rgba(30, 58, 138, 0.5); display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 3rem; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .book-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; color: white; }
+        .book-author { color: #93c5fd; font-size: 0.95rem; margin-bottom: 0.5rem; }
+        .book-location { display: inline-block; background: rgba(59, 130, 246, 0.3); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; color: #bfdbfe; margin-bottom: 0.5rem; align-self: flex-start; }
+        .book-location::before { content: "📍 "; }
+        .book-meta { display: flex; gap: 1rem; font-size: 0.85rem; color: #60a5fa; margin-bottom: 1rem; align-items: center; }
+        .rrl-badge { background: rgba(96, 165, 250, 0.2); color: #93c5fd; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: bold; border: 1px solid rgba(96, 165, 250, 0.4); }
+        .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; align-self: flex-start; }
+        .status-badge.available { background: rgba(34, 197, 94, 0.2); color: #86efac; border: 1px solid #22c55e; }
+        .status-badge.borrowed { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid #f59e0b; }
+        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
+        .btn-primary:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); transform: translateY(-1px); }
+        .btn-success { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; }
+        .btn-success:hover { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+        .btn-danger:hover { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); }
+        .btn-small { padding: 0.5rem 1rem; font-size: 0.85rem; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .book-actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 1rem; }
+        .book-actions .btn { flex: 1; margin-top: 0; }
+        .empty-state { text-align: center; padding: 4rem 2rem; color: #93c5fd; }
+        .empty-state h2 { font-size: 1.5rem; margin-bottom: 0.5rem; color: white; }
+        .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 8px; color: white; font-weight: 500; transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 1000; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
+        .toast.error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .toast.info { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        @media (max-width: 600px) { .container { padding: 1rem; } .controls { flex-direction: column; } .controls input, .controls select { width: 100%; } .admin-form { grid-template-columns: 1fr; } }
         
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #FFFFFF;
-            color: #61CDFF;
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-        
-        header {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-            color: white;
-            padding: 1.5rem 2rem;
-            box-shadow: 0 4px 20px rgba(30, 58, 138, 0.4);
-        }
-        
-        header h1 {
-            font-size: 1.8rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        
-        /* Login Screen */
-        .login-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(10, 22, 40, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
-        
-        .login-box {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-            padding: 3rem;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-        
-        .login-box h2 {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .login-box p {
-            color: #93c5fd;
-            margin-bottom: 2rem;
-        }
-        
-        .login-box input {
-            width: 100%;
-            padding: 1rem;
-            border: 2px solid #3b82f6;
-            border-radius: 8px;
-            font-size: 1rem;
-            background: rgba(255,255,255,0.1);
-            color: white;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-        
-        .login-box input::placeholder {
-            color: #93c5fd;
-        }
-        
-        .login-box input:focus {
-            outline: none;
-            border-color: #60a5fa;
-            background: rgba(255,255,255,0.15);
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-        
-        /* Stats */
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-            padding: 1.5rem;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid #3b82f6;
-        }
-        
-        .stat-card h3 {
-            font-size: 0.9rem;
-            color: #93c5fd;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.5rem;
-        }
-        
-        .stat-card .number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: white;
-        }
-        
-        /* Controls */
-        .controls {
-            background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%);
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            align-items: center;
-            border: 1px solid #3b82f6;
-        }
-        
-        .controls input[type="text"], .controls select {
-            padding: 0.75rem 1rem;
-            border: 2px solid #3b82f6;
-            border-radius: 8px;
-            font-size: 1rem;
-            background: rgba(30, 58, 138, 0.5);
-            color: white;
-            transition: all 0.2s;
-        }
-        
-        .controls input:focus, .controls select:focus {
-            outline: none;
-            border-color: #60a5fa;
-            background: rgba(30, 58, 138, 0.7);
-        }
-        
-        .controls input[type="text"] {
-            flex: 1;
-            min-width: 200px;
-        }
-        
-        /* Admin Panel */
-        .admin-panel {
-            background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%);
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-            border: 1px solid #3b82f6;
-        }
-        
-        .admin-panel h3 {
-            color: #60a5fa;
-            margin-bottom: 1rem;
-            font-size: 1.2rem;
-        }
-        
-        .admin-form {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        
-        .admin-form input[type="text"] {
-            padding: 0.75rem 1rem;
-            border: 2px solid #3b82f6;
-            border-radius: 8px;
-            font-size: 1rem;
-            background: rgba(30, 58, 138, 0.5);
-            color: white;
-        }
-        
-        .admin-form input::placeholder {
-            color: #93c5fd;
-        }
-        
-        .admin-form input:focus {
-            outline: none;
-            border-color: #60a5fa;
-        }
-
-        /* File Input Styling */
-        input[type="file"] {
-            padding: 0.5rem;
-            background: rgba(30, 58, 138, 0.5);
-            color: #93c5fd;
-            border: 2px dashed #3b82f6;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-
-        input[type="file"]::file-selector-button {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: white;
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 4px;
-            margin-right: 1rem;
-            cursor: pointer;
-            font-weight: 500;
-        }
-
-        input[type="file"]::file-selector-button:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        }
-        
-        /* Books Grid */
-        .books-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1.5rem;
-        }
-        
-        .book-card {
-            background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%);
-            border-radius: 12px;
-            padding: 1.5rem;
-            border: 1px solid #3b82f6;
-            transition: transform 0.2s, box-shadow 0.2s;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .book-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.3);
-        }
-        
-        .book-card.available {
-            border-left: 4px solid #22c55e;
-        }
-        
-        .book-card.borrowed {
-            border-left: 4px solid #f59e0b;
-        }
-
-        /* Cover Image */
-        .book-cover {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            background: rgba(30, 58, 138, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #3b82f6;
-            font-size: 3rem;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-        }
-        
-        .book-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: white;
-        }
-        
-        .book-author {
-            color: #93c5fd;
-            font-size: 0.95rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .book-location {
-            display: inline-block;
-            background: rgba(59, 130, 246, 0.3);
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            color: #bfdbfe;
-            margin-bottom: 0.5rem;
-            align-self: flex-start;
-        }
-        
-        .book-location::before {
-            content: "📍 ";
-        }
-        
-        .book-meta {
-            display: flex;
-            gap: 1rem;
-            font-size: 0.85rem;
-            color: #60a5fa;
-            margin-bottom: 1rem;
-            align-items: center;
-        }
-        
-        .rrl-badge {
-            background: rgba(96, 165, 250, 0.2);
-            color: #93c5fd;
-            padding: 0.2rem 0.6rem;
-            border-radius: 4px;
-            font-weight: bold;
-            border: 1px solid rgba(96, 165, 250, 0.4);
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            align-self: flex-start;
-        }
-        
-        .status-badge.available {
-            background: rgba(34, 197, 94, 0.2);
-            color: #86efac;
-            border: 1px solid #22c55e;
-        }
-        
-        .status-badge.borrowed {
-            background: rgba(245, 158, 11, 0.2);
-            color: #fcd34d;
-            border: 1px solid #f59e0b;
-        }
-        
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            transform: translateY(-1px);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-        }
-        
-        .btn-small {
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-        }
-        
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .book-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: auto; /* Push buttons to the bottom */
-            padding-top: 1rem;
-        }
-        
-        .book-actions .btn {
-            flex: 1;
-            margin-top: 0;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: #93c5fd;
-        }
-        
-        .empty-state h2 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-            color: white;
-        }
-        
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            color: white;
-            font-weight: 500;
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.3s;
-            z-index: 1000;
-        }
-        
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        
-        .toast.success {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-        }
-        
-        .toast.error {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        }
-        
-        .toast.info {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        }
-        
-        @media (max-width: 600px) {
-            .container {
-                padding: 1rem;
-            }
-            
-            .controls {
-                flex-direction: column;
-            }
-            
-            .controls input, .controls select {
-                width: 100%;
-            }
-            
-            .admin-form {
-                grid-template-columns: 1fr;
-            }
-        }
+        /* Loading spinner */
+        .loading { text-align: center; padding: 2rem; color: #93c5fd; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(59, 130, 246, 0.3); border-top-color: #60a5fa; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -513,10 +122,10 @@
                     <input type="text" id="newBookGenre" placeholder="Genre">
                     <input type="text" id="newBookLocation" placeholder="Location (e.g., Shelf A3)">
                     <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, C)">
-                    <!-- New File Input for Cover Page -->
                     <input type="file" id="newBookCover" accept="image/*" title="Upload Cover Image">
                 </div>
-                <button class="btn btn-primary" onclick="processAddBook()">Add Book</button>
+                <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Add Book</button>
+                <button class="btn btn-small" id="testConnectionBtn" onclick="testConnection()" style="background:#6b7280; margin-left:0.5rem">🔗 Test Connection</button>
             </div>
             
             <div class="controls">
@@ -533,6 +142,11 @@
                 </select>
             </div>
             
+            <div id="loadingState" class="loading" style="display:none;">
+                <div class="spinner"></div>
+                <p>Loading books from server...</p>
+            </div>
+            
             <div class="books-grid" id="booksGrid">
                 <!-- Books will be rendered here -->
             </div>
@@ -546,26 +160,108 @@
     
     <div class="toast" id="toast"></div>
     
-    <script src="books-data.js"></script>
+    <!-- Removed books-data.js since we're using JSONBin -->
+    
     <script>
-        // Load books from Excel data or localStorage
-        let books = JSON.parse(localStorage.getItem('kumonLibraryBooks')) || (typeof libraryBooks !== 'undefined' ? libraryBooks : []) || [];
+        // 🔐 JSONBin Configuration - ROTATE YOUR KEY AFTER SETUP!
+        const JSONBIN_CONFIG = {
+            BIN_ID: '6a054b89c0954111d81ee9ae',
+            API_KEY: '$2a$10$xHpBk/PGsQBzMG3zuHUdlOVhpkI1jd9PKven5Dh4TK1oyKhYYJEm.', // ⚠️ REPLACE WITH ROTATED KEY
+            BASE_URL: 'https://api.jsonbin.io/v3/b'
+        };
+
+        // App state
+        let books = [];
+        let nextId = 1;
+        let isLoading = false;
         
-        let nextId = books.length > 0 ? Math.max(...books.map(b => b.id)) + 1 : 1;
-        
-        // Initialize if first time
-        if (!localStorage.getItem('kumonLibraryBooks')) {
-            saveBooks();
-            showToast(`Loaded ${books.length} books from Kumon Library`, 'info');
-        }
-        
-        function saveBooks() {
+        // Load books from JSONBin
+        async function loadBooks() {
+            if (isLoading) return;
+            isLoading = true;
+            
+            document.getElementById('loadingState').style.display = 'block';
+            document.getElementById('booksGrid').innerHTML = '';
+            
             try {
-                localStorage.setItem('kumonLibraryBooks', JSON.stringify(books));
+                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, {
+                    headers: {
+                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.message || `HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const record = data.record;
+                
+                // Handle the nested structure
+                books = Array.isArray(record?.books) ? [...record.books] : [];
+                nextId = books.length > 0 ? Math.max(...books.map(b => b.id)) + 1 : 1;
+                
+                updateStats();
+                renderBooks();
+                showToast(`✓ Loaded ${books.length} books from cloud`, 'success');
+                
+            } catch (error) {
+                console.error('❌ Load error:', error);
+                showToast(`Failed to load: ${error.message}`, 'error');
+                books = [];
+                renderBooks();
+            } finally {
+                isLoading = false;
+                document.getElementById('loadingState').style.display = 'none';
+            }
+        }
+
+        // Save books to JSONBin
+        async function saveBooks() {
+            try {
+                const payload = {
+                    books: books,
+                    lastUpdated: new Date().toISOString()
+                };
+                
+                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
+                        'Content-Type': 'application/json',
+                        'X-Bin-Meta': 'false'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.message || `HTTP ${response.status}`);
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('❌ Save error:', error);
+                showToast(`Save failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Test connection to JSONBin
+        async function testConnection() {
+            showToast('Testing connection...', 'info');
+            try {
+                const res = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, {
+                    headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY }
+                });
+                const data = await res.json();
+                console.log('✅ JSONBin Response:', data);
+                showToast(`✓ Connected! Bin has ${data.record?.books?.length || 0} books`, 'success');
             } catch (e) {
-                // Catch LocalStorage QuotaExceeded errors
-                showToast('Storage limit reached! Cannot save image. Try clearing cache.', 'error');
-                console.error("Storage error: ", e);
+                console.error('❌ Test failed:', e);
+                showToast(`✗ Error: ${e.message}`, 'error');
             }
         }
         
@@ -575,8 +271,7 @@
                 document.getElementById('loginOverlay').classList.add('hidden');
                 document.getElementById('mainApp').classList.remove('hidden');
                 showToast('Welcome to Kumon ERP Library!', 'success');
-                updateStats();
-                renderBooks();
+                loadBooks(); // Load from JSONBin on login
             } else {
                 document.getElementById('loginError').style.display = 'block';
                 setTimeout(() => {
@@ -604,8 +299,11 @@
             }, 3000);
         }
 
-        // New wrapper to handle the file upload reading asynchronously
-        function processAddBook() {
+        // Add book wrapper with file handling
+        async function processAddBook() {
+            const btn = document.getElementById('addBookBtn');
+            const originalText = btn.textContent;
+            
             const title = document.getElementById('newBookTitle').value.trim();
             const author = document.getElementById('newBookAuthor').value.trim();
             const genre = document.getElementById('newBookGenre').value.trim();
@@ -617,64 +315,80 @@
                 return;
             }
 
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
             const coverInput = document.getElementById('newBookCover');
             const file = coverInput.files[0];
 
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const coverBase64 = e.target.result;
-                    addBookToSystem(title, author, genre, location, rrlLevel, coverBase64);
-                };
-                reader.readAsDataURL(file);
-            } else {
-                // If no image is selected, pass null
-                addBookToSystem(title, author, genre, location, rrlLevel, null);
+            try {
+                if (file) {
+                    // Warn about image size limits
+                    if (file.size > 500 * 1024) {
+                        showToast('⚠️ Image >500KB may fail. Compressing...', 'info');
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = async function(e) {
+                        const coverBase64 = e.target.result;
+                        await addBookToSystem(title, author, genre, location, rrlLevel, coverBase64);
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    await addBookToSystem(title, author, genre, location, rrlLevel, null);
+                }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
             }
         }
         
-        function addBookToSystem(title, author, genre, location, rrlLevel, coverImage) {
+        async function addBookToSystem(title, author, genre, location, rrlLevel, coverImage) {
             const newBook = {
                 id: nextId++,
                 title: title,
                 author: author,
                 genre: genre || 'Uncategorized',
                 location: location,
-                rrlLevel: rrlLevel || 'N/A', 
-                coverImage: coverImage, // Save the image string
+                rrlLevel: rrlLevel || 'N/A',
+                coverImage: coverImage,
                 status: 'available',
                 borrower: null,
                 borrowDate: null
             };
             
-            books.unshift(newBook); // Add to the beginning of the array so it shows up first
-            saveBooks();
-            updateStats();
-            renderBooks();
+            books.unshift(newBook);
+            
+            const saved = await saveBooks();
+            if (saved) {
+                updateStats();
+                renderBooks();
+                showToast(`"${title}" added successfully`, 'success');
+            }
             
             // Clear inputs
             document.getElementById('newBookTitle').value = '';
             document.getElementById('newBookAuthor').value = '';
             document.getElementById('newBookGenre').value = '';
             document.getElementById('newBookLocation').value = '';
-            document.getElementById('newBookRRL').value = ''; 
-            document.getElementById('newBookCover').value = ''; // Clear file input
-            
-            showToast(`"${title}" added successfully`);
+            document.getElementById('newBookRRL').value = '';
+            document.getElementById('newBookCover').value = '';
         }
         
-        function removeBook(id) {
+        async function removeBook(id) {
             const book = books.find(b => b.id === id);
             if (book && confirm(`Are you sure you want to remove "${book.title}"?`)) {
                 books = books.filter(b => b.id !== id);
-                saveBooks();
-                updateStats();
-                renderBooks();
-                showToast(`"${book.title}" removed`);
+                const saved = await saveBooks();
+                if (saved) {
+                    updateStats();
+                    renderBooks();
+                    showToast(`"${book.title}" removed`, 'success');
+                }
             }
         }
         
-        function borrowBook(id) {
+        async function borrowBook(id) {
             const name = prompt("Enter borrower name:");
             if (!name || name.trim() === '') {
                 showToast('Borrower name required', 'error');
@@ -686,24 +400,30 @@
                 book.status = 'borrowed';
                 book.borrower = name.trim();
                 book.borrowDate = new Date().toISOString().split('T')[0];
-                saveBooks();
-                renderBooks();
-                updateStats();
-                showToast(`"${book.title}" borrowed by ${name}`);
+                
+                const saved = await saveBooks();
+                if (saved) {
+                    renderBooks();
+                    updateStats();
+                    showToast(`"${book.title}" borrowed by ${name}`, 'success');
+                }
             }
         }
         
-        function returnBook(id) {
+        async function returnBook(id) {
             const book = books.find(b => b.id === id);
             if (book) {
                 const previousBorrower = book.borrower;
                 book.status = 'available';
                 book.borrower = null;
                 book.borrowDate = null;
-                saveBooks();
-                renderBooks();
-                updateStats();
-                showToast(`"${book.title}" returned by ${previousBorrower}`);
+                
+                const saved = await saveBooks();
+                if (saved) {
+                    renderBooks();
+                    updateStats();
+                    showToast(`"${book.title}" returned by ${previousBorrower}`, 'success');
+                }
             }
         }
         
@@ -735,9 +455,19 @@
             const emptyState = document.getElementById('emptyState');
             const filteredBooks = getFilteredAndSortedBooks();
             
-            if (filteredBooks.length === 0) {
+            if (filteredBooks.length === 0 && books.length > 0) {
                 grid.innerHTML = '';
                 emptyState.style.display = 'block';
+                emptyState.querySelector('h2').textContent = 'No matching books';
+                emptyState.querySelector('p').textContent = 'Try adjusting your search or filter';
+                return;
+            }
+            
+            if (books.length === 0) {
+                grid.innerHTML = '';
+                emptyState.style.display = 'block';
+                emptyState.querySelector('h2').textContent = '📚 Library is empty';
+                emptyState.querySelector('p').textContent = 'Add your first book using the admin panel above';
                 return;
             }
             
@@ -745,9 +475,8 @@
             
             grid.innerHTML = filteredBooks.map(book => `
                 <div class="book-card ${book.status}">
-                    <!-- Render image if exists, else show a fallback block -->
                     ${book.coverImage 
-                        ? `<img src="${book.coverImage}" class="book-cover" alt="Cover for ${escapeHtml(book.title)}">` 
+                        ? `<img src="${book.coverImage}" class="book-cover" alt="Cover for ${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` 
                         : `<div class="book-cover">📘</div>`
                     }
                     
@@ -792,6 +521,7 @@
         }
         
         function escapeHtml(text) {
+            if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
@@ -806,12 +536,23 @@
         document.getElementById('filterStatus').addEventListener('change', renderBooks);
         document.getElementById('sortBy').addEventListener('change', renderBooks);
         
-        // Add book on Enter key for text inputs
         ['newBookTitle', 'newBookAuthor', 'newBookGenre', 'newBookLocation', 'newBookRRL'].forEach(id => {
             document.getElementById(id).addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') processAddBook();
             });
         });
+        
+        // Auto-load books-data.js fallback if JSONBin fails (optional backup)
+        // Remove this block if you don't want fallback behavior
+        /*
+        if (typeof libraryBooks !== 'undefined' && books.length === 0) {
+            console.log('🔄 Falling back to books-data.js');
+            books = JSON.parse(JSON.stringify(libraryBooks));
+            nextId = books.length > 0 ? Math.max(...books.map(b => b.id)) + 1 : 1;
+            updateStats();
+            renderBooks();
+        }
+        */
     </script>
 </body>
 </html>

@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KUMON RRL LIBRARY</title>
+    <title>Kumon ERP Library</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #FFFFFF; color: #61CDFF; line-height: 1.6; min-height: 100vh; }
-        header { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 1.5rem 2rem; box-shadow: 0 4px 20px rgba(30, 58, 138, 0.4); display: flex; justify-content: space-between; align-items: center; }
+        header { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 1.5rem 2rem; box-shadow: 0 4px 20px rgba(30, 58, 138, 0.4); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
         header h1 { font-size: 1.8rem; display: flex; align-items: center; gap: 0.5rem; }
-        .header-actions { display: flex; gap: 0.75rem; align-items: center; }
+        .header-actions { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
         .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-        .login-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 22, 40, 0.95); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        
+        /* Login Overlay - only shown for admin actions when not logged in */
+        .login-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 22, 40, 0.95); display: none; align-items: center; justify-content: center; z-index: 2000; }
+        .login-overlay.show { display: flex; }
         .login-box { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 3rem; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4); width: 100%; max-width: 400px; text-align: center; }
         .login-box h2 { font-size: 2rem; margin-bottom: 0.5rem; }
         .login-box p { color: #93c5fd; margin-bottom: 2rem; }
@@ -19,14 +22,37 @@
         .login-box input::placeholder { color: #93c5fd; }
         .login-box input:focus { outline: none; border-color: #60a5fa; background: rgba(255,255,255,0.15); }
         .hidden { display: none !important; }
+        
+        /* Public vs Admin mode indicator */
+        .mode-indicator { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+            padding: 0.5rem 1rem; 
+            border-radius: 20px; 
+            font-size: 0.85rem; 
+            font-weight: 500;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid #3b82f6;
+            color: #93c5fd;
+        }
+        .mode-indicator.admin {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: #22c55e;
+            color: #86efac;
+        }
+        
         .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
         .stat-card { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 1.5rem; border-radius: 12px; text-align: center; border: 1px solid #3b82f6; }
         .stat-card h3 { font-size: 0.9rem; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
         .stat-card .number { font-size: 2.5rem; font-weight: 700; color: white; }
+        
         .controls { background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; border: 1px solid #3b82f6; }
         .controls input[type="text"], .controls select { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; transition: all 0.2s; }
         .controls input:focus, .controls select:focus { outline: none; border-color: #60a5fa; background: rgba(30, 58, 138, 0.7); }
         .controls input[type="text"] { flex: 1; min-width: 200px; }
+        
+        /* Admin Panel - hidden in public mode */
         .admin-panel { background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border: 1px solid #3b82f6; }
         .admin-panel h3 { color: #60a5fa; margin-bottom: 1rem; font-size: 1.2rem; }
         .admin-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
@@ -36,21 +62,35 @@
         input[type="file"] { padding: 0.5rem; background: rgba(30, 58, 138, 0.5); color: #93c5fd; border: 2px dashed #3b82f6; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
         input[type="file"]::file-selector-button { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; margin-right: 1rem; cursor: pointer; font-weight: 500; }
         input[type="file"]::file-selector-button:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
+        
         .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
         .book-card { background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); border-radius: 12px; padding: 1.5rem; border: 1px solid #3b82f6; transition: transform 0.2s, box-shadow 0.2s; position: relative; display: flex; flex-direction: column; }
         .book-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(59, 130, 246, 0.3); }
         .book-card.available { border-left: 4px solid #22c55e; }
         .book-card.borrowed { border-left: 4px solid #f59e0b; }
+        
         .book-cover { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; background: rgba(30, 58, 138, 0.5); display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 3rem; border: 1px solid rgba(59, 130, 246, 0.3); }
         .book-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; color: white; }
         .book-author { color: #93c5fd; font-size: 0.95rem; margin-bottom: 0.5rem; }
         .book-location { display: inline-block; background: rgba(59, 130, 246, 0.3); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; color: #bfdbfe; margin-bottom: 0.5rem; align-self: flex-start; }
         .book-location::before { content: "📍 "; }
-        .book-meta { display: flex; gap: 1rem; font-size: 0.85rem; color: #60a5fa; margin-bottom: 1rem; align-items: center; }
+        .book-meta { display: flex; gap: 1rem; font-size: 0.85rem; color: #60a5fa; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
         .rrl-badge { background: rgba(96, 165, 250, 0.2); color: #93c5fd; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: bold; border: 1px solid rgba(96, 165, 250, 0.4); }
+        
+        /* Borrower info badge */
+        .borrower-badge { 
+            background: rgba(245, 158, 11, 0.2); 
+            color: #fcd34d; 
+            padding: 0.2rem 0.6rem; 
+            border-radius: 4px; 
+            font-size: 0.8rem;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+        
         .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; align-self: flex-start; }
         .status-badge.available { background: rgba(34, 197, 94, 0.2); color: #86efac; border: 1px solid #22c55e; }
         .status-badge.borrowed { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid #f59e0b; }
+        
         .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
         .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
         .btn-primary:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); transform: translateY(-1px); }
@@ -62,15 +102,56 @@
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-logout { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; }
         .btn-logout:hover { background: linear-gradient(135deg, #4b5563 0%, #374151 100%); }
-        .book-actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 1rem; }
-        .book-actions .btn { flex: 1; margin-top: 0; }
+        .btn-login { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; }
+        .btn-login:hover { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); }
+        
+        .book-actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 1rem; flex-wrap: wrap; }
+        .book-actions .btn { flex: 1; min-width: 100px; margin-top: 0; }
+        
         .empty-state { text-align: center; padding: 4rem 2rem; color: #93c5fd; }
         .empty-state h2 { font-size: 1.5rem; margin-bottom: 0.5rem; color: white; }
+        
         .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 8px; color: white; font-weight: 500; transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 1000; }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.success { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
         .toast.error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
         .toast.info { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        
+        /* Borrow modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 22, 40, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500;
+            padding: 1rem;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            padding: 2rem;
+            border-radius: 16px;
+            max-width: 400px;
+            width: 100%;
+            border: 1px solid #3b82f6;
+        }
+        .modal h3 { color: white; margin-bottom: 1.5rem; font-size: 1.3rem; }
+        .modal-form { display: flex; flex-direction: column; gap: 1rem; }
+        .modal-form input, .modal-form select {
+            padding: 0.75rem 1rem;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: rgba(30, 58, 138, 0.5);
+            color: white;
+        }
+        .modal-form input::placeholder { color: #93c5fd; }
+        .modal-form input:focus { outline: none; border-color: #60a5fa; }
+        .modal-actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
+        .modal-actions .btn { flex: 1; }
+        
         @media (max-width: 600px) { 
             .container { padding: 1rem; } 
             .controls { flex-direction: column; } 
@@ -78,6 +159,8 @@
             .admin-form { grid-template-columns: 1fr; }
             header { flex-direction: column; gap: 1rem; text-align: center; }
             .header-actions { width: 100%; justify-content: center; }
+            .book-actions { flex-direction: column; }
+            .book-actions .btn { width: 100%; }
         }
         
         /* Loading spinner */
@@ -91,26 +174,51 @@
         
         /* Camera hint */
         .camera-hint { font-size: 0.75rem; color: #93c5fd; margin-top: 0.25rem; }
+        
+        /* Admin-only elements */
+        .admin-only { display: none; }
+        .admin-mode .admin-only { display: initial; }
+        .admin-mode .public-only { display: none; }
     </style>
 </head>
 <body>
-    <!-- Login Overlay -->
+    <!-- Login Modal (for admin actions) -->
     <div class="login-overlay" id="loginOverlay">
         <div class="login-box">
-            <h2>🔐KUMON RRL LIBRARY</h2>
-            <p>Enter password to access</p>
+            <h2>🔐 Admin Login</h2>
+            <p>Enter password to manage library</p>
             <input type="password" id="passwordInput" placeholder="Enter password" maxlength="10">
-            <button class="btn btn-primary" onclick="login()" style="width: 100%;">Login</button>
+            <button class="btn btn-primary" onclick="login()" style="width: 100%;">Login as Admin</button>
+            <button class="btn btn-small" onclick="closeLoginModal()" style="background:transparent;border:1px solid #3b82f6;margin-top:0.5rem;width:100%">Continue as Visitor</button>
             <p id="loginError" style="color: #fca5a5; margin-top: 1rem; display: none;">Invalid password</p>
         </div>
     </div>
 
-    <!-- Main App -->
-    <div id="mainApp" class="hidden">
+    <!-- Borrow Modal -->
+    <div class="modal-overlay" id="borrowModal">
+        <div class="modal">
+            <h3>📚 Borrow Book</h3>
+            <p id="borrowBookTitle" style="color:#93c5fd;margin-bottom:1rem;font-style:italic;"></p>
+            <div class="modal-form">
+                <input type="text" id="borrowerName" placeholder="Student Name *" required>
+                <input type="text" id="borrowerGrade" placeholder="Grade (e.g., Grade 3) *" required>
+                <input type="text" id="borrowerLevel" placeholder="Kumon Level (e.g., CII, D) *" required>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-success" onclick="confirmBorrow()">Confirm Borrow</button>
+                <button class="btn btn-small" onclick="closeBorrowModal()" style="background:#6b7280">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App (always visible - public view by default) -->
+    <div id="mainApp">
         <header>
-            <h1>📚KUMON RRL LIBRARY📚</h1>
+            <h1>📚 Kumon ERP Library</h1>
             <div class="header-actions">
-                <button class="btn btn-small btn-logout" onclick="logout()">🚪 Logout</button>
+                <span class="mode-indicator" id="modeIndicator">👥 Public View</span>
+                <button class="btn btn-small btn-login admin-only" onclick="openLoginModal()">🔐 Admin Login</button>
+                <button class="btn btn-small btn-logout admin-only" onclick="logout()">🚪 Logout</button>
             </div>
         </header>
         
@@ -130,8 +238,8 @@
                 </div>
             </div>
             
-            <!-- Admin Panel -->
-            <div class="admin-panel">
+            <!-- Admin Panel (hidden in public mode) -->
+            <div class="admin-panel admin-only">
                 <h3>⚡ Admin: Add New Book</h3>
                 <div class="admin-form">
                     <input type="text" id="newBookTitle" placeholder="Book Title">
@@ -139,7 +247,6 @@
                     <input type="text" id="newBookGenre" placeholder="Genre">
                     <input type="text" id="newBookLocation" placeholder="Location (e.g., Shelf A3)">
                     <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, C)">
-                    <!-- 📷 Camera support: capture="environment" uses back camera on mobile -->
                     <input type="file" id="newBookCover" accept="image/*" capture="environment" title="Upload or take photo">
                 </div>
                 <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
@@ -147,6 +254,14 @@
                 <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Add Book</button>
                 <button class="btn btn-small" id="testConnectionBtn" onclick="testConnection()" style="background:#6b7280; margin-left:0.5rem">🔗 Test Connection</button>
                 <button class="btn btn-small" onclick="exportBackup()" style="background:#8b5cf6; margin-left:0.5rem">💾 Export Backup</button>
+            </div>
+            
+            <!-- Public notice when not logged in -->
+            <div class="admin-panel public-only" style="text-align:center;">
+                <p style="color:#93c5fd;margin:0;">
+                    👋 Welcome! Browse our library below. 
+                    <button class="btn btn-small btn-login" onclick="openLoginModal()" style="margin-left:0.5rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
+                </p>
             </div>
             
             <div class="controls">
@@ -189,40 +304,38 @@
             BASE_URL: 'https://api.jsonbin.io/v3/b'
         };
 
-        // 🔐 Session Management (localStorage for login persistence ONLY)
+        // 🔐 Session Management
         const SESSION_KEY = 'kumonLibrarySession';
         
         // App state
         let books = [];
         let nextId = 1;
         let isLoading = false;
+        let isAdmin = false;
+        let pendingBorrowBookId = null; // For borrow modal
         
-        // 🔄 Rate Limit Handling: Fetch with exponential backoff retry
+        // 🔄 Rate Limit Handling
         async function fetchWithRetry(url, options, retries = 3) {
             for (let i = 0; i < retries; i++) {
                 try {
                     const res = await fetch(url, options);
-                    
-                    // Handle rate limiting (429 Too Many Requests)
                     if (res.status === 429) {
                         const retryAfter = res.headers.get('Retry-After') || (i + 1);
                         console.warn(`⚠️ Rate limited. Waiting ${retryAfter}s before retry ${i + 1}/${retries}`);
                         await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
                         continue;
                     }
-                    
                     return res;
                 } catch (error) {
                     console.warn(`⚠️ Request failed (attempt ${i + 1}/${retries}):`, error.message);
                     if (i === retries - 1) throw error;
-                    // Exponential backoff: 500ms, 1s, 2s
                     await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, i)));
                 }
             }
             throw new Error('Max retries exceeded');
         }
         
-        // 🗜️ Compress Cover Images: Resize to 300px + compress to 20% quality
+        // 🗜️ Compress Cover Images: 300px, 20% quality
         async function compressImage(file, maxWidth = 300, quality = 0.2) {
             return new Promise((resolve, reject) => {
                 const canvas = document.createElement('canvas');
@@ -232,23 +345,14 @@
                 img.onload = () => {
                     let width = img.width;
                     let height = img.height;
-                    
-                    // Calculate new dimensions maintaining aspect ratio
                     if (width > maxWidth) {
                         height = Math.round((maxWidth / width) * height);
                         width = maxWidth;
                     }
-                    
                     canvas.width = width;
                     canvas.height = height;
-                    
-                    // Draw and compress with aggressive quality setting
                     ctx.drawImage(img, 0, 0, width, height);
-                    
-                    // Convert to JPEG with 20% quality for minimal file size
                     const compressed = canvas.toDataURL('image/jpeg', quality);
-                    
-                    // Clean up
                     URL.revokeObjectURL(img.src);
                     resolve(compressed);
                 };
@@ -257,45 +361,110 @@
                     URL.revokeObjectURL(img.src);
                     reject(new Error('Failed to load image for compression'));
                 };
-                
-                // Start loading
                 img.src = URL.createObjectURL(file);
             });
         }
         
-        // 🔐 Save login session to localStorage
+        // 🔐 Session functions
         function saveSession() {
             localStorage.setItem(SESSION_KEY, JSON.stringify({
-                loggedIn: true,
+                isAdmin: true,
                 loginTime: new Date().toISOString()
             }));
         }
         
-        // 🔐 Check if user has active session
         function checkSession() {
             try {
                 const session = JSON.parse(localStorage.getItem(SESSION_KEY));
-                return session?.loggedIn === true;
-            } catch {
-                return false;
-            }
+                return session?.isAdmin === true;
+            } catch { return false; }
         }
         
-        // 🔐 Clear login session
         function clearSession() {
             localStorage.removeItem(SESSION_KEY);
         }
         
-        // 🔐 Logout function
-        function logout() {
-            clearSession();
-            document.getElementById('mainApp').classList.add('hidden');
-            document.getElementById('loginOverlay').classList.remove('hidden');
-            document.getElementById('passwordInput').value = '';
-            showToast('Logged out successfully', 'info');
+        function setAdminMode(active) {
+            isAdmin = active;
+            const app = document.getElementById('mainApp');
+            const indicator = document.getElementById('modeIndicator');
+            
+            if (active) {
+                app.classList.add('admin-mode');
+                indicator.textContent = '🔐 Admin Mode';
+                indicator.classList.add('admin');
+            } else {
+                app.classList.remove('admin-mode');
+                indicator.textContent = '👥 Public View';
+                indicator.classList.remove('admin');
+            }
         }
         
-        // Load books from JSONBin with retry logic
+        function logout() {
+            clearSession();
+            setAdminMode(false);
+            showToast('Logged out - now in Public View', 'info');
+        }
+        
+        // Modal functions
+        function openLoginModal() {
+            document.getElementById('loginOverlay').classList.add('show');
+            document.getElementById('passwordInput').focus();
+        }
+        
+        function closeLoginModal() {
+            document.getElementById('loginOverlay').classList.remove('show');
+            document.getElementById('passwordError').style.display = 'none';
+        }
+        
+        function openBorrowModal(bookId, bookTitle) {
+            // Check if admin first
+            if (!isAdmin) {
+                openLoginModal();
+                pendingBorrowBookId = bookId; // Remember for after login
+                return;
+            }
+            
+            pendingBorrowBookId = bookId;
+            document.getElementById('borrowBookTitle').textContent = `"${bookTitle}"`;
+            document.getElementById('borrowerName').value = '';
+            document.getElementById('borrowerGrade').value = '';
+            document.getElementById('borrowerLevel').value = '';
+            document.getElementById('borrowModal').classList.add('show');
+            document.getElementById('borrowerName').focus();
+        }
+        
+        function closeBorrowModal() {
+            document.getElementById('borrowModal').classList.remove('show');
+            pendingBorrowBookId = null;
+        }
+        
+        // Login function
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === '1111') {
+                saveSession();
+                setAdminMode(true);
+                closeLoginModal();
+                document.getElementById('passwordInput').value = '';
+                
+                // If there was a pending borrow action, trigger it
+                if (pendingBorrowBookId) {
+                    const book = books.find(b => b.id === pendingBorrowBookId);
+                    if (book) openBorrowModal(book.id, book.title);
+                    pendingBorrowBookId = null;
+                }
+                
+                showToast('✓ Admin mode activated', 'success');
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('loginError').style.display = 'none';
+                }, 2000);
+            }
+        }
+        
+        // Load books from JSONBin
         async function loadBooks() {
             if (isLoading) return;
             isLoading = true;
@@ -306,12 +475,7 @@
             try {
                 const response = await fetchWithRetry(
                     `${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`,
-                    {
-                        headers: {
-                            'X-Master-Key': JSONBIN_CONFIG.API_KEY,
-                            'Content-Type': 'application/json'
-                        }
-                    }
+                    { headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY, 'Content-Type': 'application/json' }}
                 );
                 
                 if (!response.ok) {
@@ -321,14 +485,12 @@
                 
                 const data = await response.json();
                 const record = data.record;
-                
-                // Handle the nested structure
                 books = Array.isArray(record?.books) ? [...record.books] : [];
                 nextId = books.length > 0 ? Math.max(...books.map(b => b.id)) + 1 : 1;
                 
                 updateStats();
                 renderBooks();
-                showToast(`✓ Loaded ${books.length} books from cloud`, 'success');
+                if (books.length > 0) showToast(`✓ Loaded ${books.length} books`, 'success');
                 
             } catch (error) {
                 console.error('❌ Load error:', error);
@@ -341,14 +503,10 @@
             }
         }
 
-        // Save books to JSONBin with retry logic
+        // Save books to JSONBin
         async function saveBooks() {
             try {
-                const payload = {
-                    books: books,
-                    lastUpdated: new Date().toISOString()
-                };
-                
+                const payload = { books: books, lastUpdated: new Date().toISOString() };
                 const response = await fetchWithRetry(
                     `${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`,
                     {
@@ -366,7 +524,6 @@
                     const err = await response.json().catch(() => ({}));
                     throw new Error(err.message || `HTTP ${response.status}`);
                 }
-                
                 return true;
             } catch (error) {
                 console.error('❌ Save error:', error);
@@ -375,29 +532,24 @@
             }
         }
 
-        // Test connection to JSONBin
+        // Test connection
         async function testConnection() {
             showToast('Testing connection...', 'info');
             try {
                 const res = await fetchWithRetry(
                     `${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`,
-                    { headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY } }
+                    { headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY }}
                 );
                 const data = await res.json();
-                console.log('✅ JSONBin Response:', data);
-                showToast(`✓ Connected! Bin has ${data.record?.books?.length || 0} books`, 'success');
+                showToast(`✓ Connected! ${data.record?.books?.length || 0} books in cloud`, 'success');
             } catch (e) {
-                console.error('❌ Test failed:', e);
                 showToast(`✗ Error: ${e.message}`, 'error');
             }
         }
         
-        // Export backup of current books
+        // Export backup
         function exportBackup() {
-            if (books.length === 0) {
-                showToast('No books to export', 'info');
-                return;
-            }
+            if (books.length === 0) { showToast('No books to export', 'info'); return; }
             const blob = new Blob([JSON.stringify(books, null, 2)], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -408,47 +560,22 @@
             showToast('Backup downloaded!', 'success');
         }
         
-        function login() {
-            const password = document.getElementById('passwordInput').value;
-            if (password === '1111') {
-                // 🔐 Save session for persistence
-                saveSession();
-                
-                document.getElementById('loginOverlay').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-                showToast('Welcome to Kumon ERP Library!', 'success');
-                loadBooks();
-            } else {
-                document.getElementById('loginError').style.display = 'block';
-                setTimeout(() => {
-                    document.getElementById('loginError').style.display = 'none';
-                }, 2000);
-            }
-        }
-        
         function updateStats() {
-            const total = books.length;
-            const available = books.filter(b => b.status === 'available').length;
-            const borrowed = books.filter(b => b.status === 'borrowed').length;
-            
-            document.getElementById('totalBooks').textContent = total;
-            document.getElementById('availableBooks').textContent = available;
-            document.getElementById('borrowedBooks').textContent = borrowed;
+            document.getElementById('totalBooks').textContent = books.length;
+            document.getElementById('availableBooks').textContent = books.filter(b => b.status === 'available').length;
+            document.getElementById('borrowedBooks').textContent = books.filter(b => b.status === 'borrowed').length;
         }
         
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.className = `toast ${type} show`;
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // 🗜️ Add book wrapper with aggressive image compression (300px, 20% quality)
+        // Add book with image compression
         async function processAddBook() {
             const btn = document.getElementById('addBookBtn');
-            const originalText = btn.textContent;
             const warningEl = document.getElementById('imageSizeWarning');
             
             const title = document.getElementById('newBookTitle').value.trim();
@@ -466,73 +593,62 @@
             btn.textContent = 'Saving...';
             warningEl.classList.remove('show');
 
-            const coverInput = document.getElementById('newBookCover');
-            const file = coverInput.files[0];
+            const file = document.getElementById('newBookCover').files[0];
 
             try {
+                let coverImage = null;
                 if (file) {
-                    // Show warning for large files
                     if (file.size > 500 * 1024) {
-                        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing to 300px @ 20% quality...`;
+                        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`;
                         warningEl.classList.add('show');
                     }
-                    
-                    // 🗜️ Compress image: 300px max width, 20% JPEG quality
-                    const compressedBase64 = await compressImage(file, 300, 0.2);
-                    await addBookToSystem(title, author, genre, location, rrlLevel, compressedBase64);
-                } else {
-                    await addBookToSystem(title, author, genre, location, rrlLevel, null);
+                    coverImage = await compressImage(file, 300, 0.2);
                 }
+                await addBookToSystem(title, author, genre, location, rrlLevel, coverImage);
             } catch (error) {
-                console.error('Error processing image:', error);
-                showToast(`Image error: ${error.message}. Adding book without image.`, 'error');
-                // Still try to add book without image
+                console.error('Image error:', error);
+                showToast(`Image error. Adding without image.`, 'error');
                 await addBookToSystem(title, author, genre, location, rrlLevel, null);
             } finally {
                 btn.disabled = false;
-                btn.textContent = originalText;
+                btn.textContent = 'Add Book';
                 warningEl.classList.remove('show');
+                // Clear inputs
+                ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
             }
         }
         
         async function addBookToSystem(title, author, genre, location, rrlLevel, coverImage) {
             const newBook = {
                 id: nextId++,
-                title: title,
-                author: author,
+                title, author,
                 genre: genre || 'Uncategorized',
-                location: location,
+                location,
                 rrlLevel: rrlLevel || 'N/A',
-                coverImage: coverImage,
+                coverImage,
                 status: 'available',
                 borrower: null,
-                borrowDate: null
+                borrowDate: null,
+                borrowerGrade: null,
+                borrowerLevel: null
             };
-            
             books.unshift(newBook);
             
-            const saved = await saveBooks();
-            if (saved) {
+            if (await saveBooks()) {
                 updateStats();
                 renderBooks();
                 showToast(`"${title}" added successfully`, 'success');
             }
-            
-            // Clear inputs
-            document.getElementById('newBookTitle').value = '';
-            document.getElementById('newBookAuthor').value = '';
-            document.getElementById('newBookGenre').value = '';
-            document.getElementById('newBookLocation').value = '';
-            document.getElementById('newBookRRL').value = '';
-            document.getElementById('newBookCover').value = '';
         }
         
         async function removeBook(id) {
             const book = books.find(b => b.id === id);
-            if (book && confirm(`Are you sure you want to remove "${book.title}"?`)) {
+            if (book && confirm(`Remove "${book.title}"?`)) {
                 books = books.filter(b => b.id !== id);
-                const saved = await saveBooks();
-                if (saved) {
+                if (await saveBooks()) {
                     updateStats();
                     renderBooks();
                     showToast(`"${book.title}" removed`, 'success');
@@ -540,24 +656,30 @@
             }
         }
         
-        async function borrowBook(id) {
-            const name = prompt("Enter borrower name:");
-            if (!name || name.trim() === '') {
-                showToast('Borrower name required', 'error');
+        // Confirm borrow with enhanced info
+        async function confirmBorrow() {
+            const name = document.getElementById('borrowerName').value.trim();
+            const grade = document.getElementById('borrowerGrade').value.trim();
+            const level = document.getElementById('borrowerLevel').value.trim();
+            
+            if (!name || !grade || !level) {
+                showToast('Please fill in all borrower fields', 'error');
                 return;
             }
             
-            const book = books.find(b => b.id === id);
+            const book = books.find(b => b.id === pendingBorrowBookId);
             if (book) {
                 book.status = 'borrowed';
-                book.borrower = name.trim();
+                book.borrower = name;
+                book.borrowerGrade = grade;
+                book.borrowerLevel = level;
                 book.borrowDate = new Date().toISOString().split('T')[0];
                 
-                const saved = await saveBooks();
-                if (saved) {
+                if (await saveBooks()) {
+                    closeBorrowModal();
                     renderBooks();
                     updateStats();
-                    showToast(`"${book.title}" borrowed by ${name}`, 'success');
+                    showToast(`📚 "${book.title}" borrowed by ${name} (${grade}, ${level})`, 'success');
                 }
             }
         }
@@ -565,16 +687,17 @@
         async function returnBook(id) {
             const book = books.find(b => b.id === id);
             if (book) {
-                const previousBorrower = book.borrower;
+                const info = `${book.borrower} (${book.borrowerGrade}, ${book.borrowerLevel})`;
                 book.status = 'available';
                 book.borrower = null;
+                book.borrowerGrade = null;
+                book.borrowerLevel = null;
                 book.borrowDate = null;
                 
-                const saved = await saveBooks();
-                if (saved) {
+                if (await saveBooks()) {
                     renderBooks();
                     updateStats();
-                    showToast(`"${book.title}" returned by ${previousBorrower}`, 'success');
+                    showToast(`✓ "${book.title}" returned by ${info}`, 'success');
                 }
             }
         }
@@ -598,7 +721,6 @@
                 if (sortBy === 'status') return a.status.localeCompare(b.status);
                 return 0;
             });
-            
             return filtered;
         }
         
@@ -614,24 +736,21 @@
                 emptyState.querySelector('p').textContent = 'Try adjusting your search or filter';
                 return;
             }
-            
             if (books.length === 0) {
                 grid.innerHTML = '';
                 emptyState.style.display = 'block';
                 emptyState.querySelector('h2').textContent = '📚 Library is empty';
-                emptyState.querySelector('p').textContent = 'Add your first book using the admin panel above';
+                emptyState.querySelector('p').textContent = isAdmin ? 'Add your first book above' : 'Check back soon!';
                 return;
             }
-            
             emptyState.style.display = 'none';
             
             grid.innerHTML = filteredBooks.map(book => `
                 <div class="book-card ${book.status}">
                     ${book.coverImage 
-                        ? `<img src="${book.coverImage}" class="book-cover" alt="Cover for ${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` 
+                        ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` 
                         : `<div class="book-cover">📘</div>`
                     }
-                    
                     <div class="book-title">${escapeHtml(book.title)}</div>
                     <div class="book-author">by ${escapeHtml(book.author)}</div>
                     <div class="book-location">${escapeHtml(book.location)}</div>
@@ -643,31 +762,29 @@
                         <span>ID: ${book.id}</span>
                     </div>
                     <span class="status-badge ${book.status}">
-                        ${book.status === 'available' ? 'Available' : 'Borrowed'}
+                        ${book.status === 'available' ? '✓ Available' : '📤 Borrowed'}
                     </span>
                     ${book.status === 'borrowed' ? `
-                        <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #93c5fd;">
-                            Borrowed by: ${escapeHtml(book.borrower)}<br>
-                            Date: ${book.borrowDate}
+                        <div style="margin-top:0.5rem;font-size:0.85rem;color:#93c5fd;">
+                            <span class="borrower-badge">👤 ${escapeHtml(book.borrower)}</span><br>
+                            <small>Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><br>
+                            <small>Since: ${book.borrowDate}</small>
                         </div>
-                        <div class="book-actions">
+                    ` : ''}
+                    <div class="book-actions">
+                        ${book.status === 'available' ? `
+                            <button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">
+                                📚 Borrow
+                            </button>
+                        ` : `
                             <button class="btn btn-success" onclick="returnBook(${book.id})">
-                                Return Book
+                                ✓ Return
                             </button>
-                            <button class="btn btn-danger btn-small" onclick="removeBook(${book.id})">
-                                Remove
-                            </button>
-                        </div>
-                    ` : `
-                        <div class="book-actions">
-                            <button class="btn btn-primary" onclick="borrowBook(${book.id})">
-                                Borrow Book
-                            </button>
-                            <button class="btn btn-danger btn-small" onclick="removeBook(${book.id})">
-                                Remove
-                            </button>
-                        </div>
-                    `}
+                        `}
+                        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">
+                            🗑 Remove
+                        </button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -679,47 +796,45 @@
             return div.innerHTML;
         }
         
-        // 🔐 Initialize app: check for existing session on page load
+        // Initialize app
         function initApp() {
+            // Check for admin session
             if (checkSession()) {
-                // User has active session - skip login screen
-                document.getElementById('loginOverlay').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-                showToast('Session restored', 'info');
-                loadBooks();
+                setAdminMode(true);
+                showToast('✓ Admin session restored', 'info');
+            } else {
+                setAdminMode(false);
             }
-            // Else: show login screen (default)
+            // Always load books (public can view)
+            loadBooks();
         }
         
-        // Run init on page load
         document.addEventListener('DOMContentLoaded', initApp);
         
         // Event listeners
-        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') login();
-        });
-        
+        document.getElementById('passwordInput').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
         document.getElementById('searchInput').addEventListener('input', renderBooks);
         document.getElementById('filterStatus').addEventListener('change', renderBooks);
         document.getElementById('sortBy').addEventListener('change', renderBooks);
         
-        // Real-time image size warning
-        document.getElementById('newBookCover').addEventListener('change', function(e) {
+        // Image size warning
+        document.getElementById('newBookCover')?.addEventListener('change', function(e) {
             const file = e.target.files[0];
             const warningEl = document.getElementById('imageSizeWarning');
             if (file && file.size > 500 * 1024) {
-                warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will be compressed to 300px @ 20% quality.`;
+                warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress to 300px @ 20%.`;
                 warningEl.classList.add('show');
-            } else {
-                warningEl.classList.remove('show');
-            }
+            } else { warningEl.classList.remove('show'); }
         });
         
-        ['newBookTitle', 'newBookAuthor', 'newBookGenre', 'newBookLocation', 'newBookRRL'].forEach(id => {
-            document.getElementById(id).addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') processAddBook();
-            });
+        // Enter key for admin form
+        ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL'].forEach(id => {
+            document.getElementById(id)?.addEventListener('keypress', e => { if (e.key === 'Enter') processAddBook(); });
         });
+        
+        // Close modals on outside click
+        document.getElementById('loginOverlay')?.addEventListener('click', e => { if (e.target.id === 'loginOverlay') closeLoginModal(); });
+        document.getElementById('borrowModal')?.addEventListener('click', e => { if (e.target.id === 'borrowModal') closeBorrowModal(); });
     </script>
 </body>
 </html>

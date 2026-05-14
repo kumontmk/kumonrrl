@@ -206,6 +206,32 @@
         .modal-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
         .modal-actions .btn { flex: 1; }
         
+        /* Contact info styling */
+        .contact-info {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+            margin: 1rem 0;
+        }
+        .contact-info h4 {
+            color: #1e40af;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+        }
+        .contact-info p {
+            color: #475569;
+            margin: 0.5rem 0;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .contact-info a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .contact-info a:hover { text-decoration: underline; }
+        
         .camera-hint { font-size: 0.8rem; color: #64748b; margin-top: 0.75rem; font-style: italic; }
         .image-warning { font-size: 0.8rem; color: #f59e0b; margin-top: 0.75rem; display: none; font-weight: 600; }
         .image-warning.show { display: block; }
@@ -224,6 +250,7 @@
             .book-actions .btn { width: 100%; }
             .stats { grid-template-columns: 1fr; }
             .btn-fab { bottom: 1rem; right: 1rem; }
+            .contact-info p { font-size: 0.9rem; }
         }
         
         .loading { text-align: center; padding: 3rem 2rem; color: #64748b; }
@@ -248,7 +275,7 @@
         </div>
     </div>
 
-    <!-- Borrow Modal -->
+    <!-- Borrow Modal (Admin) -->
     <div class="modal-overlay" id="borrowModal">
         <div class="modal">
             <h3>📚 Borrow Book</h3>
@@ -261,6 +288,34 @@
             <div class="modal-actions">
                 <button class="btn btn-success" onclick="confirmBorrow()">Confirm Borrow</button>
                 <button class="btn btn-small" onclick="closeBorrowModal()" style="background:#64748b">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visitor Borrow Info Modal -->
+    <div class="modal-overlay" id="visitorBorrowModal">
+        <div class="modal">
+            <h3>📚 Borrow a Book</h3>
+            <p style="color:#64748b;margin-bottom:1rem;">To borrow books from our library, please:</p>
+            
+            <div class="contact-info">
+                <h4>📍 Visit or Call Us</h4>
+                <p><strong>Kumon Taipa Mei Keng</strong></p>
+                <p>📞 <a href="tel:+85328831773">+853 2883 1773</a></p>
+                <p>🏠 澳門氹仔柯維納馬路美景花園美德閣地下AU座</p>
+                <p style="font-size:0.85rem;color:#64748b;margin-top:0.5rem;">
+                    NA TAIPA, ESTRADA GOVERNADOR ALBANO DE OLIVEIRA N° 24,<br>
+                    MEI KENG FA UN RÉS-DO-CHÃO AU
+                </p>
+            </div>
+            
+            <p style="color:#64748b;margin:1.5rem 0 1rem;font-size:0.9rem;">
+                Or if you are an admin, you can log in to manage borrowings:
+            </p>
+            
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="openLoginModalFromVisitor()">🔐 Login as Admin</button>
+                <button class="btn btn-small" onclick="closeVisitorBorrowModal()" style="background:#64748b">Close</button>
             </div>
         </div>
     </div>
@@ -428,9 +483,13 @@
         function openLoginModal() { document.getElementById('loginOverlay').classList.add('show'); document.getElementById('passwordInput').focus(); }
         function closeLoginModal() { document.getElementById('loginOverlay').classList.remove('show'); document.getElementById('loginError').style.display = 'none'; }
         
-        // Borrow Modal
+        // Borrow Modal (Admin)
         function openBorrowModal(bookId, bookTitle) {
-            if (!isAdmin) { openLoginModal(); pendingBorrowBookId = bookId; return; }
+            if (!isAdmin) { 
+                // Show visitor info instead
+                openVisitorBorrowModal(bookId, bookTitle);
+                return; 
+            }
             pendingBorrowBookId = bookId;
             document.getElementById('borrowBookTitle').textContent = `"${bookTitle}"`;
             document.getElementById('borrowerName').value = '';
@@ -440,6 +499,20 @@
             document.getElementById('borrowerName').focus();
         }
         function closeBorrowModal() { document.getElementById('borrowModal').classList.remove('show'); pendingBorrowBookId = null; }
+        
+        // Visitor Borrow Info Modal
+        function openVisitorBorrowModal(bookId, bookTitle) {
+            pendingBorrowBookId = bookId;
+            document.getElementById('visitorBorrowModal').classList.add('show');
+        }
+        function closeVisitorBorrowModal() { 
+            document.getElementById('visitorBorrowModal').classList.remove('show'); 
+            pendingBorrowBookId = null; 
+        }
+        function openLoginModalFromVisitor() {
+            closeVisitorBorrowModal();
+            openLoginModal();
+        }
         
         // Add Book Modal
         function openAddBookModal() {
@@ -595,7 +668,6 @@
         
         // Return book - requires admin login
         async function returnBook(id) {
-            // Check if admin first
             if (!isAdmin) {
                 pendingReturnBookId = id;
                 openLoginModal();
@@ -637,7 +709,6 @@
                 if (sortBy === 'author') return a.author.localeCompare(b.author);
                 if (sortBy === 'status') return a.status.localeCompare(b.status);
                 if (sortBy === 'rrl') {
-                    // Sort by RRL Level (alphanumeric: A, B, C, CII, D, etc.)
                     const levelA = (a.rrlLevel || 'Z').toUpperCase();
                     const levelB = (b.rrlLevel || 'Z').toUpperCase();
                     return levelA.localeCompare(levelB, undefined, { numeric: true });
@@ -700,6 +771,7 @@
         document.getElementById('loginOverlay')?.addEventListener('click', e => { if (e.target.id === 'loginOverlay') closeLoginModal(); });
         document.getElementById('borrowModal')?.addEventListener('click', e => { if (e.target.id === 'borrowModal') closeBorrowModal(); });
         document.getElementById('addBookModal')?.addEventListener('click', e => { if (e.target.id === 'addBookModal') closeAddBookModal(); });
+        document.getElementById('visitorBorrowModal')?.addEventListener('click', e => { if (e.target.id === 'visitorBorrowModal') closeVisitorBorrowModal(); });
     </script>
 </body>
 </html>

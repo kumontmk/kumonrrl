@@ -158,11 +158,10 @@
                 <!-- Badge (Hidden by default) -->
                 <span class="mode-indicator" id="modeIndicator">🔐 Admin Mode</span>
                 
-                <!-- Login Button (Visible by default) -->
+                <!-- Login Button (Always visible by default) -->
                 <button class="btn btn-login" onclick="openLoginModal()">🔐 Admin Login</button>
                 
-                <!-- Logout Button (Hidden by default) -->
-                <button class="btn btn-logout" onclick="logout()">🚪 Logout</button>
+                <!-- Logout Button will be added/removed by JavaScript -->
             </div>
         </header>
         
@@ -295,16 +294,34 @@
             isAdmin = active;
             const app = document.getElementById('mainApp');
             const indicator = document.getElementById('modeIndicator');
+            const headerActions = document.querySelector('.header-actions');
+            const loginBtn = headerActions.querySelector('.btn-login');
             
-            // Toggle class on the main app container
+            // Remove existing logout button if any
+            const existingLogout = headerActions.querySelector('.btn-logout');
+            if (existingLogout) {
+                existingLogout.remove();
+            }
+            
             if (active) { 
+                // ADMIN MODE: Hide login, show badge, add logout button
                 app.classList.add('admin-mode'); 
                 indicator.textContent = '🔐 Admin Mode'; 
                 indicator.classList.add('admin'); 
+                loginBtn.style.display = 'none';
+                
+                // Add logout button
+                const logoutBtn = document.createElement('button');
+                logoutBtn.className = 'btn btn-logout';
+                logoutBtn.textContent = '🚪 Logout';
+                logoutBtn.onclick = logout;
+                headerActions.appendChild(logoutBtn);
             } else { 
+                // PUBLIC MODE: Show login, hide badge
                 app.classList.remove('admin-mode'); 
                 indicator.textContent = '👥 Public View'; 
                 indicator.classList.remove('admin'); 
+                loginBtn.style.display = 'inline-flex';
             }
             updateDetailModalVisibility();
         }

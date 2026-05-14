@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kumon RRL Library</title>
+    <title>Kumon ERP Library</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #FFFFFF; color: #61CDFF; line-height: 1.6; min-height: 100vh; }
@@ -12,7 +12,7 @@
         .header-actions { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
         .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
         
-        /* Login Overlay - only shown for admin actions when not logged in */
+        /* Login Overlay */
         .login-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 22, 40, 0.95); display: none; align-items: center; justify-content: center; z-index: 2000; }
         .login-overlay.show { display: flex; }
         .login-box { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 3rem; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4); width: 100%; max-width: 400px; text-align: center; }
@@ -23,7 +23,7 @@
         .login-box input:focus { outline: none; border-color: #60a5fa; background: rgba(255,255,255,0.15); }
         .hidden { display: none !important; }
         
-        /* Public vs Admin mode indicator */
+        /* Mode indicator */
         .mode-indicator { 
             display: inline-flex; 
             align-items: center; 
@@ -52,16 +52,55 @@
         .controls input:focus, .controls select:focus { outline: none; border-color: #60a5fa; background: rgba(30, 58, 138, 0.7); }
         .controls input[type="text"] { flex: 1; min-width: 200px; }
         
-        /* Admin Panel - hidden in public mode */
-        .admin-panel { background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border: 1px solid #3b82f6; }
-        .admin-panel h3 { color: #60a5fa; margin-bottom: 1rem; font-size: 1.2rem; }
+        /* Admin Panel - Fixed styling */
+        .admin-panel { 
+            background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); 
+            padding: 1.5rem; 
+            border-radius: 12px; 
+            margin-bottom: 2rem; 
+            border: 1px solid #3b82f6;
+            position: relative;
+            overflow: hidden;
+        }
+        .admin-panel h3 { 
+            color: #60a5fa; 
+            margin-bottom: 1rem; 
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
         .admin-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
         .admin-form input[type="text"] { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; }
         .admin-form input::placeholder { color: #93c5fd; }
         .admin-form input:focus { outline: none; border-color: #60a5fa; }
-        input[type="file"] { padding: 0.5rem; background: rgba(30, 58, 138, 0.5); color: #93c5fd; border: 2px dashed #3b82f6; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
-        input[type="file"]::file-selector-button { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; margin-right: 1rem; cursor: pointer; font-weight: 500; }
-        input[type="file"]::file-selector-button:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
+        
+        /* File input styling - Fixed */
+        input[type="file"] { 
+            padding: 0.75rem 1rem; 
+            background: rgba(30, 58, 138, 0.5); 
+            color: #93c5fd; 
+            border: 2px dashed #3b82f6; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 0.9rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        input[type="file"]::file-selector-button { 
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+            color: white; 
+            padding: 0.5rem 1rem; 
+            border: none; 
+            border-radius: 4px; 
+            margin-right: 1rem; 
+            cursor: pointer; 
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        input[type="file"]::file-selector-button:hover { 
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); 
+        }
         
         .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
         .book-card { background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); border-radius: 12px; padding: 1.5rem; border: 1px solid #3b82f6; transition: transform 0.2s, box-shadow 0.2s; position: relative; display: flex; flex-direction: column; }
@@ -77,7 +116,6 @@
         .book-meta { display: flex; gap: 1rem; font-size: 0.85rem; color: #60a5fa; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
         .rrl-badge { background: rgba(96, 165, 250, 0.2); color: #93c5fd; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: bold; border: 1px solid rgba(96, 165, 250, 0.4); }
         
-        /* Borrower info badge */
         .borrower-badge { 
             background: rgba(245, 158, 11, 0.2); 
             color: #fcd34d; 
@@ -117,7 +155,7 @@
         .toast.error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
         .toast.info { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
         
-        /* Borrow modal */
+        /* Modal */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -182,7 +220,7 @@
     </style>
 </head>
 <body>
-    <!-- Login Modal (for admin actions) -->
+    <!-- Login Modal -->
     <div class="login-overlay" id="loginOverlay">
         <div class="login-box">
             <h2>🔐 Admin Login</h2>
@@ -211,10 +249,10 @@
         </div>
     </div>
 
-    <!-- Main App (always visible - public view by default) -->
+    <!-- Main App -->
     <div id="mainApp">
         <header>
-            <h1>📚 Kumon RRL Library</h1>
+            <h1>📚 Kumon ERP Library</h1>
             <div class="header-actions">
                 <span class="mode-indicator" id="modeIndicator">👥 Public View</span>
                 <button class="btn btn-small btn-login admin-only" onclick="openLoginModal()">🔐 Admin Login</button>
@@ -238,7 +276,7 @@
                 </div>
             </div>
             
-            <!-- Admin Panel (hidden in public mode) -->
+            <!-- Admin Panel -->
             <div class="admin-panel admin-only">
                 <h3>⚡ Admin: Add New Book</h3>
                 <div class="admin-form">
@@ -256,7 +294,7 @@
                 <button class="btn btn-small" onclick="exportBackup()" style="background:#8b5cf6; margin-left:0.5rem">💾 Export Backup</button>
             </div>
             
-            <!-- Public notice when not logged in -->
+            <!-- Public notice -->
             <div class="admin-panel public-only" style="text-align:center;">
                 <p style="color:#93c5fd;margin:0;">
                     👋 Welcome! Browse our library below. 
@@ -297,7 +335,7 @@
     <div class="toast" id="toast"></div>
     
     <script>
-        // 🔐 JSONBin Configuration - ROTATE YOUR KEY AFTER SETUP!
+        // 🔐 JSONBin Configuration
         const JSONBIN_CONFIG = {
             BIN_ID: '6a054b89c0954111d81ee9ae',
             API_KEY: '$2a$10$knk7dAn110pbuLUoGrzIEeYrPDXJGPq9P8TJIsMekjcFlnFZDLqlm',
@@ -312,7 +350,7 @@
         let nextId = 1;
         let isLoading = false;
         let isAdmin = false;
-        let pendingBorrowBookId = null; // For borrow modal
+        let pendingBorrowBookId = null;
         
         // 🔄 Rate Limit Handling
         async function fetchWithRetry(url, options, retries = 3) {
@@ -335,7 +373,7 @@
             throw new Error('Max retries exceeded');
         }
         
-        // 🗜️ Compress Cover Images: 300px, 20% quality
+        // 🗜️ Compress Cover Images
         async function compressImage(file, maxWidth = 300, quality = 0.2) {
             return new Promise((resolve, reject) => {
                 const canvas = document.createElement('canvas');
@@ -414,14 +452,13 @@
         
         function closeLoginModal() {
             document.getElementById('loginOverlay').classList.remove('show');
-            document.getElementById('passwordError').style.display = 'none';
+            document.getElementById('loginError').style.display = 'none';
         }
         
         function openBorrowModal(bookId, bookTitle) {
-            // Check if admin first
             if (!isAdmin) {
                 openLoginModal();
-                pendingBorrowBookId = bookId; // Remember for after login
+                pendingBorrowBookId = bookId;
                 return;
             }
             
@@ -448,7 +485,6 @@
                 closeLoginModal();
                 document.getElementById('passwordInput').value = '';
                 
-                // If there was a pending borrow action, trigger it
                 if (pendingBorrowBookId) {
                     const book = books.find(b => b.id === pendingBorrowBookId);
                     if (book) openBorrowModal(book.id, book.title);
@@ -798,14 +834,12 @@
         
         // Initialize app
         function initApp() {
-            // Check for admin session
             if (checkSession()) {
                 setAdminMode(true);
                 showToast('✓ Admin session restored', 'info');
             } else {
                 setAdminMode(false);
             }
-            // Always load books (public can view)
             loadBooks();
         }
         
@@ -817,14 +851,16 @@
         document.getElementById('filterStatus').addEventListener('change', renderBooks);
         document.getElementById('sortBy').addEventListener('change', renderBooks);
         
-        // Image size warning
+        // Image file name display and size warning
         document.getElementById('newBookCover')?.addEventListener('change', function(e) {
             const file = e.target.files[0];
             const warningEl = document.getElementById('imageSizeWarning');
             if (file && file.size > 500 * 1024) {
                 warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress to 300px @ 20%.`;
                 warningEl.classList.add('show');
-            } else { warningEl.classList.remove('show'); }
+            } else { 
+                warningEl.classList.remove('show'); 
+            }
         });
         
         // Enter key for admin form

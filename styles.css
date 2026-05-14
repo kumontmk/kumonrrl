@@ -50,10 +50,10 @@
 html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 body { font-family: var(--font-family); background: var(--bg-main); color: var(--text-primary); line-height: 1.6; min-height: 100vh; }
 
-/* ── Typography ─ */
+/* ── Typography ── */
 h1, h2, h3, h4, h5, h6 { font-weight: 600; line-height: 1.3; color: var(--text-primary); }
 
-/* ── Header ─ */
+/* ── Header ── */
 header {
     background: #87CEEB;
     color: var(--text-primary);
@@ -106,7 +106,7 @@ header h1 {
 .banner-image {
     width: 100%;
     height: auto;
-    max-height: 600px;
+    max-height: 150px;
     object-fit: cover;
     display: block;
 }
@@ -114,7 +114,7 @@ header h1 {
 /* ── Container ── */
 .container { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; width: 100%; }
 
-/* ── Login Overlay ─ */
+/* ── Login Overlay ── */
 .login-overlay {
     position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px);
     display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
@@ -172,7 +172,7 @@ header h1 {
     background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2rem;
 }
 
-/* ─ Public Notice ── */
+/* ── Public Notice ─ */
 .public-notice { background: var(--bg-card); padding: 1.25rem 1.5rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; text-align: center; border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); }
 .public-notice p { color: var(--text-secondary); font-size: 0.95rem; }
 
@@ -210,7 +210,7 @@ header h1 {
 .book-actions { display: flex; gap: 0.375rem; padding: 0.75rem 0.875rem; margin-top: auto; border-top: 1px solid var(--border-light); flex-wrap: wrap; }
 .book-actions .btn { flex: 1; min-width: 0; padding: 0.4rem 0.5rem; font-size: 0.75rem; }
 
-/* ── Buttons ─ */
+/* ── Buttons ── */
 .btn {
     padding: 0.625rem 1.25rem; border: none; border-radius: var(--radius-sm); font-size: 0.875rem; font-weight: 600;
     cursor: pointer; transition: var(--transition); text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; line-height: 1.4; font-family: var(--font-family);
@@ -236,7 +236,7 @@ header h1 {
 .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
 .empty-state h2 { font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--text-secondary); font-weight: 600; }
 
-/* ── Toast  */
+/* ── Toast ── */
 .toast {
     position: fixed; bottom: 1.5rem; right: 1.5rem; padding: 0.875rem 1.25rem; border-radius: var(--radius-sm);
     color: var(--text-white); font-weight: 500; font-size: 0.9rem; transform: translateY(calc(100% + 2rem)); opacity: 0;
@@ -266,7 +266,7 @@ header h1 {
 .contact-info a { color: var(--primary); text-decoration: none; font-weight: 600; }
 .contact-info a:hover { text-decoration: underline; }
 
-/* ── File Input ── */
+/* ─ File Input ── */
 input[type="file"] { padding: 0.75rem; background: var(--bg-input); color: var(--text-secondary); border: 2px dashed var(--border-medium); border-radius: var(--radius-sm); cursor: pointer; font-size: 0.875rem; width: 100%; transition: var(--transition); }
 input[type="file"]:hover { border-color: var(--primary); background: #eff6ff; }
 input[type="file"]::file-selector-button { background: var(--primary); color: var(--text-white); padding: 0.5rem 1rem; border: none; border-radius: 6px; margin-right: 0.75rem; cursor: pointer; font-weight: 600; font-size: 0.8rem; transition: var(--transition); font-family: var(--font-family); }
@@ -283,20 +283,20 @@ input[type="file"]::file-selector-button:hover { background: var(--primary-dark)
 .admin-mode .public-only { display: none; }
 .admin-mode .stats.admin-only { display: grid; }
 
-/* ── Loading  */
+/* ── Loading ── */
 .loading { text-align: center; padding: 3rem 2rem; color: var(--text-muted); }
 .spinner { width: 36px; height: 36px; border: 3px solid var(--border-light); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ── Scrollbar  */
+/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-main); }
 ::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ── Book Detail Modal ─ */
+/* ── Book Detail Modal ── */
 .detail-modal-overlay {
     position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
     display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; overflow-y: auto;
@@ -349,7 +349,7 @@ input[type="file"]::file-selector-button:hover { background: var(--primary-dark)
 .borrower-label { font-size: 0.85rem; color: #92400e; font-weight: 600; }
 .borrower-value { font-size: 0.85rem; color: #78350f; font-weight: 500; }
 
-.detail-actions-full { display: flex; gap: 0.75rem; margin-top: auto; padding-top: 1.25rem; border-top: 1px solid var(--border-light); }
+.detail-actions-full { display: flex; gap: 0.75rem; margin-top: auto; padding-top: 1.25rem; border-top: 1px solid var(--border-light); flex-wrap: wrap; }
 
 /* ── Footer ── */
 .site-footer {
@@ -418,7 +418,7 @@ input[type="file"]::file-selector-button:hover { background: var(--primary-dark)
     .placeholder-large { font-size: 4rem; }
 }
 
-/* ── Print Styles ─ */
+/* ── Print Styles ── */
 @media print {
     header, .controls, .btn-fab, .book-actions, .toast, .modal-overlay, .login-overlay, .detail-modal-overlay, .site-footer { display: none !important; }
     body { background: white; }

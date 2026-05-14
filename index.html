@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kumon ERP Library</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #FFFFFF; color: #61CDFF; line-height: 1.6; min-height: 100vh; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #FFFFFF; color: #61CDFF; line-height: 1.6; min-height: 100vh; overflow-x: hidden; }
         header { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 1.5rem 2rem; box-shadow: 0 4px 20px rgba(30, 58, 138, 0.4); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
         header h1 { font-size: 1.8rem; display: flex; align-items: center; gap: 0.5rem; }
         .header-actions { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; width: 100%; }
         
         /* Login Overlay */
         .login-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 22, 40, 0.95); display: none; align-items: center; justify-content: center; z-index: 2000; }
@@ -25,34 +25,22 @@
         
         /* Mode indicator */
         .mode-indicator { 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 0.5rem; 
-            padding: 0.5rem 1rem; 
-            border-radius: 20px; 
-            font-size: 0.85rem; 
-            font-weight: 500;
-            background: rgba(59, 130, 246, 0.2);
-            border: 1px solid #3b82f6;
-            color: #93c5fd;
+            display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; 
+            border-radius: 20px; font-size: 0.85rem; font-weight: 500;
+            background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; color: #93c5fd;
         }
-        .mode-indicator.admin {
-            background: rgba(34, 197, 94, 0.2);
-            border-color: #22c55e;
-            color: #86efac;
-        }
+        .mode-indicator.admin { background: rgba(34, 197, 94, 0.2); border-color: #22c55e; color: #86efac; }
         
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
         .stat-card { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 1.5rem; border-radius: 12px; text-align: center; border: 1px solid #3b82f6; }
         .stat-card h3 { font-size: 0.9rem; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
         .stat-card .number { font-size: 2.5rem; font-weight: 700; color: white; }
         
         .controls { background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; border: 1px solid #3b82f6; }
-        .controls input[type="text"], .controls select { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; transition: all 0.2s; }
+        .controls input[type="text"], .controls select { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; transition: all 0.2s; flex: 1; min-width: 150px; }
         .controls input:focus, .controls select:focus { outline: none; border-color: #60a5fa; background: rgba(30, 58, 138, 0.7); }
-        .controls input[type="text"] { flex: 1; min-width: 200px; }
         
-        /* Admin Panel - Fixed styling */
+        /* Admin Panel - FIXED */
         .admin-panel { 
             background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); 
             padding: 1.5rem; 
@@ -60,49 +48,36 @@
             margin-bottom: 2rem; 
             border: 1px solid #3b82f6;
             position: relative;
-            overflow: hidden;
+            overflow: visible;
+            width: 100%;
         }
         .admin-panel h3 { 
-            color: #60a5fa; 
-            margin-bottom: 1rem; 
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            color: #60a5fa; margin-bottom: 1rem; font-size: 1.2rem;
+            display: flex; align-items: center; gap: 0.5rem;
         }
-        .admin-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-        .admin-form input[type="text"] { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; }
+        
+        /* Form Grid - Mobile Optimized */
+        .admin-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .admin-form input[type="text"] { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; width: 100%; }
         .admin-form input::placeholder { color: #93c5fd; }
         .admin-form input:focus { outline: none; border-color: #60a5fa; }
         
-        /* File input styling - Fixed */
+        /* File Input - Fixed */
         input[type="file"] { 
-            padding: 0.75rem 1rem; 
-            background: rgba(30, 58, 138, 0.5); 
-            color: #93c5fd; 
-            border: 2px dashed #3b82f6; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            font-size: 0.9rem;
-            width: 100%;
-            box-sizing: border-box;
+            padding: 0.75rem; background: rgba(30, 58, 138, 0.5); color: #93c5fd; 
+            border: 2px dashed #3b82f6; border-radius: 8px; cursor: pointer; font-size: 0.9rem; width: 100%;
         }
         input[type="file"]::file-selector-button { 
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
-            color: white; 
-            padding: 0.5rem 1rem; 
-            border: none; 
-            border-radius: 4px; 
-            margin-right: 1rem; 
-            cursor: pointer; 
-            font-weight: 500;
-            white-space: nowrap;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; 
+            padding: 0.5rem 1rem; border: none; border-radius: 4px; margin-right: 1rem; cursor: pointer; font-weight: 500;
         }
-        input[type="file"]::file-selector-button:hover { 
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); 
-        }
+        input[type="file"]::file-selector-button:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
         
-        .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+        /* Button Container - Fixed Overlap */
+        .admin-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+        .admin-actions .btn { flex: 1 1 auto; min-width: 120px; white-space: nowrap; }
+        
+        .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
         .book-card { background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); border-radius: 12px; padding: 1.5rem; border: 1px solid #3b82f6; transition: transform 0.2s, box-shadow 0.2s; position: relative; display: flex; flex-direction: column; }
         .book-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(59, 130, 246, 0.3); }
         .book-card.available { border-left: 4px solid #22c55e; }
@@ -115,28 +90,19 @@
         .book-location::before { content: "📍 "; }
         .book-meta { display: flex; gap: 1rem; font-size: 0.85rem; color: #60a5fa; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
         .rrl-badge { background: rgba(96, 165, 250, 0.2); color: #93c5fd; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: bold; border: 1px solid rgba(96, 165, 250, 0.4); }
-        
-        .borrower-badge { 
-            background: rgba(245, 158, 11, 0.2); 
-            color: #fcd34d; 
-            padding: 0.2rem 0.6rem; 
-            border-radius: 4px; 
-            font-size: 0.8rem;
-            border: 1px solid rgba(245, 158, 11, 0.4);
-        }
-        
+        .borrower-badge { background: rgba(245, 158, 11, 0.2); color: #fcd34d; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; border: 1px solid rgba(245, 158, 11, 0.4); }
         .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; align-self: flex-start; }
         .status-badge.available { background: rgba(34, 197, 94, 0.2); color: #86efac; border: 1px solid #22c55e; }
         .status-badge.borrowed { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid #f59e0b; }
         
-        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .btn { padding: 0.75rem 1.25rem; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-align: center; }
         .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
         .btn-primary:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); transform: translateY(-1px); }
         .btn-success { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; }
         .btn-success:hover { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); }
         .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
         .btn-danger:hover { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); }
-        .btn-small { padding: 0.5rem 1rem; font-size: 0.85rem; }
+        .btn-small { padding: 0.6rem 1rem; font-size: 0.85rem; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-logout { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; }
         .btn-logout:hover { background: linear-gradient(135deg, #4b5563 0%, #374151 100%); }
@@ -149,42 +115,19 @@
         .empty-state { text-align: center; padding: 4rem 2rem; color: #93c5fd; }
         .empty-state h2 { font-size: 1.5rem; margin-bottom: 0.5rem; color: white; }
         
-        .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 8px; color: white; font-weight: 500; transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 1000; }
+        .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 8px; color: white; font-weight: 500; transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 1000; max-width: 90vw; }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.success { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
         .toast.error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
         .toast.info { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
         
         /* Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10, 22, 40, 0.9);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1500;
-            padding: 1rem;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 22, 40, 0.9); display: none; align-items: center; justify-content: center; z-index: 1500; padding: 1rem; }
         .modal-overlay.show { display: flex; }
-        .modal {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-            padding: 2rem;
-            border-radius: 16px;
-            max-width: 400px;
-            width: 100%;
-            border: 1px solid #3b82f6;
-        }
+        .modal { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 2rem; border-radius: 16px; max-width: 400px; width: 100%; border: 1px solid #3b82f6; }
         .modal h3 { color: white; margin-bottom: 1.5rem; font-size: 1.3rem; }
         .modal-form { display: flex; flex-direction: column; gap: 1rem; }
-        .modal-form input, .modal-form select {
-            padding: 0.75rem 1rem;
-            border: 2px solid #3b82f6;
-            border-radius: 8px;
-            font-size: 1rem;
-            background: rgba(30, 58, 138, 0.5);
-            color: white;
-        }
+        .modal-form input { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; }
         .modal-form input::placeholder { color: #93c5fd; }
         .modal-form input:focus { outline: none; border-color: #60a5fa; }
         .modal-actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
@@ -193,27 +136,24 @@
         @media (max-width: 600px) { 
             .container { padding: 1rem; } 
             .controls { flex-direction: column; } 
-            .controls input, .controls select { width: 100%; } 
+            .controls input, .controls select { width: 100%; min-width: unset; } 
             .admin-form { grid-template-columns: 1fr; }
             header { flex-direction: column; gap: 1rem; text-align: center; }
             .header-actions { width: 100%; justify-content: center; }
             .book-actions { flex-direction: column; }
             .book-actions .btn { width: 100%; }
+            .admin-actions { flex-direction: column; }
+            .admin-actions .btn { width: 100%; }
         }
         
-        /* Loading spinner */
         .loading { text-align: center; padding: 2rem; color: #93c5fd; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(59, 130, 246, 0.3); border-top-color: #60a5fa; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
         @keyframes spin { to { transform: rotate(360deg); } }
         
-        /* Image size warning */
         .image-warning { font-size: 0.8rem; color: #fcd34d; margin-top: 0.5rem; display: none; }
         .image-warning.show { display: block; }
-        
-        /* Camera hint */
         .camera-hint { font-size: 0.75rem; color: #93c5fd; margin-top: 0.25rem; }
         
-        /* Admin-only elements */
         .admin-only { display: none; }
         .admin-mode .admin-only { display: initial; }
         .admin-mode .public-only { display: none; }
@@ -288,16 +228,18 @@
                     <input type="file" id="newBookCover" accept="image/*" capture="environment" title="Upload or take photo">
                 </div>
                 <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
-                <p id="imageSizeWarning" class="image-warning">⚠️ Large images may fail to save. Images are auto-compressed to 300px @ 20% quality.</p>
-                <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Add Book</button>
-                <button class="btn btn-small" id="testConnectionBtn" onclick="testConnection()" style="background:#6b7280; margin-left:0.5rem">🔗 Test Connection</button>
-                <button class="btn btn-small" onclick="exportBackup()" style="background:#8b5cf6; margin-left:0.5rem">💾 Export Backup</button>
+                <p id="imageSizeWarning" class="image-warning">️ Large images may fail to save. Images are auto-compressed to 300px @ 20% quality.</p>
+                <div class="admin-actions">
+                    <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Add Book</button>
+                    <button class="btn btn-small" id="testConnectionBtn" onclick="testConnection()" style="background:#6b7280">🔗 Test Connection</button>
+                    <button class="btn btn-small" onclick="exportBackup()" style="background:#8b5cf6"> Export Backup</button>
+                </div>
             </div>
             
             <!-- Public notice -->
             <div class="admin-panel public-only" style="text-align:center;">
                 <p style="color:#93c5fd;margin:0;">
-                    👋 Welcome! Browse our library below. 
+                     Welcome! Browse our library below. 
                     <button class="btn btn-small btn-login" onclick="openLoginModal()" style="margin-left:0.5rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
                 </p>
             </div>
@@ -335,37 +277,30 @@
     <div class="toast" id="toast"></div>
     
     <script>
-        // 🔐 JSONBin Configuration
         const JSONBIN_CONFIG = {
             BIN_ID: '6a054b89c0954111d81ee9ae',
             API_KEY: '$2a$10$knk7dAn110pbuLUoGrzIEeYrPDXJGPq9P8TJIsMekjcFlnFZDLqlm',
             BASE_URL: 'https://api.jsonbin.io/v3/b'
         };
 
-        // 🔐 Session Management
         const SESSION_KEY = 'kumonLibrarySession';
-        
-        // App state
         let books = [];
         let nextId = 1;
         let isLoading = false;
         let isAdmin = false;
         let pendingBorrowBookId = null;
         
-        // 🔄 Rate Limit Handling
         async function fetchWithRetry(url, options, retries = 3) {
             for (let i = 0; i < retries; i++) {
                 try {
                     const res = await fetch(url, options);
                     if (res.status === 429) {
                         const retryAfter = res.headers.get('Retry-After') || (i + 1);
-                        console.warn(`⚠️ Rate limited. Waiting ${retryAfter}s before retry ${i + 1}/${retries}`);
                         await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
                         continue;
                     }
                     return res;
                 } catch (error) {
-                    console.warn(`⚠️ Request failed (attempt ${i + 1}/${retries}):`, error.message);
                     if (i === retries - 1) throw error;
                     await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, i)));
                 }
@@ -373,95 +308,43 @@
             throw new Error('Max retries exceeded');
         }
         
-        // 🗜️ Compress Cover Images
         async function compressImage(file, maxWidth = 300, quality = 0.2) {
             return new Promise((resolve, reject) => {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 const img = new Image();
-                
                 img.onload = () => {
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > maxWidth) {
-                        height = Math.round((maxWidth / width) * height);
-                        width = maxWidth;
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
+                    let width = img.width, height = img.height;
+                    if (width > maxWidth) { height = Math.round((maxWidth / width) * height); width = maxWidth; }
+                    canvas.width = width; canvas.height = height;
                     ctx.drawImage(img, 0, 0, width, height);
                     const compressed = canvas.toDataURL('image/jpeg', quality);
                     URL.revokeObjectURL(img.src);
                     resolve(compressed);
                 };
-                
-                img.onerror = (e) => {
-                    URL.revokeObjectURL(img.src);
-                    reject(new Error('Failed to load image for compression'));
-                };
+                img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('Image load failed')); };
                 img.src = URL.createObjectURL(file);
             });
         }
         
-        // 🔐 Session functions
-        function saveSession() {
-            localStorage.setItem(SESSION_KEY, JSON.stringify({
-                isAdmin: true,
-                loginTime: new Date().toISOString()
-            }));
-        }
-        
-        function checkSession() {
-            try {
-                const session = JSON.parse(localStorage.getItem(SESSION_KEY));
-                return session?.isAdmin === true;
-            } catch { return false; }
-        }
-        
-        function clearSession() {
-            localStorage.removeItem(SESSION_KEY);
-        }
+        function saveSession() { localStorage.setItem(SESSION_KEY, JSON.stringify({ isAdmin: true, loginTime: new Date().toISOString() })); }
+        function checkSession() { try { return JSON.parse(localStorage.getItem(SESSION_KEY))?.isAdmin === true; } catch { return false; } }
+        function clearSession() { localStorage.removeItem(SESSION_KEY); }
         
         function setAdminMode(active) {
             isAdmin = active;
             const app = document.getElementById('mainApp');
             const indicator = document.getElementById('modeIndicator');
-            
-            if (active) {
-                app.classList.add('admin-mode');
-                indicator.textContent = '🔐 Admin Mode';
-                indicator.classList.add('admin');
-            } else {
-                app.classList.remove('admin-mode');
-                indicator.textContent = '👥 Public View';
-                indicator.classList.remove('admin');
-            }
+            if (active) { app.classList.add('admin-mode'); indicator.textContent = ' Admin Mode'; indicator.classList.add('admin'); }
+            else { app.classList.remove('admin-mode'); indicator.textContent = '👥 Public View'; indicator.classList.remove('admin'); }
         }
         
-        function logout() {
-            clearSession();
-            setAdminMode(false);
-            showToast('Logged out - now in Public View', 'info');
-        }
-        
-        // Modal functions
-        function openLoginModal() {
-            document.getElementById('loginOverlay').classList.add('show');
-            document.getElementById('passwordInput').focus();
-        }
-        
-        function closeLoginModal() {
-            document.getElementById('loginOverlay').classList.remove('show');
-            document.getElementById('loginError').style.display = 'none';
-        }
+        function logout() { clearSession(); setAdminMode(false); showToast('Logged out - now in Public View', 'info'); }
+        function openLoginModal() { document.getElementById('loginOverlay').classList.add('show'); document.getElementById('passwordInput').focus(); }
+        function closeLoginModal() { document.getElementById('loginOverlay').classList.remove('show'); document.getElementById('loginError').style.display = 'none'; }
         
         function openBorrowModal(bookId, bookTitle) {
-            if (!isAdmin) {
-                openLoginModal();
-                pendingBorrowBookId = bookId;
-                return;
-            }
-            
+            if (!isAdmin) { openLoginModal(); pendingBorrowBookId = bookId; return; }
             pendingBorrowBookId = bookId;
             document.getElementById('borrowBookTitle').textContent = `"${bookTitle}"`;
             document.getElementById('borrowerName').value = '';
@@ -470,130 +353,65 @@
             document.getElementById('borrowModal').classList.add('show');
             document.getElementById('borrowerName').focus();
         }
+        function closeBorrowModal() { document.getElementById('borrowModal').classList.remove('show'); pendingBorrowBookId = null; }
         
-        function closeBorrowModal() {
-            document.getElementById('borrowModal').classList.remove('show');
-            pendingBorrowBookId = null;
-        }
-        
-        // Login function
         function login() {
             const password = document.getElementById('passwordInput').value;
             if (password === '1111') {
-                saveSession();
-                setAdminMode(true);
-                closeLoginModal();
-                document.getElementById('passwordInput').value = '';
-                
-                if (pendingBorrowBookId) {
-                    const book = books.find(b => b.id === pendingBorrowBookId);
-                    if (book) openBorrowModal(book.id, book.title);
-                    pendingBorrowBookId = null;
-                }
-                
+                saveSession(); setAdminMode(true); closeLoginModal(); document.getElementById('passwordInput').value = '';
+                if (pendingBorrowBookId) { const book = books.find(b => b.id === pendingBorrowBookId); if (book) openBorrowModal(book.id, book.title); pendingBorrowBookId = null; }
                 showToast('✓ Admin mode activated', 'success');
             } else {
                 document.getElementById('loginError').style.display = 'block';
-                setTimeout(() => {
-                    document.getElementById('loginError').style.display = 'none';
-                }, 2000);
+                setTimeout(() => { document.getElementById('loginError').style.display = 'none'; }, 2000);
             }
         }
         
-        // Load books from JSONBin
         async function loadBooks() {
             if (isLoading) return;
             isLoading = true;
-            
             document.getElementById('loadingState').style.display = 'block';
             document.getElementById('booksGrid').innerHTML = '';
-            
             try {
-                const response = await fetchWithRetry(
-                    `${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`,
-                    { headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY, 'Content-Type': 'application/json' }}
-                );
-                
-                if (!response.ok) {
-                    const err = await response.json().catch(() => ({}));
-                    throw new Error(err.message || `HTTP ${response.status}`);
-                }
-                
+                const response = await fetchWithRetry(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, { headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY, 'Content-Type': 'application/json' }});
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
-                const record = data.record;
-                books = Array.isArray(record?.books) ? [...record.books] : [];
+                books = Array.isArray(data.record?.books) ? [...data.record.books] : [];
                 nextId = books.length > 0 ? Math.max(...books.map(b => b.id)) + 1 : 1;
-                
-                updateStats();
-                renderBooks();
+                updateStats(); renderBooks();
                 if (books.length > 0) showToast(`✓ Loaded ${books.length} books`, 'success');
-                
             } catch (error) {
-                console.error('❌ Load error:', error);
+                console.error('Load error:', error);
                 showToast(`Failed to load: ${error.message}`, 'error');
-                books = [];
-                renderBooks();
-            } finally {
-                isLoading = false;
-                document.getElementById('loadingState').style.display = 'none';
-            }
+                books = []; renderBooks();
+            } finally { isLoading = false; document.getElementById('loadingState').style.display = 'none'; }
         }
 
-        // Save books to JSONBin
         async function saveBooks() {
             try {
-                const payload = { books: books, lastUpdated: new Date().toISOString() };
-                const response = await fetchWithRetry(
-                    `${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`,
-                    {
-                        method: 'PUT',
-                        headers: {
-                            'X-Master-Key': JSONBIN_CONFIG.API_KEY,
-                            'Content-Type': 'application/json',
-                            'X-Bin-Meta': 'false'
-                        },
-                        body: JSON.stringify(payload)
-                    }
-                );
-                
-                if (!response.ok) {
-                    const err = await response.json().catch(() => ({}));
-                    throw new Error(err.message || `HTTP ${response.status}`);
-                }
-                return true;
-            } catch (error) {
-                console.error('❌ Save error:', error);
-                showToast(`Save failed: ${error.message}`, 'error');
-                return false;
-            }
+                const response = await fetchWithRetry(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, {
+                    method: 'PUT', headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY, 'Content-Type': 'application/json', 'X-Bin-Meta': 'false' },
+                    body: JSON.stringify({ books, lastUpdated: new Date().toISOString() })
+                });
+                return response.ok;
+            } catch (error) { showToast(`Save failed: ${error.message}`, 'error'); return false; }
         }
 
-        // Test connection
         async function testConnection() {
             showToast('Testing connection...', 'info');
             try {
-                const res = await fetchWithRetry(
-                    `${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`,
-                    { headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY }}
-                );
+                const res = await fetchWithRetry(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, { headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY }});
                 const data = await res.json();
-                showToast(`✓ Connected! ${data.record?.books?.length || 0} books in cloud`, 'success');
-            } catch (e) {
-                showToast(`✗ Error: ${e.message}`, 'error');
-            }
+                showToast(`✓ Connected! ${data.record?.books?.length || 0} books`, 'success');
+            } catch (e) { showToast(`✗ Error: ${e.message}`, 'error'); }
         }
         
-        // Export backup
         function exportBackup() {
             if (books.length === 0) { showToast('No books to export', 'info'); return; }
             const blob = new Blob([JSON.stringify(books, null, 2)], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `kumon-library-backup-${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('Backup downloaded!', 'success');
+            const a = document.createElement('a'); a.href = url; a.download = `kumon-library-backup-${new Date().toISOString().split('T')[0]}.json`; a.click();
+            URL.revokeObjectURL(url); showToast('Backup downloaded!', 'success');
         }
         
         function updateStats() {
@@ -604,40 +422,28 @@
         
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `toast ${type} show`;
+            toast.textContent = message; toast.className = `toast ${type} show`;
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // Add book with image compression
         async function processAddBook() {
             const btn = document.getElementById('addBookBtn');
             const warningEl = document.getElementById('imageSizeWarning');
-            
             const title = document.getElementById('newBookTitle').value.trim();
             const author = document.getElementById('newBookAuthor').value.trim();
             const genre = document.getElementById('newBookGenre').value.trim();
             const location = document.getElementById('newBookLocation').value.trim();
             const rrlLevel = document.getElementById('newBookRRL').value.trim();
             
-            if (!title || !author || !location) {
-                showToast('Please fill in title, author, and location', 'error');
-                return;
-            }
+            if (!title || !author || !location) { showToast('Please fill in title, author, and location', 'error'); return; }
 
-            btn.disabled = true;
-            btn.textContent = 'Saving...';
-            warningEl.classList.remove('show');
-
+            btn.disabled = true; btn.textContent = 'Saving...'; warningEl.classList.remove('show');
             const file = document.getElementById('newBookCover').files[0];
 
             try {
                 let coverImage = null;
                 if (file) {
-                    if (file.size > 500 * 1024) {
-                        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`;
-                        warningEl.classList.add('show');
-                    }
+                    if (file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; warningEl.classList.add('show'); }
                     coverImage = await compressImage(file, 300, 0.2);
                 }
                 await addBookToSystem(title, author, genre, location, rrlLevel, coverImage);
@@ -646,77 +452,34 @@
                 showToast(`Image error. Adding without image.`, 'error');
                 await addBookToSystem(title, author, genre, location, rrlLevel, null);
             } finally {
-                btn.disabled = false;
-                btn.textContent = 'Add Book';
-                warningEl.classList.remove('show');
-                // Clear inputs
-                ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.value = '';
-                });
+                btn.disabled = false; btn.textContent = 'Add Book'; warningEl.classList.remove('show');
+                ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
             }
         }
         
         async function addBookToSystem(title, author, genre, location, rrlLevel, coverImage) {
-            const newBook = {
-                id: nextId++,
-                title, author,
-                genre: genre || 'Uncategorized',
-                location,
-                rrlLevel: rrlLevel || 'N/A',
-                coverImage,
-                status: 'available',
-                borrower: null,
-                borrowDate: null,
-                borrowerGrade: null,
-                borrowerLevel: null
-            };
+            const newBook = { id: nextId++, title, author, genre: genre || 'Uncategorized', location, rrlLevel: rrlLevel || 'N/A', coverImage, status: 'available', borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null };
             books.unshift(newBook);
-            
-            if (await saveBooks()) {
-                updateStats();
-                renderBooks();
-                showToast(`"${title}" added successfully`, 'success');
-            }
+            if (await saveBooks()) { updateStats(); renderBooks(); showToast(`"${title}" added successfully`, 'success'); }
         }
         
         async function removeBook(id) {
             const book = books.find(b => b.id === id);
             if (book && confirm(`Remove "${book.title}"?`)) {
                 books = books.filter(b => b.id !== id);
-                if (await saveBooks()) {
-                    updateStats();
-                    renderBooks();
-                    showToast(`"${book.title}" removed`, 'success');
-                }
+                if (await saveBooks()) { updateStats(); renderBooks(); showToast(`"${book.title}" removed`, 'success'); }
             }
         }
         
-        // Confirm borrow with enhanced info
         async function confirmBorrow() {
             const name = document.getElementById('borrowerName').value.trim();
             const grade = document.getElementById('borrowerGrade').value.trim();
             const level = document.getElementById('borrowerLevel').value.trim();
-            
-            if (!name || !grade || !level) {
-                showToast('Please fill in all borrower fields', 'error');
-                return;
-            }
-            
+            if (!name || !grade || !level) { showToast('Please fill in all borrower fields', 'error'); return; }
             const book = books.find(b => b.id === pendingBorrowBookId);
             if (book) {
-                book.status = 'borrowed';
-                book.borrower = name;
-                book.borrowerGrade = grade;
-                book.borrowerLevel = level;
-                book.borrowDate = new Date().toISOString().split('T')[0];
-                
-                if (await saveBooks()) {
-                    closeBorrowModal();
-                    renderBooks();
-                    updateStats();
-                    showToast(`📚 "${book.title}" borrowed by ${name} (${grade}, ${level})`, 'success');
-                }
+                book.status = 'borrowed'; book.borrower = name; book.borrowerGrade = grade; book.borrowerLevel = level; book.borrowDate = new Date().toISOString().split('T')[0];
+                if (await saveBooks()) { closeBorrowModal(); renderBooks(); updateStats(); showToast(`📚 "${book.title}" borrowed by ${name} (${grade}, ${level})`, 'success'); }
             }
         }
         
@@ -724,17 +487,8 @@
             const book = books.find(b => b.id === id);
             if (book) {
                 const info = `${book.borrower} (${book.borrowerGrade}, ${book.borrowerLevel})`;
-                book.status = 'available';
-                book.borrower = null;
-                book.borrowerGrade = null;
-                book.borrowerLevel = null;
-                book.borrowDate = null;
-                
-                if (await saveBooks()) {
-                    renderBooks();
-                    updateStats();
-                    showToast(`✓ "${book.title}" returned by ${info}`, 'success');
-                }
+                book.status = 'available'; book.borrower = null; book.borrowerGrade = null; book.borrowerLevel = null; book.borrowDate = null;
+                if (await saveBooks()) { renderBooks(); updateStats(); showToast(`✓ "${book.title}" returned by ${info}`, 'success'); }
             }
         }
         
@@ -742,15 +496,10 @@
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const filterStatus = document.getElementById('filterStatus').value;
             const sortBy = document.getElementById('sortBy').value;
-            
             let filtered = books.filter(book => {
-                const matchesSearch = book.title.toLowerCase().includes(searchTerm) || 
-                                     book.author.toLowerCase().includes(searchTerm) ||
-                                     book.location.toLowerCase().includes(searchTerm);
-                const matchesStatus = filterStatus === 'all' || book.status === filterStatus;
-                return matchesSearch && matchesStatus;
+                const matchesSearch = book.title.toLowerCase().includes(searchTerm) || book.author.toLowerCase().includes(searchTerm) || book.location.toLowerCase().includes(searchTerm);
+                return matchesSearch && (filterStatus === 'all' || book.status === filterStatus);
             });
-            
             filtered.sort((a, b) => {
                 if (sortBy === 'title') return a.title.localeCompare(b.title);
                 if (sortBy === 'author') return a.author.localeCompare(b.author);
@@ -764,111 +513,51 @@
             const grid = document.getElementById('booksGrid');
             const emptyState = document.getElementById('emptyState');
             const filteredBooks = getFilteredAndSortedBooks();
-            
-            if (filteredBooks.length === 0 && books.length > 0) {
-                grid.innerHTML = '';
-                emptyState.style.display = 'block';
-                emptyState.querySelector('h2').textContent = 'No matching books';
-                emptyState.querySelector('p').textContent = 'Try adjusting your search or filter';
-                return;
-            }
-            if (books.length === 0) {
-                grid.innerHTML = '';
-                emptyState.style.display = 'block';
-                emptyState.querySelector('h2').textContent = '📚 Library is empty';
-                emptyState.querySelector('p').textContent = isAdmin ? 'Add your first book above' : 'Check back soon!';
-                return;
-            }
+            if (filteredBooks.length === 0 && books.length > 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = 'No matching books'; emptyState.querySelector('p').textContent = 'Try adjusting your search or filter'; return; }
+            if (books.length === 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = ' Library is empty'; emptyState.querySelector('p').textContent = isAdmin ? 'Add your first book above' : 'Check back soon!'; return; }
             emptyState.style.display = 'none';
             
             grid.innerHTML = filteredBooks.map(book => `
                 <div class="book-card ${book.status}">
-                    ${book.coverImage 
-                        ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` 
-                        : `<div class="book-cover">📘</div>`
-                    }
+                    ${book.coverImage ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` : `<div class="book-cover">📘</div>`}
                     <div class="book-title">${escapeHtml(book.title)}</div>
                     <div class="book-author">by ${escapeHtml(book.author)}</div>
                     <div class="book-location">${escapeHtml(book.location)}</div>
                     <div class="book-meta">
-                        <span>${escapeHtml(book.genre)}</span>
-                        <span>•</span>
-                        <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span>
-                        <span>•</span>
+                        <span>${escapeHtml(book.genre)}</span><span>•</span>
+                        <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span><span>•</span>
                         <span>ID: ${book.id}</span>
                     </div>
-                    <span class="status-badge ${book.status}">
-                        ${book.status === 'available' ? '✓ Available' : '📤 Borrowed'}
-                    </span>
-                    ${book.status === 'borrowed' ? `
-                        <div style="margin-top:0.5rem;font-size:0.85rem;color:#93c5fd;">
-                            <span class="borrower-badge">👤 ${escapeHtml(book.borrower)}</span><br>
-                            <small>Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><br>
-                            <small>Since: ${book.borrowDate}</small>
-                        </div>
-                    ` : ''}
+                    <span class="status-badge ${book.status}">${book.status === 'available' ? '✓ Available' : '📤 Borrowed'}</span>
+                    ${book.status === 'borrowed' ? `<div style="margin-top:0.5rem;font-size:0.85rem;color:#93c5fd;"><span class="borrower-badge"> ${escapeHtml(book.borrower)}</span><br><small>Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><br><small>Since: ${book.borrowDate}</small></div>` : ''}
                     <div class="book-actions">
-                        ${book.status === 'available' ? `
-                            <button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">
-                                📚 Borrow
-                            </button>
-                        ` : `
-                            <button class="btn btn-success" onclick="returnBook(${book.id})">
-                                ✓ Return
-                            </button>
-                        `}
-                        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">
-                            🗑 Remove
-                        </button>
+                        ${book.status === 'available' ? `<button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` : `<button class="btn btn-success" onclick="returnBook(${book.id})">✓ Return</button>`}
+                        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">🗑 Remove</button>
                     </div>
                 </div>
             `).join('');
         }
         
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+        function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
         
-        // Initialize app
         function initApp() {
-            if (checkSession()) {
-                setAdminMode(true);
-                showToast('✓ Admin session restored', 'info');
-            } else {
-                setAdminMode(false);
-            }
+            if (checkSession()) { setAdminMode(true); showToast('✓ Admin session restored', 'info'); } else { setAdminMode(false); }
             loadBooks();
         }
         
         document.addEventListener('DOMContentLoaded', initApp);
-        
-        // Event listeners
         document.getElementById('passwordInput').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
         document.getElementById('searchInput').addEventListener('input', renderBooks);
         document.getElementById('filterStatus').addEventListener('change', renderBooks);
         document.getElementById('sortBy').addEventListener('change', renderBooks);
-        
-        // Image file name display and size warning
         document.getElementById('newBookCover')?.addEventListener('change', function(e) {
             const file = e.target.files[0];
             const warningEl = document.getElementById('imageSizeWarning');
-            if (file && file.size > 500 * 1024) {
-                warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress to 300px @ 20%.`;
-                warningEl.classList.add('show');
-            } else { 
-                warningEl.classList.remove('show'); 
-            }
+            if (file && file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress to 300px @ 20%.`; warningEl.classList.add('show'); } else { warningEl.classList.remove('show'); }
         });
-        
-        // Enter key for admin form
         ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL'].forEach(id => {
             document.getElementById(id)?.addEventListener('keypress', e => { if (e.key === 'Enter') processAddBook(); });
         });
-        
-        // Close modals on outside click
         document.getElementById('loginOverlay')?.addEventListener('click', e => { if (e.target.id === 'loginOverlay') closeLoginModal(); });
         document.getElementById('borrowModal')?.addEventListener('click', e => { if (e.target.id === 'borrowModal') closeBorrowModal(); });
     </script>

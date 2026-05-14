@@ -6,147 +6,425 @@
     <title>Kumon ERP Library</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #FFFFFF; color: #61CDFF; line-height: 1.6; min-height: 100vh; overflow-x: hidden; }
-        header { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 1.5rem 2rem; box-shadow: 0 4px 20px rgba(30, 58, 138, 0.4); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #f0f4f8; 
+            color: #1e3a8a; 
+            line-height: 1.6; 
+            min-height: 100vh;
+        }
+        header { 
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); 
+            color: white; 
+            padding: 1.5rem 2rem; 
+            box-shadow: 0 2px 10px rgba(30, 64, 175, 0.3); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            gap: 1rem; 
+        }
         header h1 { font-size: 1.8rem; display: flex; align-items: center; gap: 0.5rem; }
         .header-actions { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
         .container { max-width: 1200px; margin: 0 auto; padding: 2rem; width: 100%; }
         
         /* Login Overlay */
-        .login-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 22, 40, 0.95); display: none; align-items: center; justify-content: center; z-index: 2000; }
+        .login-overlay { 
+            position: fixed; 
+            top: 0; left: 0; right: 0; bottom: 0; 
+            background: rgba(15, 23, 42, 0.95); 
+            display: none; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 2000; 
+        }
         .login-overlay.show { display: flex; }
-        .login-box { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 3rem; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4); width: 100%; max-width: 400px; text-align: center; }
-        .login-box h2 { font-size: 2rem; margin-bottom: 0.5rem; }
-        .login-box p { color: #93c5fd; margin-bottom: 2rem; }
-        .login-box input { width: 100%; padding: 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(255,255,255,0.1); color: white; margin-bottom: 1rem; text-align: center; }
-        .login-box input::placeholder { color: #93c5fd; }
-        .login-box input:focus { outline: none; border-color: #60a5fa; background: rgba(255,255,255,0.15); }
+        .login-box { 
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); 
+            padding: 2.5rem; 
+            border-radius: 12px; 
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4); 
+            width: 100%; 
+            max-width: 400px; 
+            text-align: center; 
+        }
+        .login-box h2 { font-size: 1.8rem; margin-bottom: 0.5rem; color: white; }
+        .login-box p { color: #bfdbfe; margin-bottom: 2rem; }
+        .login-box input { 
+            width: 100%; 
+            padding: 0.875rem; 
+            border: 2px solid rgba(255,255,255,0.2); 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            background: rgba(255,255,255,0.1); 
+            color: white; 
+            margin-bottom: 1rem; 
+            text-align: center; 
+        }
+        .login-box input::placeholder { color: #bfdbfe; }
+        .login-box input:focus { outline: none; border-color: white; background: rgba(255,255,255,0.15); }
         .hidden { display: none !important; }
         
         /* Mode indicator */
         .mode-indicator { 
-            display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; 
-            border-radius: 20px; font-size: 0.85rem; font-weight: 500;
-            background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; color: #93c5fd;
+            display: inline-flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+            padding: 0.5rem 1rem; 
+            border-radius: 20px; 
+            font-size: 0.85rem; 
+            font-weight: 600;
+            background: rgba(255,255,255,0.2);
+            color: white;
         }
-        .mode-indicator.admin { background: rgba(34, 197, 94, 0.2); border-color: #22c55e; color: #86efac; }
+        .mode-indicator.admin { background: #10b981; }
         
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-        .stat-card { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 1.5rem; border-radius: 12px; text-align: center; border: 1px solid #3b82f6; }
-        .stat-card h3 { font-size: 0.9rem; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
-        .stat-card .number { font-size: 2.5rem; font-weight: 700; color: white; }
+        .stats { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 1.5rem; 
+            margin-bottom: 2.5rem; 
+        }
+        .stat-card { 
+            background: white; 
+            padding: 2rem; 
+            border-radius: 12px; 
+            text-align: center; 
+            box-shadow: 0 4px 6px rgba(30, 64, 175, 0.1);
+            border: 2px solid #dbeafe;
+        }
+        .stat-card h3 { 
+            font-size: 0.875rem; 
+            color: #64748b; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            margin-bottom: 0.75rem; 
+            font-weight: 600;
+        }
+        .stat-card .number { font-size: 2.5rem; font-weight: 700; color: #1e40af; }
         
-        .controls { background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; border: 1px solid #3b82f6; }
-        .controls input[type="text"], .controls select { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; transition: all 0.2s; flex: 1; min-width: 150px; }
-        .controls input:focus, .controls select:focus { outline: none; border-color: #60a5fa; background: rgba(30, 58, 138, 0.7); }
-        
-        /* Admin Panel - FIXED GLITCHES */
-        .admin-panel { 
-            background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); 
+        .controls { 
+            background: white; 
             padding: 1.5rem; 
             border-radius: 12px; 
             margin-bottom: 2rem; 
-            border: 1px solid #3b82f6;
-            position: relative;
-            overflow: hidden; /* Contains stray background artifacts */
-            width: 100%;
-            background-clip: padding-box;
+            display: flex; 
+            gap: 1rem; 
+            flex-wrap: wrap; 
+            align-items: center; 
+            box-shadow: 0 4px 6px rgba(30, 64, 175, 0.1);
+            border: 2px solid #dbeafe;
+        }
+        .controls input[type="text"], .controls select { 
+            padding: 0.75rem 1rem; 
+            border: 2px solid #dbeafe; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            background: #f8fafc; 
+            color: #1e293b;
+            transition: all 0.2s; 
+            flex: 1; 
+            min-width: 150px; 
+        }
+        .controls input:focus, .controls select:focus { 
+            outline: none; 
+            border-color: #3b82f6; 
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         
-        /* Kill any ghost pseudo-elements */
-        .admin-panel::before, .admin-panel::after,
-        .admin-panel h3::before, .admin-panel h3::after,
-        .btn::before, .btn::after {
-            display: none !important;
-            content: none !important;
+        /* Admin Panel - Completely Redesigned */
+        .admin-panel { 
+            background: white;
+            padding: 2rem; 
+            border-radius: 12px; 
+            margin-bottom: 2rem; 
+            border: 2px solid #dbeafe;
+            box-shadow: 0 4px 6px rgba(30, 64, 175, 0.1);
         }
-
         .admin-panel h3 { 
-            color: #60a5fa; margin-bottom: 1rem; font-size: 1.2rem;
-            display: flex; align-items: center; gap: 0.5rem;
-            border-left: none !important; /* Remove any inherited borders */
+            color: #1e40af; 
+            margin-bottom: 1.5rem; 
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         
-        /* Form Grid - Mobile Optimized */
-        .admin-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1rem; overflow: visible; }
-        .admin-form > * { min-width: 0; /* Allow shrinking to fix text truncation */ }
+        /* Form Grid */
+        .admin-form { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 1rem; 
+            margin-bottom: 1.5rem; 
+        }
+        .admin-form input[type="text"] { 
+            padding: 0.875rem 1rem; 
+            border: 2px solid #dbeafe; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            background: #f8fafc; 
+            color: #1e293b;
+            transition: all 0.2s;
+        }
+        .admin-form input::placeholder { color: #94a3b8; }
+        .admin-form input:focus { 
+            outline: none; 
+            border-color: #3b82f6; 
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
         
-        .admin-form input[type="text"] { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; width: 100%; }
-        .admin-form input::placeholder { color: #93c5fd; }
-        .admin-form input:focus { outline: none; border-color: #60a5fa; }
-        
-        /* File Input - Fixed */
+        /* File Input */
         input[type="file"] { 
-            padding: 0.75rem; background: rgba(30, 58, 138, 0.5); color: #93c5fd; 
-            border: 2px dashed #3b82f6; border-radius: 8px; cursor: pointer; font-size: 0.9rem; width: 100%;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            padding: 0.875rem; 
+            background: #f8fafc; 
+            color: #475569; 
+            border: 2px dashed #94a3b8; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 0.9rem;
+            width: 100%;
         }
         input[type="file"]::file-selector-button { 
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; 
-            padding: 0.5rem 1rem; border: none; border-radius: 4px; margin-right: 1rem; cursor: pointer; font-weight: 500;
-            white-space: nowrap;
+            background: #3b82f6; 
+            color: white; 
+            padding: 0.5rem 1rem; 
+            border: none; 
+            border-radius: 6px; 
+            margin-right: 1rem; 
+            cursor: pointer; 
+            font-weight: 600;
+            transition: background 0.2s;
         }
-        input[type="file"]::file-selector-button:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
+        input[type="file"]::file-selector-button:hover { background: #2563eb; }
         
-        /* Button Container - Fixed Overlap */
-        .admin-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; width: 100%; }
-        .admin-actions .btn { flex: 1 1 auto; min-width: 120px; white-space: nowrap; }
+        /* Button Container */
+        .admin-actions { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 1rem; 
+            margin-top: 1.5rem; 
+        }
+        .admin-actions .btn { 
+            flex: 1 1 auto; 
+            min-width: 150px;
+            padding: 0.875rem 1.5rem;
+        }
         
-        .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
-        .book-card { background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%); border-radius: 12px; padding: 1.5rem; border: 1px solid #3b82f6; transition: transform 0.2s, box-shadow 0.2s; position: relative; display: flex; flex-direction: column; }
-        .book-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(59, 130, 246, 0.3); }
-        .book-card.available { border-left: 4px solid #22c55e; }
-        .book-card.borrowed { border-left: 4px solid #f59e0b; }
+        .books-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            gap: 1.5rem; 
+        }
+        .book-card { 
+            background: white;
+            border-radius: 12px; 
+            padding: 1.5rem; 
+            border: 2px solid #dbeafe;
+            box-shadow: 0 4px 6px rgba(30, 64, 175, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        .book-card:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(30, 64, 175, 0.15); 
+        }
+        .book-card.available { border-top: 4px solid #10b981; }
+        .book-card.borrowed { border-top: 4px solid #f59e0b; }
         
-        .book-cover { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; background: rgba(30, 58, 138, 0.5); display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 3rem; border: 1px solid rgba(59, 130, 246, 0.3); }
-        .book-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; color: white; }
-        .book-author { color: #93c5fd; font-size: 0.95rem; margin-bottom: 0.5rem; }
-        .book-location { display: inline-block; background: rgba(59, 130, 246, 0.3); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; color: #bfdbfe; margin-bottom: 0.5rem; align-self: flex-start; }
-        .book-location::before { content: "📍 "; }
-        .book-meta { display: flex; gap: 1rem; font-size: 0.85rem; color: #60a5fa; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
-        .rrl-badge { background: rgba(96, 165, 250, 0.2); color: #93c5fd; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: bold; border: 1px solid rgba(96, 165, 250, 0.4); }
-        .borrower-badge { background: rgba(245, 158, 11, 0.2); color: #fcd34d; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; border: 1px solid rgba(245, 158, 11, 0.4); }
-        .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; align-self: flex-start; }
-        .status-badge.available { background: rgba(34, 197, 94, 0.2); color: #86efac; border: 1px solid #22c55e; }
-        .status-badge.borrowed { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid #f59e0b; }
+        .book-cover { 
+            width: 100%; 
+            height: 180px; 
+            object-fit: cover; 
+            border-radius: 8px; 
+            margin-bottom: 1rem; 
+            background: #f1f5f9;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: #94a3b8; 
+            font-size: 3rem; 
+        }
+        .book-title { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem; color: #1e293b; }
+        .book-author { color: #64748b; font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .book-location { 
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: #dbeafe; 
+            padding: 0.375rem 0.75rem; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            color: #1e40af;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+        .book-meta { 
+            display: flex; 
+            gap: 0.75rem; 
+            font-size: 0.8rem; 
+            color: #64748b; 
+            margin-bottom: 1rem; 
+            align-items: center; 
+            flex-wrap: wrap; 
+        }
+        .rrl-badge { 
+            background: #dbeafe; 
+            color: #1e40af; 
+            padding: 0.25rem 0.625rem; 
+            border-radius: 4px; 
+            font-weight: 700;
+            font-size: 0.75rem;
+        }
+        .borrower-badge { 
+            background: #fef3c7; 
+            color: #92400e; 
+            padding: 0.375rem 0.75rem; 
+            border-radius: 6px; 
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+        .status-badge { 
+            display: inline-block; 
+            padding: 0.375rem 0.875rem; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+            margin-bottom: 0.75rem;
+        }
+        .status-badge.available { background: #d1fae5; color: #065f46; }
+        .status-badge.borrowed { background: #fef3c7; color: #92400e; }
         
-        .btn { padding: 0.75rem 1.25rem; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-align: center; }
-        .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
-        .btn-primary:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); transform: translateY(-1px); }
-        .btn-success { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; }
-        .btn-success:hover { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); }
-        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
-        .btn-danger:hover { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); }
-        .btn-small { padding: 0.6rem 1rem; font-size: 0.85rem; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-logout { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; }
-        .btn-logout:hover { background: linear-gradient(135deg, #4b5563 0%, #374151 100%); }
-        .btn-login { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; }
-        .btn-login:hover { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); }
+        .btn { 
+            padding: 0.875rem 1.5rem; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 0.95rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-primary { 
+            background: #3b82f6; 
+            color: white; 
+        }
+        .btn-primary:hover { 
+            background: #2563eb; 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .btn-success { 
+            background: #10b981; 
+            color: white; 
+        }
+        .btn-success:hover { 
+            background: #059669; 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        .btn-danger { 
+            background: #ef4444; 
+            color: white; 
+        }
+        .btn-danger:hover { 
+            background: #dc2626; 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+        .btn-small { padding: 0.625rem 1rem; font-size: 0.85rem; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+        .btn-logout { background: #64748b; color: white; }
+        .btn-logout:hover { background: #475569; }
+        .btn-login { background: #8b5cf6; color: white; }
+        .btn-login:hover { background: #7c3aed; }
         
-        .book-actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 1rem; flex-wrap: wrap; }
-        .book-actions .btn { flex: 1; min-width: 100px; margin-top: 0; }
+        .book-actions { 
+            display: flex; 
+            gap: 0.75rem; 
+            margin-top: auto; 
+            padding-top: 1rem; 
+            flex-wrap: wrap; 
+        }
+        .book-actions .btn { flex: 1; min-width: 100px; }
         
-        .empty-state { text-align: center; padding: 4rem 2rem; color: #93c5fd; }
-        .empty-state h2 { font-size: 1.5rem; margin-bottom: 0.5rem; color: white; }
+        .empty-state { text-align: center; padding: 4rem 2rem; color: #64748b; }
+        .empty-state h2 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #1e293b; }
         
-        .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 8px; color: white; font-weight: 500; transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 1000; max-width: 90vw; }
+        .toast { 
+            position: fixed; 
+            bottom: 2rem; 
+            right: 2rem; 
+            padding: 1rem 1.5rem; 
+            border-radius: 8px; 
+            color: white; 
+            font-weight: 600; 
+            transform: translateY(100px); 
+            opacity: 0; 
+            transition: all 0.3s; 
+            z-index: 1000; 
+            max-width: 90vw;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
         .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.success { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
-        .toast.error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
-        .toast.info { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        .toast.info { background: #3b82f6; }
         
         /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 22, 40, 0.9); display: none; align-items: center; justify-content: center; z-index: 1500; padding: 1rem; }
+        .modal-overlay { 
+            position: fixed; 
+            top: 0; left: 0; right: 0; bottom: 0; 
+            background: rgba(15, 23, 42, 0.8); 
+            display: none; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 1500; 
+            padding: 1rem; 
+        }
         .modal-overlay.show { display: flex; }
-        .modal { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 2rem; border-radius: 16px; max-width: 400px; width: 100%; border: 1px solid #3b82f6; }
-        .modal h3 { color: white; margin-bottom: 1.5rem; font-size: 1.3rem; }
+        .modal { 
+            background: white;
+            padding: 2rem; 
+            border-radius: 12px; 
+            max-width: 400px; 
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal h3 { color: #1e293b; margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700; }
         .modal-form { display: flex; flex-direction: column; gap: 1rem; }
-        .modal-form input { padding: 0.75rem 1rem; border: 2px solid #3b82f6; border-radius: 8px; font-size: 1rem; background: rgba(30, 58, 138, 0.5); color: white; }
-        .modal-form input::placeholder { color: #93c5fd; }
-        .modal-form input:focus { outline: none; border-color: #60a5fa; }
-        .modal-actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
+        .modal-form input { 
+            padding: 0.875rem 1rem; 
+            border: 2px solid #dbeafe; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            background: #f8fafc; 
+            color: #1e293b;
+        }
+        .modal-form input::placeholder { color: #94a3b8; }
+        .modal-form input:focus { outline: none; border-color: #3b82f6; background: white; }
+        .modal-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
         .modal-actions .btn { flex: 1; }
+        
+        .camera-hint { font-size: 0.8rem; color: #64748b; margin-top: 0.75rem; font-style: italic; }
+        .image-warning { font-size: 0.8rem; color: #f59e0b; margin-top: 0.75rem; display: none; font-weight: 600; }
+        .image-warning.show { display: block; }
+        
+        .admin-only { display: none; }
+        .admin-mode .admin-only { display: initial; }
+        .admin-mode .public-only { display: none; }
         
         @media (max-width: 600px) { 
             .container { padding: 1rem; } 
@@ -159,31 +437,31 @@
             .book-actions .btn { width: 100%; }
             .admin-actions { flex-direction: column; }
             .admin-actions .btn { width: 100%; }
+            .stats { grid-template-columns: 1fr; }
         }
         
-        .loading { text-align: center; padding: 2rem; color: #93c5fd; }
-        .spinner { width: 40px; height: 40px; border: 4px solid rgba(59, 130, 246, 0.3); border-top-color: #60a5fa; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+        .loading { text-align: center; padding: 3rem 2rem; color: #64748b; }
+        .spinner { 
+            width: 40px; height: 40px; 
+            border: 4px solid #dbeafe; 
+            border-top-color: #3b82f6; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+            margin: 0 auto 1rem; 
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .image-warning { font-size: 0.8rem; color: #fcd34d; margin-top: 0.5rem; display: none; }
-        .image-warning.show { display: block; }
-        .camera-hint { font-size: 0.75rem; color: #93c5fd; margin-top: 0.25rem; }
-        
-        .admin-only { display: none; }
-        .admin-mode .admin-only { display: initial; }
-        .admin-mode .public-only { display: none; }
     </style>
 </head>
 <body>
     <!-- Login Modal -->
     <div class="login-overlay" id="loginOverlay">
         <div class="login-box">
-            <h2> Admin Login</h2>
+            <h2>🔐 Admin Login</h2>
             <p>Enter password to manage library</p>
             <input type="password" id="passwordInput" placeholder="Enter password" maxlength="10">
             <button class="btn btn-primary" onclick="login()" style="width: 100%;">Login as Admin</button>
-            <button class="btn btn-small" onclick="closeLoginModal()" style="background:transparent;border:1px solid #3b82f6;margin-top:0.5rem;width:100%">Continue as Visitor</button>
-            <p id="loginError" style="color: #fca5a5; margin-top: 1rem; display: none;">Invalid password</p>
+            <button class="btn btn-small" onclick="closeLoginModal()" style="background:transparent;border:2px solid rgba(255,255,255,0.3);margin-top:0.75rem;width:100%;color:white">Continue as Visitor</button>
+            <p id="loginError" style="color: #fecaca; margin-top: 1rem; display: none;">❌ Invalid password</p>
         </div>
     </div>
 
@@ -191,7 +469,7 @@
     <div class="modal-overlay" id="borrowModal">
         <div class="modal">
             <h3>📚 Borrow Book</h3>
-            <p id="borrowBookTitle" style="color:#93c5fd;margin-bottom:1rem;font-style:italic;"></p>
+            <p id="borrowBookTitle" style="color:#64748b;margin-bottom:1.5rem;font-style:italic;"></p>
             <div class="modal-form">
                 <input type="text" id="borrowerName" placeholder="Student Name *" required>
                 <input type="text" id="borrowerGrade" placeholder="Grade (e.g., Grade 3) *" required>
@@ -199,7 +477,7 @@
             </div>
             <div class="modal-actions">
                 <button class="btn btn-success" onclick="confirmBorrow()">Confirm Borrow</button>
-                <button class="btn btn-small" onclick="closeBorrowModal()" style="background:#6b7280">Cancel</button>
+                <button class="btn btn-small" onclick="closeBorrowModal()" style="background:#64748b">Cancel</button>
             </div>
         </div>
     </div>
@@ -242,25 +520,25 @@
                     <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, C)">
                     <input type="file" id="newBookCover" accept="image/*" capture="environment" title="Upload or take photo">
                 </div>
-                <p class="camera-hint"> On mobile: tap to choose file OR take photo with camera</p>
-                <p id="imageSizeWarning" class="image-warning">️ Large images may fail to save. Images are auto-compressed to 300px @ 20% quality.</p>
+                <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
+                <p id="imageSizeWarning" class="image-warning">⚠️ Large images may fail to save. Images are auto-compressed to 300px @ 20% quality.</p>
                 <div class="admin-actions">
-                    <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Add Book</button>
-                    <button class="btn btn-small" id="testConnectionBtn" onclick="testConnection()" style="background:#6b7280">🔗 Test Connection</button>
-                    <button class="btn btn-small" onclick="exportBackup()" style="background:#8b5cf6"> Export Backup</button>
+                    <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">➕ Add Book</button>
+                    <button class="btn btn-small" id="testConnectionBtn" onclick="testConnection()" style="background:#64748b">🔗 Test Connection</button>
+                    <button class="btn btn-small" onclick="exportBackup()" style="background:#8b5cf6">💾 Export Backup</button>
                 </div>
             </div>
             
             <!-- Public notice -->
-            <div class="admin-panel public-only" style="text-align:center;">
-                <p style="color:#93c5fd;margin:0;">
-                     Welcome! Browse our library below. 
-                    <button class="btn btn-small btn-login" onclick="openLoginModal()" style="margin-left:0.5rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
+            <div class="admin-panel public-only" style="text-align:center; padding: 2rem;">
+                <p style="color:#64748b;margin:0; font-size: 1.1rem;">
+                    👋 Welcome! Browse our library below. 
+                    <button class="btn btn-small btn-login" onclick="openLoginModal()" style="margin-left:0.75rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
                 </p>
             </div>
             
             <div class="controls">
-                <input type="text" id="searchInput" placeholder="Search books by title or author...">
+                <input type="text" id="searchInput" placeholder="🔍 Search books by title or author...">
                 <select id="filterStatus">
                     <option value="all">All Books</option>
                     <option value="available">Available Only</option>
@@ -350,7 +628,7 @@
             isAdmin = active;
             const app = document.getElementById('mainApp');
             const indicator = document.getElementById('modeIndicator');
-            if (active) { app.classList.add('admin-mode'); indicator.textContent = ' Admin Mode'; indicator.classList.add('admin'); }
+            if (active) { app.classList.add('admin-mode'); indicator.textContent = '🔐 Admin Mode'; indicator.classList.add('admin'); }
             else { app.classList.remove('admin-mode'); indicator.textContent = '👥 Public View'; indicator.classList.remove('admin'); }
         }
         
@@ -375,7 +653,7 @@
             if (password === '1111') {
                 saveSession(); setAdminMode(true); closeLoginModal(); document.getElementById('passwordInput').value = '';
                 if (pendingBorrowBookId) { const book = books.find(b => b.id === pendingBorrowBookId); if (book) openBorrowModal(book.id, book.title); pendingBorrowBookId = null; }
-                showToast('✓ Admin mode activated', 'success');
+                showToast('✅ Admin mode activated', 'success');
             } else {
                 document.getElementById('loginError').style.display = 'block';
                 setTimeout(() => { document.getElementById('loginError').style.display = 'none'; }, 2000);
@@ -394,7 +672,7 @@
                 books = Array.isArray(data.record?.books) ? [...data.record.books] : [];
                 nextId = books.length > 0 ? Math.max(...books.map(b => b.id)) + 1 : 1;
                 updateStats(); renderBooks();
-                if (books.length > 0) showToast(`✓ Loaded ${books.length} books`, 'success');
+                if (books.length > 0) showToast(`✅ Loaded ${books.length} books`, 'success');
             } catch (error) {
                 console.error('Load error:', error);
                 showToast(`Failed to load: ${error.message}`, 'error');
@@ -417,8 +695,8 @@
             try {
                 const res = await fetchWithRetry(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, { headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY }});
                 const data = await res.json();
-                showToast(`✓ Connected! ${data.record?.books?.length || 0} books`, 'success');
-            } catch (e) { showToast(`✗ Error: ${e.message}`, 'error'); }
+                showToast(`✅ Connected! ${data.record?.books?.length || 0} books`, 'success');
+            } catch (e) { showToast(`❌ Error: ${e.message}`, 'error'); }
         }
         
         function exportBackup() {
@@ -467,7 +745,7 @@
                 showToast(`Image error. Adding without image.`, 'error');
                 await addBookToSystem(title, author, genre, location, rrlLevel, null);
             } finally {
-                btn.disabled = false; btn.textContent = 'Add Book'; warningEl.classList.remove('show');
+                btn.disabled = false; btn.textContent = '➕ Add Book'; warningEl.classList.remove('show');
                 ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
             }
         }
@@ -494,7 +772,7 @@
             const book = books.find(b => b.id === pendingBorrowBookId);
             if (book) {
                 book.status = 'borrowed'; book.borrower = name; book.borrowerGrade = grade; book.borrowerLevel = level; book.borrowDate = new Date().toISOString().split('T')[0];
-                if (await saveBooks()) { closeBorrowModal(); renderBooks(); updateStats(); showToast(` "${book.title}" borrowed by ${name} (${grade}, ${level})`, 'success'); }
+                if (await saveBooks()) { closeBorrowModal(); renderBooks(); updateStats(); showToast(`📚 "${book.title}" borrowed by ${name} (${grade}, ${level})`, 'success'); }
             }
         }
         
@@ -503,7 +781,7 @@
             if (book) {
                 const info = `${book.borrower} (${book.borrowerGrade}, ${book.borrowerLevel})`;
                 book.status = 'available'; book.borrower = null; book.borrowerGrade = null; book.borrowerLevel = null; book.borrowDate = null;
-                if (await saveBooks()) { renderBooks(); updateStats(); showToast(`✓ "${book.title}" returned by ${info}`, 'success'); }
+                if (await saveBooks()) { renderBooks(); updateStats(); showToast(`✅ "${book.title}" returned by ${info}`, 'success'); }
             }
         }
         
@@ -529,7 +807,7 @@
             const emptyState = document.getElementById('emptyState');
             const filteredBooks = getFilteredAndSortedBooks();
             if (filteredBooks.length === 0 && books.length > 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = 'No matching books'; emptyState.querySelector('p').textContent = 'Try adjusting your search or filter'; return; }
-            if (books.length === 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = ' Library is empty'; emptyState.querySelector('p').textContent = isAdmin ? 'Add your first book above' : 'Check back soon!'; return; }
+            if (books.length === 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = '📚 Library is empty'; emptyState.querySelector('p').textContent = isAdmin ? 'Add your first book above' : 'Check back soon!'; return; }
             emptyState.style.display = 'none';
             
             grid.innerHTML = filteredBooks.map(book => `
@@ -537,17 +815,17 @@
                     ${book.coverImage ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` : `<div class="book-cover">📘</div>`}
                     <div class="book-title">${escapeHtml(book.title)}</div>
                     <div class="book-author">by ${escapeHtml(book.author)}</div>
-                    <div class="book-location">${escapeHtml(book.location)}</div>
+                    <div class="book-location">📍 ${escapeHtml(book.location)}</div>
                     <div class="book-meta">
                         <span>${escapeHtml(book.genre)}</span><span>•</span>
                         <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span><span>•</span>
                         <span>ID: ${book.id}</span>
                     </div>
                     <span class="status-badge ${book.status}">${book.status === 'available' ? '✓ Available' : '📤 Borrowed'}</span>
-                    ${book.status === 'borrowed' ? `<div style="margin-top:0.5rem;font-size:0.85rem;color:#93c5fd;"><span class="borrower-badge"> ${escapeHtml(book.borrower)}</span><br><small>Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><br><small>Since: ${book.borrowDate}</small></div>` : ''}
+                    ${book.status === 'borrowed' ? `<div style="margin-top:0.5rem;"><span class="borrower-badge">👤 ${escapeHtml(book.borrower)}</span><br><small style="color:#64748b;display:block;margin-top:0.25rem">Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><small style="color:#94a3b8;display:block">Since: ${book.borrowDate}</small></div>` : ''}
                     <div class="book-actions">
-                        ${book.status === 'available' ? `<button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` : `<button class="btn btn-success" onclick="returnBook(${book.id})">✓ Return</button>`}
-                        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})"> Remove</button>
+                        ${book.status === 'available' ? `<button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` : `<button class="btn btn-success" onclick="returnBook(${book.id})">✅ Return</button>`}
+                        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">🗑 Remove</button>
                     </div>
                 </div>
             `).join('');
@@ -556,7 +834,7 @@
         function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
         
         function initApp() {
-            if (checkSession()) { setAdminMode(true); showToast('✓ Admin session restored', 'info'); } else { setAdminMode(false); }
+            if (checkSession()) { setAdminMode(true); showToast('✅ Admin session restored', 'info'); } else { setAdminMode(false); }
             loadBooks();
         }
         

@@ -154,9 +154,14 @@
                 <h1>Kumon RRL Online Library</h1>
             </div>
             <div class="header-actions">
-                <span class="mode-indicator" id="modeIndicator">👥 Public View</span>
-                <button class="btn btn-small btn-login admin-only" onclick="openLoginModal()">🔐 Admin Login</button>
-                <button class="btn btn-small btn-logout admin-only" onclick="logout()">🚪 Logout</button>
+                <!-- Mode Indicator: Hidden by default, shown in Admin Mode -->
+                <span class="mode-indicator" id="modeIndicator">🔐 Admin Mode</span>
+                
+                <!-- Login Button: Shown by default, hidden in Admin Mode -->
+                <button class="btn btn-small btn-login-action" onclick="openLoginModal()">🔐 Admin Login</button>
+                
+                <!-- Logout Button: Hidden by default, shown in Admin Mode -->
+                <button class="btn btn-small btn-logout-action" onclick="logout()">🚪 Logout</button>
             </div>
         </header>
         
@@ -180,8 +185,8 @@
             <div class="public-notice">
                 <p style="color:#64748b;margin:0; font-size: 1.1rem;">
                     👋 Welcome! Browse our library below. 
-                    <button class="btn btn-small btn-login admin-only" onclick="openAddBookModal()" style="margin-left:0.75rem;vertical-align:middle">➕ Add Book</button>
-                    <button class="btn btn-small btn-login public-only" onclick="openLoginModal()" style="margin-left:0.75rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
+                    <button class="btn btn-small btn-login-action admin-only" onclick="openAddBookModal()" style="margin-left:0.75rem;vertical-align:middle">➕ Add Book</button>
+                    <button class="btn btn-small btn-login-action" onclick="openLoginModal()" style="margin-left:0.75rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
                 </p>
             </div>
             
@@ -214,6 +219,13 @@
                 <p>Try adjusting your search or filter criteria</p>
             </div>
         </div>
+
+        <!-- ══════════ FOOTER ══════════ -->
+        <footer class="site-footer">
+            <div class="footer-content">
+                <p>📚 Kumon Taipa Mei Keng &nbsp;•&nbsp; 📞 <a href="tel:+85328831773">2883 1773</a></p>
+            </div>
+        </footer>
     </div>
     
     <!-- Floating Action Button for Admin -->
@@ -282,8 +294,8 @@
             isAdmin = active;
             const app = document.getElementById('mainApp');
             const indicator = document.getElementById('modeIndicator');
-            if (active) { app.classList.add('admin-mode'); indicator.textContent = '🔐 Admin Mode'; indicator.classList.add('admin'); }
-            else { app.classList.remove('admin-mode'); indicator.textContent = '👥 Public View'; indicator.classList.remove('admin'); }
+            if (active) { app.classList.add('admin-mode'); }
+            else { app.classList.remove('admin-mode'); }
             updateDetailModalVisibility();
         }
         

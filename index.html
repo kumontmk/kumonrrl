@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kumon ERP Library</title>
     <style>
-        /* ... [keep all your existing CSS exactly as is] ... */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #FFFFFF; color: #61CDFF; line-height: 1.6; min-height: 100vh; }
         header { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 1.5rem 2rem; box-shadow: 0 4px 20px rgba(30, 58, 138, 0.4); }
@@ -75,6 +74,10 @@
         .loading { text-align: center; padding: 2rem; color: #93c5fd; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(59, 130, 246, 0.3); border-top-color: #60a5fa; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Image size warning */
+        .image-warning { font-size: 0.8rem; color: #fcd34d; margin-top: 0.5rem; display: none; }
+        .image-warning.show { display: block; }
     </style>
 </head>
 <body>
@@ -124,8 +127,10 @@
                     <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, C)">
                     <input type="file" id="newBookCover" accept="image/*" title="Upload Cover Image">
                 </div>
+                <p id="imageSizeWarning" class="image-warning">⚠️ Large images may fail to save. Images are auto-compressed to 300px @ 20% quality.</p>
                 <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Add Book</button>
                 <button class="btn btn-small" id="testConnectionBtn" onclick="testConnection()" style="background:#6b7280; margin-left:0.5rem">🔗 Test Connection</button>
+                <button class="btn btn-small" onclick="exportBackup()" style="background:#8b5cf6; margin-left:0.5rem">💾 Export Backup</button>
             </div>
             
             <div class="controls">
@@ -160,13 +165,11 @@
     
     <div class="toast" id="toast"></div>
     
-    <!-- Removed books-data.js since we're using JSONBin -->
-    
     <script>
         // 🔐 JSONBin Configuration - ROTATE YOUR KEY AFTER SETUP!
         const JSONBIN_CONFIG = {
             BIN_ID: '6a054b89c0954111d81ee9ae',
-            API_KEY: '$2a$10$xHpBk/PGsQBzMG3zuHUdlOVhpkI1jd9PKven5Dh4TK1oyKhYYJEm.', // ⚠️ REPLACE WITH ROTATED KEY
+            API_KEY: 'YOUR_NEW_MASTER_KEY_HERE', // ⚠️ REPLACE WITH ROTATED KEY
             BASE_URL: 'https://api.jsonbin.io/v3/b'
         };
 
@@ -175,7 +178,73 @@
         let nextId = 1;
         let isLoading = false;
         
-        // Load books from JSONBin
+        // 🔄 Rate Limit Handling: Fetch with exponential backoff retry
+        async function fetchWithRetry(url, options, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const res = await fetch(url, options);
+                    
+                    // Handle rate limiting (429 Too Many Requests)
+                    if (res.status === 429) {
+                        const retryAfter = res.headers.get('Retry-After') || (i + 1);
+                        console.warn(`⚠️ Rate limited. Waiting ${retryAfter}s before retry ${i + 1}/${retries}`);
+                        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                        continue;
+                    }
+                    
+                    return res;
+                } catch (error) {
+                    console.warn(`⚠️ Request failed (attempt ${i + 1}/${retries}):`, error.message);
+                    if (i === retries - 1) throw error;
+                    // Exponential backoff: 500ms, 1s, 2s
+                    await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, i)));
+                }
+            }
+            throw new Error('Max retries exceeded');
+        }
+        
+        // 🗜️ Compress Cover Images: Resize to 300px + compress to 20% quality
+        async function compressImage(file, maxWidth = 300, quality = 0.2) {
+            return new Promise((resolve, reject) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    // Calculate new dimensions maintaining aspect ratio
+                    if (width > maxWidth) {
+                        height = Math.round((maxWidth / width) * height);
+                        width = maxWidth;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Draw and compress with aggressive quality setting
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Convert to JPEG with 20% quality for minimal file size
+                    const compressed = canvas.toDataURL('image/jpeg', quality);
+                    
+                    // Clean up
+                    URL.revokeObjectURL(img.src);
+                    resolve(compressed);
+                };
+                
+                img.onerror = (e) => {
+                    URL.revokeObjectURL(img.src);
+                    reject(new Error('Failed to load image for compression'));
+                };
+                
+                // Start loading
+                img.src = URL.createObjectURL(file);
+            });
+        }
+        
+        // Load books from JSONBin with retry logic
         async function loadBooks() {
             if (isLoading) return;
             isLoading = true;
@@ -184,12 +253,15 @@
             document.getElementById('booksGrid').innerHTML = '';
             
             try {
-                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, {
-                    headers: {
-                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
-                        'Content-Type': 'application/json'
+                const response = await fetchWithRetry(
+                    `${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`,
+                    {
+                        headers: {
+                            'X-Master-Key': JSONBIN_CONFIG.API_KEY,
+                            'Content-Type': 'application/json'
+                        }
                     }
-                });
+                );
                 
                 if (!response.ok) {
                     const err = await response.json().catch(() => ({}));
@@ -218,7 +290,7 @@
             }
         }
 
-        // Save books to JSONBin
+        // Save books to JSONBin with retry logic
         async function saveBooks() {
             try {
                 const payload = {
@@ -226,15 +298,18 @@
                     lastUpdated: new Date().toISOString()
                 };
                 
-                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, {
-                    method: 'PUT',
-                    headers: {
-                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
-                        'Content-Type': 'application/json',
-                        'X-Bin-Meta': 'false'
-                    },
-                    body: JSON.stringify(payload)
-                });
+                const response = await fetchWithRetry(
+                    `${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'X-Master-Key': JSONBIN_CONFIG.API_KEY,
+                            'Content-Type': 'application/json',
+                            'X-Bin-Meta': 'false'
+                        },
+                        body: JSON.stringify(payload)
+                    }
+                );
                 
                 if (!response.ok) {
                     const err = await response.json().catch(() => ({}));
@@ -253,9 +328,10 @@
         async function testConnection() {
             showToast('Testing connection...', 'info');
             try {
-                const res = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, {
-                    headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY }
-                });
+                const res = await fetchWithRetry(
+                    `${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`,
+                    { headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY } }
+                );
                 const data = await res.json();
                 console.log('✅ JSONBin Response:', data);
                 showToast(`✓ Connected! Bin has ${data.record?.books?.length || 0} books`, 'success');
@@ -263,6 +339,22 @@
                 console.error('❌ Test failed:', e);
                 showToast(`✗ Error: ${e.message}`, 'error');
             }
+        }
+        
+        // Export backup of current books
+        function exportBackup() {
+            if (books.length === 0) {
+                showToast('No books to export', 'info');
+                return;
+            }
+            const blob = new Blob([JSON.stringify(books, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kumon-library-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Backup downloaded!', 'success');
         }
         
         function login() {
@@ -299,10 +391,11 @@
             }, 3000);
         }
 
-        // Add book wrapper with file handling
+        // 🗜️ Add book wrapper with aggressive image compression (300px, 20% quality)
         async function processAddBook() {
             const btn = document.getElementById('addBookBtn');
             const originalText = btn.textContent;
+            const warningEl = document.getElementById('imageSizeWarning');
             
             const title = document.getElementById('newBookTitle').value.trim();
             const author = document.getElementById('newBookAuthor').value.trim();
@@ -317,29 +410,34 @@
 
             btn.disabled = true;
             btn.textContent = 'Saving...';
+            warningEl.classList.remove('show');
 
             const coverInput = document.getElementById('newBookCover');
             const file = coverInput.files[0];
 
             try {
                 if (file) {
-                    // Warn about image size limits
+                    // Show warning for large files
                     if (file.size > 500 * 1024) {
-                        showToast('⚠️ Image >500KB may fail. Compressing...', 'info');
+                        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing to 300px @ 20% quality...`;
+                        warningEl.classList.add('show');
                     }
                     
-                    const reader = new FileReader();
-                    reader.onload = async function(e) {
-                        const coverBase64 = e.target.result;
-                        await addBookToSystem(title, author, genre, location, rrlLevel, coverBase64);
-                    };
-                    reader.readAsDataURL(file);
+                    // 🗜️ Compress image: 300px max width, 20% JPEG quality
+                    const compressedBase64 = await compressImage(file, 300, 0.2);
+                    await addBookToSystem(title, author, genre, location, rrlLevel, compressedBase64);
                 } else {
                     await addBookToSystem(title, author, genre, location, rrlLevel, null);
                 }
+            } catch (error) {
+                console.error('Error processing image:', error);
+                showToast(`Image error: ${error.message}. Adding book without image.`, 'error');
+                // Still try to add book without image
+                await addBookToSystem(title, author, genre, location, rrlLevel, null);
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
+                warningEl.classList.remove('show');
             }
         }
         
@@ -536,23 +634,23 @@
         document.getElementById('filterStatus').addEventListener('change', renderBooks);
         document.getElementById('sortBy').addEventListener('change', renderBooks);
         
+        // Real-time image size warning
+        document.getElementById('newBookCover').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const warningEl = document.getElementById('imageSizeWarning');
+            if (file && file.size > 500 * 1024) {
+                warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will be compressed to 300px @ 20% quality.`;
+                warningEl.classList.add('show');
+            } else {
+                warningEl.classList.remove('show');
+            }
+        });
+        
         ['newBookTitle', 'newBookAuthor', 'newBookGenre', 'newBookLocation', 'newBookRRL'].forEach(id => {
             document.getElementById(id).addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') processAddBook();
             });
         });
-        
-        // Auto-load books-data.js fallback if JSONBin fails (optional backup)
-        // Remove this block if you don't want fallback behavior
-        /*
-        if (typeof libraryBooks !== 'undefined' && books.length === 0) {
-            console.log('🔄 Falling back to books-data.js');
-            books = JSON.parse(JSON.stringify(libraryBooks));
-            nextId = books.length > 0 ? Math.max(...books.map(b => b.id)) + 1 : 1;
-            updateStats();
-            renderBooks();
-        }
-        */
     </script>
 </body>
 </html>

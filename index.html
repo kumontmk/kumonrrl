@@ -7,8 +7,9 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #FFFFFF; color: #61CDFF; line-height: 1.6; min-height: 100vh; }
-        header { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 1.5rem 2rem; box-shadow: 0 4px 20px rgba(30, 58, 138, 0.4); }
+        header { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 1.5rem 2rem; box-shadow: 0 4px 20px rgba(30, 58, 138, 0.4); display: flex; justify-content: space-between; align-items: center; }
         header h1 { font-size: 1.8rem; display: flex; align-items: center; gap: 0.5rem; }
+        .header-actions { display: flex; gap: 0.75rem; align-items: center; }
         .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
         .login-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 22, 40, 0.95); display: flex; align-items: center; justify-content: center; z-index: 2000; }
         .login-box { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 3rem; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4); width: 100%; max-width: 400px; text-align: center; }
@@ -59,6 +60,8 @@
         .btn-danger:hover { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); }
         .btn-small { padding: 0.5rem 1rem; font-size: 0.85rem; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-logout { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; }
+        .btn-logout:hover { background: linear-gradient(135deg, #4b5563 0%, #374151 100%); }
         .book-actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 1rem; }
         .book-actions .btn { flex: 1; margin-top: 0; }
         .empty-state { text-align: center; padding: 4rem 2rem; color: #93c5fd; }
@@ -68,7 +71,14 @@
         .toast.success { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
         .toast.error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
         .toast.info { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
-        @media (max-width: 600px) { .container { padding: 1rem; } .controls { flex-direction: column; } .controls input, .controls select { width: 100%; } .admin-form { grid-template-columns: 1fr; } }
+        @media (max-width: 600px) { 
+            .container { padding: 1rem; } 
+            .controls { flex-direction: column; } 
+            .controls input, .controls select { width: 100%; } 
+            .admin-form { grid-template-columns: 1fr; }
+            header { flex-direction: column; gap: 1rem; text-align: center; }
+            .header-actions { width: 100%; justify-content: center; }
+        }
         
         /* Loading spinner */
         .loading { text-align: center; padding: 2rem; color: #93c5fd; }
@@ -78,6 +88,9 @@
         /* Image size warning */
         .image-warning { font-size: 0.8rem; color: #fcd34d; margin-top: 0.5rem; display: none; }
         .image-warning.show { display: block; }
+        
+        /* Camera hint */
+        .camera-hint { font-size: 0.75rem; color: #93c5fd; margin-top: 0.25rem; }
     </style>
 </head>
 <body>
@@ -95,8 +108,9 @@
     <!-- Main App -->
     <div id="mainApp" class="hidden">
         <header>
-            <div class="container" style="padding: 0;">
-                <h1>📚 Kumon ERP Library</h1>
+            <h1>📚 Kumon ERP Library</h1>
+            <div class="header-actions">
+                <button class="btn btn-small btn-logout" onclick="logout()">🚪 Logout</button>
             </div>
         </header>
         
@@ -125,8 +139,10 @@
                     <input type="text" id="newBookGenre" placeholder="Genre">
                     <input type="text" id="newBookLocation" placeholder="Location (e.g., Shelf A3)">
                     <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, C)">
-                    <input type="file" id="newBookCover" accept="image/*" title="Upload Cover Image">
+                    <!-- 📷 Camera support: capture="environment" uses back camera on mobile -->
+                    <input type="file" id="newBookCover" accept="image/*" capture="environment" title="Upload or take photo">
                 </div>
+                <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
                 <p id="imageSizeWarning" class="image-warning">⚠️ Large images may fail to save. Images are auto-compressed to 300px @ 20% quality.</p>
                 <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Add Book</button>
                 <button class="btn btn-small" id="testConnectionBtn" onclick="testConnection()" style="background:#6b7280; margin-left:0.5rem">🔗 Test Connection</button>
@@ -169,10 +185,13 @@
         // 🔐 JSONBin Configuration - ROTATE YOUR KEY AFTER SETUP!
         const JSONBIN_CONFIG = {
             BIN_ID: '6a054b89c0954111d81ee9ae',
-            API_KEY: '$2a$10$knk7dAn110pbuLUoGrzIEeYrPDXJGPq9P8TJIsMekjcFlnFZDLqlm', // ⚠️ REPLACE WITH ROTATED KEY
+            API_KEY: '$2a$10$knk7dAn110pbuLUoGrzIEeYrPDXJGPq9P8TJIsMekjcFlnFZDLqlm',
             BASE_URL: 'https://api.jsonbin.io/v3/b'
         };
 
+        // 🔐 Session Management (localStorage for login persistence ONLY)
+        const SESSION_KEY = 'kumonLibrarySession';
+        
         // App state
         let books = [];
         let nextId = 1;
@@ -242,6 +261,38 @@
                 // Start loading
                 img.src = URL.createObjectURL(file);
             });
+        }
+        
+        // 🔐 Save login session to localStorage
+        function saveSession() {
+            localStorage.setItem(SESSION_KEY, JSON.stringify({
+                loggedIn: true,
+                loginTime: new Date().toISOString()
+            }));
+        }
+        
+        // 🔐 Check if user has active session
+        function checkSession() {
+            try {
+                const session = JSON.parse(localStorage.getItem(SESSION_KEY));
+                return session?.loggedIn === true;
+            } catch {
+                return false;
+            }
+        }
+        
+        // 🔐 Clear login session
+        function clearSession() {
+            localStorage.removeItem(SESSION_KEY);
+        }
+        
+        // 🔐 Logout function
+        function logout() {
+            clearSession();
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginOverlay').classList.remove('hidden');
+            document.getElementById('passwordInput').value = '';
+            showToast('Logged out successfully', 'info');
         }
         
         // Load books from JSONBin with retry logic
@@ -360,10 +411,13 @@
         function login() {
             const password = document.getElementById('passwordInput').value;
             if (password === '1111') {
+                // 🔐 Save session for persistence
+                saveSession();
+                
                 document.getElementById('loginOverlay').classList.add('hidden');
                 document.getElementById('mainApp').classList.remove('hidden');
                 showToast('Welcome to Kumon ERP Library!', 'success');
-                loadBooks(); // Load from JSONBin on login
+                loadBooks();
             } else {
                 document.getElementById('loginError').style.display = 'block';
                 setTimeout(() => {
@@ -624,6 +678,21 @@
             div.textContent = text;
             return div.innerHTML;
         }
+        
+        // 🔐 Initialize app: check for existing session on page load
+        function initApp() {
+            if (checkSession()) {
+                // User has active session - skip login screen
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                showToast('Session restored', 'info');
+                loadBooks();
+            }
+            // Else: show login screen (default)
+        }
+        
+        // Run init on page load
+        document.addEventListener('DOMContentLoaded', initApp);
         
         // Event listeners
         document.getElementById('passwordInput').addEventListener('keypress', function(e) {

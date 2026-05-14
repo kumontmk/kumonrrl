@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kumon RRL Online Library</title>
+    <!-- Google Keep Font (Roboto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -19,10 +23,10 @@
         </div>
     </div>
 
-    <!-- ═════════ BORROW MODAL ══════════ -->
+    <!-- ══════════ BORROW MODAL ══════════ -->
     <div class="modal-overlay" id="borrowModal">
         <div class="modal">
-            <h3>📚 Borrow Book</h3>
+            <h3> Borrow Book</h3>
             <p id="borrowBookTitle" style="color:#64748b;margin-bottom:1.5rem;font-style:italic;"></p>
             <div class="modal-form">
                 <input type="text" id="borrowerName" placeholder="Student Name *" required>
@@ -36,10 +40,10 @@
         </div>
     </div>
 
-    <!-- ══════════ VISITOR BORROW MODAL ══════════ -->
+    <!-- ═════════ VISITOR BORROW MODAL ══════════ -->
     <div class="modal-overlay" id="visitorBorrowModal">
         <div class="modal">
-            <h3>📚 Borrow a Book</h3>
+            <h3> Borrow a Book</h3>
             <p style="color:#64748b;margin-bottom:1rem;">To borrow books from our library, please:</p>
             <div class="contact-info">
                 <h4>📍 Visit or Call Us</h4>
@@ -73,7 +77,7 @@
                 <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, C)">
                 <input type="file" id="newBookCover" accept="image/*" capture="environment" title="Upload or take photo">
             </div>
-            <p class="camera-hint"> On mobile: tap to choose file OR take photo with camera</p>
+            <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
             <p id="imageSizeWarning" class="image-warning">⚠️ Large images may fail to save. Images are auto-compressed to 300px @ 20% quality.</p>
             <div class="modal-actions">
                 <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Save Book</button>
@@ -137,7 +141,7 @@
                     </div>
 
                     <div class="detail-actions-full">
-                        <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()">📚 Borrow Book</button>
+                        <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()"> Borrow Book</button>
                         <button class="btn btn-success btn-large" id="detailReturnBtn" onclick="handleDetailReturn()" style="display:none;">✅ Return Book</button>
                         <button class="btn btn-danger btn-large admin-only" onclick="handleDetailRemove()">🗑 Remove Book</button>
                     </div>
@@ -146,7 +150,7 @@
         </div>
     </div>
 
-    <!-- ══════════ MAIN APP ═════════ -->
+    <!-- ══════════ MAIN APP ══════════ -->
     <div id="mainApp">
         <header>
             <div class="header-left" onclick="goHome()" style="cursor: pointer;">
@@ -186,7 +190,7 @@
                 <p style="color:#64748b;margin:0; font-size: 1.1rem;">
                     👋 Welcome! Browse our library below. 
                     <button class="btn btn-small btn-login admin-only" onclick="openAddBookModal()" style="margin-left:0.75rem;vertical-align:middle">➕ Add Book</button>
-                    <button class="btn btn-small btn-login public-only" onclick="openLoginModal()" style="margin-left:0.75rem;vertical-align:middle"> Login to Borrow/Manage</button>
+                    <button class="btn btn-small btn-login public-only" onclick="openLoginModal()" style="margin-left:0.75rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
                 </p>
             </div>
             
@@ -220,10 +224,10 @@
             </div>
         </div>
 
-        <!-- ═════════ FOOTER ══════════ -->
+        <!-- ══════════ FOOTER ══════════ -->
         <footer class="site-footer">
             <div class="footer-content">
-                <p> Kumon Taipa Mei Keng &nbsp;•&nbsp; 📞 <a href="tel:+85328831773">2883 1773</a></p>
+                <p>📚 Kumon Taipa Mei Keng &nbsp;•&nbsp; 📞 <a href="tel:+85328831773">2883 1773</a></p>
             </div>
         </footer>
     </div>
@@ -294,7 +298,7 @@
             isAdmin = active;
             const app = document.getElementById('mainApp');
             const indicator = document.getElementById('modeIndicator');
-            if (active) { app.classList.add('admin-mode'); indicator.textContent = '🔐 Admin Mode'; indicator.classList.add('admin'); }
+            if (active) { app.classList.add('admin-mode'); indicator.textContent = ' Admin Mode'; indicator.classList.add('admin'); }
             else { app.classList.remove('admin-mode'); indicator.textContent = '👥 Public View'; indicator.classList.remove('admin'); }
             updateDetailModalVisibility();
         }
@@ -589,7 +593,7 @@
             
             grid.innerHTML = filteredBooks.map(book => `
                 <div class="book-card ${book.status}" onclick="openBookDetail(${book.id})">
-                    ${book.coverImage ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` : `<div class="book-cover"></div>`}
+                    ${book.coverImage ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` : `<div class="book-cover">📘</div>`}
                     <div class="book-title">${escapeHtml(book.title)}</div>
                     <div class="book-author">by ${escapeHtml(book.author)}</div>
                     <div class="book-location">📍 ${escapeHtml(book.location)}</div>

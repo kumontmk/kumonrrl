@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kumon ERP Library</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login Modal -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <h2>🔐 Admin Login</h2>
+            <p>Enter password to manage library</p>
+            <input type="password" id="passwordInput" placeholder="Enter password" maxlength="10">
+            <button class="btn btn-primary" onclick="login()" style="width: 100%;">Login as Admin</button>
+            <button class="btn btn-small" onclick="closeLoginModal()" style="background:transparent;border:2px solid rgba(255,255,255,0.3);margin-top:0.75rem;width:100%;color:white">Continue as Visitor</button>
+            <p id="loginError" style="color: #fecaca; margin-top: 1rem; display: none;">❌ Invalid password</p>
+        </div>
+    </div>
+
+    <!-- Borrow Modal (Admin) -->
+    <div class="modal-overlay" id="borrowModal">
+        <div class="modal">
+            <h3>📚 Borrow Book</h3>
+            <p id="borrowBookTitle" style="color:#64748b;margin-bottom:1.5rem;font-style:italic;"></p>
+            <div class="modal-form">
+                <input type="text" id="borrowerName" placeholder="Student Name *" required>
+                <input type="text" id="borrowerGrade" placeholder="Grade (e.g., Grade 3) *" required>
+                <input type="text" id="borrowerLevel" placeholder="Kumon Level (e.g., CII, D) *" required>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-success" onclick="confirmBorrow()">Confirm Borrow</button>
+                <button class="btn btn-small" onclick="closeBorrowModal()" style="background:#64748b">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visitor Borrow Info Modal -->
+    <div class="modal-overlay" id="visitorBorrowModal">
+        <div class="modal">
+            <h3>📚 Borrow a Book</h3>
+            <p style="color:#64748b;margin-bottom:1rem;">To borrow books from our library, please:</p>
+            
+            <div class="contact-info">
+                <h4>📍 Visit or Call Us</h4>
+                <p><strong>Kumon Taipa Mei Keng</strong></p>
+                <p>📞 <a href="tel:+85328831773">+853 2883 1773</a></p>
+                <p>🏠 澳門氹仔柯維納馬路美景花園美德閣地下AU座</p>
+                <p style="font-size:0.85rem;color:#64748b;margin-top:0.5rem;">
+                    NA TAIPA, ESTRADA GOVERNADOR ALBANO DE OLIVEIRA N° 24,<br>
+                    MEI KENG FA UN RÉS-DO-CHÃO AU
+                </p>
+            </div>
+            
+            <p style="color:#64748b;margin:1.5rem 0 1rem;font-size:0.9rem;">
+                Or if you are an admin, you can log in to manage borrowings:
+            </p>
+            
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="openLoginModalFromVisitor()">🔐 Login as Admin</button>
+                <button class="btn btn-small" onclick="closeVisitorBorrowModal()" style="background:#64748b">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Book Modal (Admin Only) -->
+    <div class="modal-overlay" id="addBookModal">
+        <div class="modal">
+            <h3>➕ Add New Book</h3>
+            <div class="modal-form">
+                <input type="text" id="newBookTitle" placeholder="Book Title *">
+                <input type="text" id="newBookAuthor" placeholder="Author *">
+                <input type="text" id="newBookGenre" placeholder="Genre">
+                <input type="text" id="newBookLocation" placeholder="Location (e.g., Shelf A3) *">
+                <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, C)">
+                <input type="file" id="newBookCover" accept="image/*" capture="environment" title="Upload or take photo">
+            </div>
+            <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
+            <p id="imageSizeWarning" class="image-warning">⚠️ Large images may fail to save. Images are auto-compressed to 300px @ 20% quality.</p>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Save Book</button>
+                <button class="btn btn-small" onclick="closeAddBookModal()" style="background:#64748b">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp">
+        <header>
+            <h1>📚 Kumon ERP Library</h1>
+            <div class="header-actions">
+                <span class="mode-indicator" id="modeIndicator">👥 Public View</span>
+                <button class="btn btn-small btn-login admin-only" onclick="openLoginModal()">🔐 Admin Login</button>
+                <button class="btn btn-small btn-logout admin-only" onclick="logout()">🚪 Logout</button>
+            </div>
+        </header>
+        
+        <div class="container">
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>Total Books</h3>
+                    <div class="number" id="totalBooks">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Available</h3>
+                    <div class="number" id="availableBooks">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Borrowed</h3>
+                    <div class="number" id="borrowedBooks">0</div>
+                </div>
+            </div>
+            
+            <!-- Public notice -->
+            <div class="public-notice">
+                <p style="color:#64748b;margin:0; font-size: 1.1rem;">
+                    👋 Welcome! Browse our library below. 
+                    <button class="btn btn-small btn-login admin-only" onclick="openAddBookModal()" style="margin-left:0.75rem;vertical-align:middle">➕ Add Book</button>
+                    <button class="btn btn-small btn-login public-only" onclick="openLoginModal()" style="margin-left:0.75rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
+                </p>
+            </div>
+            
+            <div class="controls">
+                <input type="text" id="searchInput" placeholder="🔍 Search books by title or author...">
+                <select id="filterStatus">
+                    <option value="all">All Books</option>
+                    <option value="available">Available Only</option>
+                    <option value="borrowed">Borrowed Only</option>
+                </select>
+                <select id="sortBy">
+                    <option value="title">Sort by Title</option>
+                    <option value="author">Sort by Author</option>
+                    <option value="status">Sort by Status</option>
+                    <option value="rrl">Sort by RRL Level</option>
+                </select>
+            </div>
+            
+            <div id="loadingState" class="loading" style="display:none;">
+                <div class="spinner"></div>
+                <p>Loading books from server...</p>
+            </div>
+            
+            <div class="books-grid" id="booksGrid">
+                <!-- Books will be rendered here -->
+            </div>
+            
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <h2>No books found</h2>
+                <p>Try adjusting your search or filter criteria</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Floating Action Button for Admin -->
+    <button class="btn btn-primary btn-fab admin-only" onclick="openAddBookModal()" title="Add New Book">➕</button>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        const JSONBIN_CONFIG = {
+            BIN_ID: '6a054b89c0954111d81ee9ae',
+            API_KEY: '$2a$10$knk7dAn110pbuLUoGrzIEeYrPDXJGPq9P8TJIsMekjcFlnFZDLqlm',
+            BASE_URL: 'https://api.jsonbin.io/v3/b'
+        };
+
+        const SESSION_KEY = 'kumonLibrarySession';
+        let books = [];
+        let nextId = 1;
+        let isLoading = false;
+        let isAdmin = false;
+        let pendingBorrowBookId = null;
+        let pendingReturnBookId = null;
+        
+        async function fetchWithRetry(url, options, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const res = await fetch(url, options);
+                    if (res.status === 429) {
+                        const retryAfter = res.headers.get('Retry-After') || (i + 1);
+                        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                        continue;
+                    }
+                    return res;
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, i)));
+                }
+            }
+            throw new Error('Max retries exceeded');
+        }
+        
+        async function compressImage(file, maxWidth = 300, quality = 0.2) {
+            return new Promise((resolve, reject) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                img.onload = () => {
+                    let width = img.width, height = img.height;
+                    if (width > maxWidth) { height = Math.round((maxWidth / width) * height); width = maxWidth; }
+                    canvas.width = width; canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressed = canvas.toDataURL('image/jpeg', quality);
+                    URL.revokeObjectURL(img.src);
+                    resolve(compressed);
+                };
+                img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('Image load failed')); };
+                img.src = URL.createObjectURL(file);
+            });
+        }
+        
+        function saveSession() { localStorage.setItem(SESSION_KEY, JSON.stringify({ isAdmin: true, loginTime: new Date().toISOString() })); }
+        function checkSession() { try { return JSON.parse(localStorage.getItem(SESSION_KEY))?.isAdmin === true; } catch { return false; } }
+        function clearSession() { localStorage.removeItem(SESSION_KEY); }
+        
+        function setAdminMode(active) {
+            isAdmin = active;
+            const app = document.getElementById('mainApp');
+            const indicator = document.getElementById('modeIndicator');
+            if (active) { app.classList.add('admin-mode'); indicator.textContent = '🔐 Admin Mode'; indicator.classList.add('admin'); }
+            else { app.classList.remove('admin-mode'); indicator.textContent = '👥 Public View'; indicator.classList.remove('admin'); }
+        }
+        
+        function logout() { clearSession(); setAdminMode(false); showToast('Logged out - now in Public View', 'info'); }
+        
+        // Login Modal
+        function openLoginModal() { document.getElementById('loginOverlay').classList.add('show'); document.getElementById('passwordInput').focus(); }
+        function closeLoginModal() { document.getElementById('loginOverlay').classList.remove('show'); document.getElementById('loginError').style.display = 'none'; }
+        
+        // Borrow Modal (Admin)
+        function openBorrowModal(bookId, bookTitle) {
+            if (!isAdmin) { 
+                openVisitorBorrowModal(bookId, bookTitle);
+                return; 
+            }
+            pendingBorrowBookId = bookId;
+            document.getElementById('borrowBookTitle').textContent = `"${bookTitle}"`;
+            document.getElementById('borrowerName').value = '';
+            document.getElementById('borrowerGrade').value = '';
+            document.getElementById('borrowerLevel').value = '';
+            document.getElementById('borrowModal').classList.add('show');
+            document.getElementById('borrowerName').focus();
+        }
+        function closeBorrowModal() { document.getElementById('borrowModal').classList.remove('show'); pendingBorrowBookId = null; }
+        
+        // Visitor Borrow Info Modal
+        function openVisitorBorrowModal(bookId, bookTitle) {
+            pendingBorrowBookId = bookId;
+            document.getElementById('visitorBorrowModal').classList.add('show');
+        }
+        function closeVisitorBorrowModal() { 
+            document.getElementById('visitorBorrowModal').classList.remove('show'); 
+            pendingBorrowBookId = null; 
+        }
+        function openLoginModalFromVisitor() {
+            closeVisitorBorrowModal();
+            openLoginModal();
+        }
+        
+        // Add Book Modal
+        function openAddBookModal() {
+            if (!isAdmin) { openLoginModal(); return; }
+            ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover'].forEach(id => {
+                const el = document.getElementById(id); if (el) el.value = '';
+            });
+            document.getElementById('imageSizeWarning').classList.remove('show');
+            document.getElementById('addBookModal').classList.add('show');
+            document.getElementById('newBookTitle').focus();
+        }
+        function closeAddBookModal() { document.getElementById('addBookModal').classList.remove('show'); }
+        
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === '1111') {
+                saveSession(); setAdminMode(true); closeLoginModal(); document.getElementById('passwordInput').value = '';
+                
+                if (pendingBorrowBookId) { 
+                    const book = books.find(b => b.id === pendingBorrowBookId); 
+                    if (book) openBorrowModal(book.id, book.title); 
+                    pendingBorrowBookId = null; 
+                }
+                if (pendingReturnBookId) {
+                    returnBook(pendingReturnBookId);
+                    pendingReturnBookId = null;
+                }
+                
+                showToast('✅ Admin mode activated', 'success');
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+                setTimeout(() => { document.getElementById('loginError').style.display = 'none'; }, 2000);
+            }
+        }
+        
+        async function loadBooks() {
+            if (isLoading) return;
+            isLoading = true;
+            document.getElementById('loadingState').style.display = 'block';
+            document.getElementById('booksGrid').innerHTML = '';
+            try {
+                const response = await fetchWithRetry(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, { headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY, 'Content-Type': 'application/json' }});
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                books = Array.isArray(data.record?.books) ? [...data.record.books] : [];
+                nextId = books.length > 0 ? Math.max(...books.map(b => b.id)) + 1 : 1;
+                updateStats(); renderBooks();
+                if (books.length > 0) showToast(`✅ Loaded ${books.length} books`, 'success');
+            } catch (error) {
+                console.error('Load error:', error);
+                showToast(`Failed to load: ${error.message}`, 'error');
+                books = []; renderBooks();
+            } finally { isLoading = false; document.getElementById('loadingState').style.display = 'none'; }
+        }
+
+        async function saveBooks() {
+            try {
+                const response = await fetchWithRetry(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, {
+                    method: 'PUT', headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY, 'Content-Type': 'application/json', 'X-Bin-Meta': 'false' },
+                    body: JSON.stringify({ books, lastUpdated: new Date().toISOString() })
+                });
+                return response.ok;
+            } catch (error) { showToast(`Save failed: ${error.message}`, 'error'); return false; }
+        }
+
+        async function testConnection() {
+            showToast('Testing connection...', 'info');
+            try {
+                const res = await fetchWithRetry(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, { headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY }});
+                const data = await res.json();
+                showToast(`✅ Connected! ${data.record?.books?.length || 0} books`, 'success');
+            } catch (e) { showToast(`❌ Error: ${e.message}`, 'error'); }
+        }
+        
+        function exportBackup() {
+            if (books.length === 0) { showToast('No books to export', 'info'); return; }
+            const blob = new Blob([JSON.stringify(books, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `kumon-library-backup-${new Date().toISOString().split('T')[0]}.json`; a.click();
+            URL.revokeObjectURL(url); showToast('Backup downloaded!', 'success');
+        }
+        
+        function updateStats() {
+            document.getElementById('totalBooks').textContent = books.length;
+            document.getElementById('availableBooks').textContent = books.filter(b => b.status === 'available').length;
+            document.getElementById('borrowedBooks').textContent = books.filter(b => b.status === 'borrowed').length;
+        }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message; toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        async function processAddBook() {
+            const btn = document.getElementById('addBookBtn');
+            const warningEl = document.getElementById('imageSizeWarning');
+            const title = document.getElementById('newBookTitle').value.trim();
+            const author = document.getElementById('newBookAuthor').value.trim();
+            const genre = document.getElementById('newBookGenre').value.trim();
+            const location = document.getElementById('newBookLocation').value.trim();
+            const rrlLevel = document.getElementById('newBookRRL').value.trim();
+            
+            if (!title || !author || !location) { showToast('Please fill in title, author, and location', 'error'); return; }
+
+            btn.disabled = true; btn.textContent = 'Saving...'; warningEl.classList.remove('show');
+            const file = document.getElementById('newBookCover').files[0];
+
+            try {
+                let coverImage = null;
+                if (file) {
+                    if (file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; warningEl.classList.add('show'); }
+                    coverImage = await compressImage(file, 300, 0.2);
+                }
+                await addBookToSystem(title, author, genre, location, rrlLevel, coverImage);
+                closeAddBookModal();
+            } catch (error) {
+                console.error('Image error:', error);
+                showToast(`Image error. Adding without image.`, 'error');
+                await addBookToSystem(title, author, genre, location, rrlLevel, null);
+                closeAddBookModal();
+            } finally {
+                btn.disabled = false; btn.textContent = 'Save Book'; warningEl.classList.remove('show');
+            }
+        }
+        
+        async function addBookToSystem(title, author, genre, location, rrlLevel, coverImage) {
+            const newBook = { id: nextId++, title, author, genre: genre || 'Uncategorized', location, rrlLevel: rrlLevel || 'N/A', coverImage, status: 'available', borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null };
+            books.unshift(newBook);
+            if (await saveBooks()) { updateStats(); renderBooks(); showToast(`"${title}" added successfully`, 'success'); }
+        }
+        
+        async function removeBook(id) {
+            const book = books.find(b => b.id === id);
+            if (book && confirm(`Remove "${book.title}"?`)) {
+                books = books.filter(b => b.id !== id);
+                if (await saveBooks()) { updateStats(); renderBooks(); showToast(`"${book.title}" removed`, 'success'); }
+            }
+        }
+        
+        async function confirmBorrow() {
+            const name = document.getElementById('borrowerName').value.trim();
+            const grade = document.getElementById('borrowerGrade').value.trim();
+            const level = document.getElementById('borrowerLevel').value.trim();
+            if (!name || !grade || !level) { showToast('Please fill in all borrower fields', 'error'); return; }
+            const book = books.find(b => b.id === pendingBorrowBookId);
+            if (book) {
+                book.status = 'borrowed'; book.borrower = name; book.borrowerGrade = grade; book.borrowerLevel = level; book.borrowDate = new Date().toISOString().split('T')[0];
+                if (await saveBooks()) { closeBorrowModal(); renderBooks(); updateStats(); showToast(`📚 "${book.title}" borrowed by ${name} (${grade}, ${level})`, 'success'); }
+            }
+        }
+        
+        async function returnBook(id) {
+            if (!isAdmin) {
+                pendingReturnBookId = id;
+                openLoginModal();
+                return;
+            }
+            
+            const book = books.find(b => b.id === id);
+            if (book) {
+                const info = `${book.borrower} (${book.borrowerGrade}, ${book.borrowerLevel})`;
+                book.status = 'available';
+                book.borrower = null;
+                book.borrowerGrade = null;
+                book.borrowerLevel = null;
+                book.borrowDate = null;
+                
+                if (await saveBooks()) {
+                    renderBooks();
+                    updateStats();
+                    showToast(`✅ "${book.title}" returned by ${info}`, 'success');
+                }
+            }
+        }
+        
+        function getFilteredAndSortedBooks() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filterStatus = document.getElementById('filterStatus').value;
+            const sortBy = document.getElementById('sortBy').value;
+            
+            let filtered = books.filter(book => {
+                const matchesSearch = book.title.toLowerCase().includes(searchTerm) || 
+                                     book.author.toLowerCase().includes(searchTerm) ||
+                                     book.location.toLowerCase().includes(searchTerm);
+                const matchesStatus = filterStatus === 'all' || book.status === filterStatus;
+                return matchesSearch && matchesStatus;
+            });
+            
+            filtered.sort((a, b) => {
+                if (sortBy === 'title') return a.title.localeCompare(b.title);
+                if (sortBy === 'author') return a.author.localeCompare(b.author);
+                if (sortBy === 'status') return a.status.localeCompare(b.status);
+                if (sortBy === 'rrl') {
+                    const levelA = (a.rrlLevel || 'Z').toUpperCase();
+                    const levelB = (b.rrlLevel || 'Z').toUpperCase();
+                    return levelA.localeCompare(levelB, undefined, { numeric: true });
+                }
+                return 0;
+            });
+            return filtered;
+        }
+        
+        function renderBooks() {
+            const grid = document.getElementById('booksGrid');
+            const emptyState = document.getElementById('emptyState');
+            const filteredBooks = getFilteredAndSortedBooks();
+            if (filteredBooks.length === 0 && books.length > 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = 'No matching books'; emptyState.querySelector('p').textContent = 'Try adjusting your search or filter'; return; }
+            if (books.length === 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = '📚 Library is empty'; emptyState.querySelector('p').textContent = isAdmin ? 'Click ➕ to add your first book' : 'Check back soon!'; return; }
+            emptyState.style.display = 'none';
+            
+            grid.innerHTML = filteredBooks.map(book => `
+                <div class="book-card ${book.status}">
+                    ${book.coverImage ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` : `<div class="book-cover">📘</div>`}
+                    <div class="book-title">${escapeHtml(book.title)}</div>
+                    <div class="book-author">by ${escapeHtml(book.author)}</div>
+                    <div class="book-location">📍 ${escapeHtml(book.location)}</div>
+                    <div class="book-meta">
+                        <span>${escapeHtml(book.genre)}</span><span>•</span>
+                        <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span><span>•</span>
+                        <span>ID: ${book.id}</span>
+                    </div>
+                    <span class="status-badge ${book.status}">${book.status === 'available' ? '✓ Available' : '📤 Borrowed'}</span>
+                    ${book.status === 'borrowed' ? `<div style="margin-top:0.5rem;"><span class="borrower-badge">👤 ${escapeHtml(book.borrower)}</span><br><small style="color:#64748b;display:block;margin-top:0.25rem">Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><small style="color:#94a3b8;display:block">Since: ${book.borrowDate}</small></div>` : ''}
+                    <div class="book-actions">
+                        ${book.status === 'available' ? `<button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` : `<button class="btn btn-success" onclick="returnBook(${book.id})">✅ Return</button>`}
+                        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">🗑 Remove</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+        
+        function initApp() {
+            if (checkSession()) { setAdminMode(true); showToast('✅ Admin session restored', 'info'); } else { setAdminMode(false); }
+            loadBooks();
+        }
+        
+        document.addEventListener('DOMContentLoaded', initApp);
+        document.getElementById('passwordInput').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
+        document.getElementById('searchInput').addEventListener('input', renderBooks);
+        document.getElementById('filterStatus').addEventListener('change', renderBooks);
+        document.getElementById('sortBy').addEventListener('change', renderBooks);
+        document.getElementById('newBookCover')?.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const warningEl = document.getElementById('imageSizeWarning');
+            if (file && file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress to 300px @ 20%.`; warningEl.classList.add('show'); } else { warningEl.classList.remove('show'); }
+        });
+        ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL'].forEach(id => {
+            document.getElementById(id)?.addEventListener('keypress', e => { if (e.key === 'Enter') processAddBook(); });
+        });
+        // Close modals on outside click
+        document.getElementById('loginOverlay')?.addEventListener('click', e => { if (e.target.id === 'loginOverlay') closeLoginModal(); });
+        document.getElementById('borrowModal')?.addEventListener('click', e => { if (e.target.id === 'borrowModal') closeBorrowModal(); });
+        document.getElementById('addBookModal')?.addEventListener('click', e => { if (e.target.id === 'addBookModal') closeAddBookModal(); });
+        document.getElementById('visitorBorrowModal')?.addEventListener('click', e => { if (e.target.id === 'visitorBorrowModal') closeVisitorBorrowModal(); });
+    </script>
+</body>
+</html>

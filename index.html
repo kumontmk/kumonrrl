@@ -318,7 +318,7 @@
                 <p style="color:#64748b;margin:0; font-size: 1.1rem;">
                     👋 Welcome! Browse our library below. 
                     <button class="btn btn-small btn-login admin-only" onclick="openAddBookModal()" style="margin-left:0.75rem;vertical-align:middle">➕ Add Book</button>
-                    <button class="btn btn-small btn-login" onclick="openLoginModal()" style="margin-left:0.75rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
+                    <button class="btn btn-small btn-login public-only" onclick="openLoginModal()" style="margin-left:0.75rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
                 </p>
             </div>
             
@@ -333,6 +333,7 @@
                     <option value="title">Sort by Title</option>
                     <option value="author">Sort by Author</option>
                     <option value="status">Sort by Status</option>
+                    <option value="rrl">Sort by RRL Level</option>
                 </select>
             </div>
             
@@ -370,6 +371,7 @@
         let isLoading = false;
         let isAdmin = false;
         let pendingBorrowBookId = null;
+        let pendingReturnBookId = null;
         
         async function fetchWithRetry(url, options, retries = 3) {
             for (let i = 0; i < retries; i++) {
@@ -442,7 +444,6 @@
         // Add Book Modal
         function openAddBookModal() {
             if (!isAdmin) { openLoginModal(); return; }
-            // Clear form
             ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover'].forEach(id => {
                 const el = document.getElementById(id); if (el) el.value = '';
             });
@@ -456,7 +457,18 @@
             const password = document.getElementById('passwordInput').value;
             if (password === '1111') {
                 saveSession(); setAdminMode(true); closeLoginModal(); document.getElementById('passwordInput').value = '';
-                if (pendingBorrowBookId) { const book = books.find(b => b.id === pendingBorrowBookId); if (book) openBorrowModal(book.id, book.title); pendingBorrowBookId = null; }
+                
+                // Handle pending actions
+                if (pendingBorrowBookId) { 
+                    const book = books.find(b => b.id === pendingBorrowBookId); 
+                    if (book) openBorrowModal(book.id, book.title); 
+                    pendingBorrowBookId = null; 
+                }
+                if (pendingReturnBookId) {
+                    returnBook(pendingReturnBookId);
+                    pendingReturnBookId = null;
+                }
+                
                 showToast('✅ Admin mode activated', 'success');
             } else {
                 document.getElementById('loginError').style.display = 'block';
@@ -581,12 +593,29 @@
             }
         }
         
+        // Return book - requires admin login
         async function returnBook(id) {
+            // Check if admin first
+            if (!isAdmin) {
+                pendingReturnBookId = id;
+                openLoginModal();
+                return;
+            }
+            
             const book = books.find(b => b.id === id);
             if (book) {
                 const info = `${book.borrower} (${book.borrowerGrade}, ${book.borrowerLevel})`;
-                book.status = 'available'; book.borrower = null; book.borrowerGrade = null; book.borrowerLevel = null; book.borrowDate = null;
-                if (await saveBooks()) { renderBooks(); updateStats(); showToast(`✅ "${book.title}" returned by ${info}`, 'success'); }
+                book.status = 'available';
+                book.borrower = null;
+                book.borrowerGrade = null;
+                book.borrowerLevel = null;
+                book.borrowDate = null;
+                
+                if (await saveBooks()) {
+                    renderBooks();
+                    updateStats();
+                    showToast(`✅ "${book.title}" returned by ${info}`, 'success');
+                }
             }
         }
         
@@ -594,14 +623,25 @@
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const filterStatus = document.getElementById('filterStatus').value;
             const sortBy = document.getElementById('sortBy').value;
+            
             let filtered = books.filter(book => {
-                const matchesSearch = book.title.toLowerCase().includes(searchTerm) || book.author.toLowerCase().includes(searchTerm) || book.location.toLowerCase().includes(searchTerm);
-                return matchesSearch && (filterStatus === 'all' || book.status === filterStatus);
+                const matchesSearch = book.title.toLowerCase().includes(searchTerm) || 
+                                     book.author.toLowerCase().includes(searchTerm) ||
+                                     book.location.toLowerCase().includes(searchTerm);
+                const matchesStatus = filterStatus === 'all' || book.status === filterStatus;
+                return matchesSearch && matchesStatus;
             });
+            
             filtered.sort((a, b) => {
                 if (sortBy === 'title') return a.title.localeCompare(b.title);
                 if (sortBy === 'author') return a.author.localeCompare(b.author);
                 if (sortBy === 'status') return a.status.localeCompare(b.status);
+                if (sortBy === 'rrl') {
+                    // Sort by RRL Level (alphanumeric: A, B, C, CII, D, etc.)
+                    const levelA = (a.rrlLevel || 'Z').toUpperCase();
+                    const levelB = (b.rrlLevel || 'Z').toUpperCase();
+                    return levelA.localeCompare(levelB, undefined, { numeric: true });
+                }
                 return 0;
             });
             return filtered;

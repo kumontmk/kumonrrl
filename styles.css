@@ -96,16 +96,47 @@ header h1 {
 
 .header-actions { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
 
-/* ── Header Button Visibility Logic (CORRECTED) ── */
-/* Default: Public View */
-.btn-login { display: inline-flex; }
-.btn-logout { display: none; }
-.mode-indicator { display: none; }
+/* ═══════════════════════════════════════════════
+   HEADER BUTTON VISIBILITY LOGIC (CRITICAL FIX)
+   ═══════════════════════════════════════════════ */
 
-/* Admin View: Hide Login, Show Logout & Badge */
-#mainApp.admin-mode .btn-login { display: none; }
-#mainApp.admin-mode .btn-logout { display: inline-flex; }
-#mainApp.admin-mode .mode-indicator { display: inline-flex; }
+/* 1. DEFAULT STATE (Public / Not Logged In) */
+/* Show Login Button */
+.btn-login { 
+    display: inline-flex !important;
+    background: white;
+    color: #1e3a8a;
+    border: 1px solid rgba(255,255,255,0.5);
+    font-weight: 700;
+}
+/* HIDE Logout Button */
+.btn-logout { 
+    display: none !important; 
+}
+
+/* 2. ADMIN STATE (Logged In) */
+/* HIDE Login Button */
+#mainApp.admin-mode .btn-login { 
+    display: none !important; 
+}
+/* SHOW Logout Button */
+#mainApp.admin-mode .btn-logout { 
+    display: inline-flex !important;
+    background: white;
+    color: #1e3a8a;
+    border: 1px solid rgba(255,255,255,0.5);
+    font-weight: 700;
+}
+
+/* Mode Indicator */
+.mode-indicator {
+    display: none; /* Hidden by default */
+    align-items: center; gap: 0.375rem; padding: 0.375rem 0.875rem;
+    border-radius: var(--radius-full); font-size: 0.8rem; font-weight: 600;
+    background: rgba(255, 255, 255, 0.15); color: var(--text-white); border: 1px solid rgba(255, 255, 255, 0.2);
+}
+#mainApp.admin-mode .mode-indicator { display: inline-flex; } /* Shown in Admin Mode */
+.mode-indicator.admin { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4); color: #a7f3d0; }
 
 /* ── Container ── */
 .container { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; width: 100%; }
@@ -131,14 +162,6 @@ header h1 {
 .login-box input:focus { outline: none; border-color: var(--primary); background: var(--bg-card); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
 
 .hidden { display: none !important; }
-
-/* ── Mode Indicator ── */
-.mode-indicator {
-    align-items: center; gap: 0.375rem; padding: 0.375rem 0.875rem;
-    border-radius: var(--radius-full); font-size: 0.8rem; font-weight: 600;
-    background: rgba(255, 255, 255, 0.15); color: var(--text-white); border: 1px solid rgba(255, 255, 255, 0.2);
-}
-.mode-indicator.admin { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4); color: #a7f3d0; }
 
 /* ── Stats Cards ── */
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
@@ -220,10 +243,6 @@ header h1 {
 .btn-danger:hover { background: #b91c1c; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); }
 .btn-small { padding: 0.5rem 1rem; font-size: 0.8rem; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-logout { background: rgba(255, 255, 255, 0.1); color: var(--text-white); border: 1px solid rgba(255, 255, 255, 0.2); }
-.btn-logout:hover { background: rgba(255, 255, 255, 0.2); }
-.btn-login { background: var(--secondary); color: var(--text-white); }
-.btn-login:hover { background: #6d28d9; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3); }
 .btn-fab { position: fixed; bottom: 1.5rem; right: 1.5rem; width: 56px; height: 56px; border-radius: var(--radius-full); padding: 0; font-size: 1.5rem; z-index: 50; box-shadow: var(--shadow-lg); background: var(--primary); }
 .btn-fab:hover { transform: scale(1.05); box-shadow: var(--shadow-xl); }
 .btn-large { padding: 0.875rem 1.5rem; font-size: 0.95rem; flex: 1; }
@@ -232,7 +251,7 @@ header h1 {
 .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
 .empty-state h2 { font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--text-secondary); font-weight: 600; }
 
-/* ── Toast ─ */
+/* ── Toast  */
 .toast {
     position: fixed; bottom: 1.5rem; right: 1.5rem; padding: 0.875rem 1.25rem; border-radius: var(--radius-sm);
     color: var(--text-white); font-weight: 500; font-size: 0.9rem; transform: translateY(calc(100% + 2rem)); opacity: 0;
@@ -278,7 +297,7 @@ input[type="file"]::file-selector-button:hover { background: var(--primary-dark)
 #mainApp.admin-mode .admin-only { display: inline-flex; }
 #mainApp.admin-mode .public-only { display: none; }
 
-/* ── Loading ─ */
+/* ── Loading  */
 .loading { text-align: center; padding: 3rem 2rem; color: var(--text-muted); }
 .spinner { width: 36px; height: 36px; border: 3px solid var(--border-light); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -346,7 +365,7 @@ input[type="file"]::file-selector-button:hover { background: var(--primary-dark)
 
 .detail-actions-full { display: flex; gap: 0.75rem; margin-top: auto; padding-top: 1.25rem; border-top: 1px solid var(--border-light); }
 
-/* ── Footer ── */
+/* ── Footer ─ */
 .site-footer {
     background: var(--bg-card);
     border-top: 1px solid var(--border-light);
@@ -413,7 +432,7 @@ input[type="file"]::file-selector-button:hover { background: var(--primary-dark)
     .placeholder-large { font-size: 4rem; }
 }
 
-/* ── Print Styles ── */
+/* ── Print Styles ─ */
 @media print {
     header, .controls, .btn-fab, .book-actions, .toast, .modal-overlay, .login-overlay, .detail-modal-overlay, .site-footer { display: none !important; }
     body { background: white; }

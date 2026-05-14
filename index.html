@@ -14,19 +14,19 @@
     <!-- ══════════ LOGIN MODAL ══════════ -->
     <div class="login-overlay" id="loginOverlay">
         <div class="login-box">
-            <h2>🔐 Admin Login</h2>
+            <h2> Admin Login</h2>
             <p>Enter password to manage library</p>
             <input type="password" id="passwordInput" placeholder="Enter password" maxlength="10">
             <button class="btn btn-primary" onclick="login()" style="width: 100%;">Login as Admin</button>
             <button class="btn btn-small" onclick="closeLoginModal()" style="background:transparent;border:2px solid rgba(255,255,255,0.3);margin-top:0.75rem;width:100%;color:white">Continue as Visitor</button>
-            <p id="loginError" style="color: #fecaca; margin-top: 1rem; display: none;">❌ Invalid password</p>
+            <p id="loginError" style="color: #fecaca; margin-top: 1rem; display: none;"> Invalid password</p>
         </div>
     </div>
 
     <!-- ══════════ BORROW MODAL ══════════ -->
     <div class="modal-overlay" id="borrowModal">
         <div class="modal">
-            <h3> Borrow Book</h3>
+            <h3>📚 Borrow Book</h3>
             <p id="borrowBookTitle" style="color:#64748b;margin-bottom:1.5rem;font-style:italic;"></p>
             <div class="modal-form">
                 <input type="text" id="borrowerName" placeholder="Student Name *" required>
@@ -40,13 +40,13 @@
         </div>
     </div>
 
-    <!-- ═════════ VISITOR BORROW MODAL ══════════ -->
+    <!-- ══════════ VISITOR BORROW MODAL ══════════ -->
     <div class="modal-overlay" id="visitorBorrowModal">
         <div class="modal">
-            <h3> Borrow a Book</h3>
+            <h3>📚 Borrow a Book</h3>
             <p style="color:#64748b;margin-bottom:1rem;">To borrow books from our library, please:</p>
             <div class="contact-info">
-                <h4>📍 Visit or Call Us</h4>
+                <h4> Visit or Call Us</h4>
                 <p><strong>Kumon Taipa Mei Keng</strong></p>
                 <p>📞 <a href="tel:+85328831773">+853 2883 1773</a></p>
                 <p>🏠 澳門仔柯維納馬路美景花園美德閣地下AU座</p>
@@ -82,6 +82,29 @@
             <div class="modal-actions">
                 <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Save Book</button>
                 <button class="btn btn-small" onclick="closeAddBookModal()" style="background:#64748b">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════ EDIT BOOK MODAL ══════════ -->
+    <div class="modal-overlay" id="editBookModal">
+        <div class="modal">
+            <h3>✏️ Edit Book</h3>
+            <div class="modal-form">
+                <input type="hidden" id="editBookId">
+                <input type="text" id="editBookTitle" placeholder="Book Title *">
+                <input type="text" id="editBookAuthor" placeholder="Author *">
+                <input type="text" id="editBookGenre" placeholder="Genre">
+                <input type="text" id="editBookLocation" placeholder="Location (e.g., Shelf A3) *">
+                <input type="text" id="editBookRRL" placeholder="RRL Level (e.g., A, B, C)">
+                <input type="file" id="editBookCover" accept="image/*" capture="environment" title="Upload or take photo">
+                <p id="editImageHint" style="font-size:0.8rem;color:#64748b;margin-top:0.5rem;">Leave empty to keep current cover image.</p>
+            </div>
+            <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
+            <p id="editImageSizeWarning" class="image-warning">⚠️ Large images may fail to save. Images are auto-compressed to 300px @ 20% quality.</p>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="editBookBtn" onclick="processEditBook()">Update Book</button>
+                <button class="btn btn-small" onclick="closeEditBookModal()" style="background:#64748b">Cancel</button>
             </div>
         </div>
     </div>
@@ -143,7 +166,8 @@
                     <div class="detail-actions-full">
                         <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()"> Borrow Book</button>
                         <button class="btn btn-success btn-large" id="detailReturnBtn" onclick="handleDetailReturn()" style="display:none;">✅ Return Book</button>
-                        <button class="btn btn-danger btn-large admin-only" onclick="handleDetailRemove()">🗑 Remove Book</button>
+                        <button class="btn btn-primary btn-large admin-only" onclick="openEditModal(selectedBookId)" style="background:#7c3aed">✏️ Edit</button>
+                        <button class="btn btn-danger btn-large admin-only" onclick="handleDetailRemove()">🗑 Remove</button>
                     </div>
                 </div>
             </div>
@@ -158,7 +182,7 @@
                 <h1>Kumon RRL Online Library</h1>
             </div>
             <div class="header-actions">
-                <span class="mode-indicator" id="modeIndicator"> Public View</span>
+                <span class="mode-indicator" id="modeIndicator">👥 Public View</span>
                 <button class="btn btn-small btn-logout admin-only" onclick="logout()">🚪 Logout</button>
             </div>
         </header>
@@ -298,7 +322,7 @@
             isAdmin = active;
             const app = document.getElementById('mainApp');
             const indicator = document.getElementById('modeIndicator');
-            if (active) { app.classList.add('admin-mode'); indicator.textContent = ' Admin Mode'; indicator.classList.add('admin'); }
+            if (active) { app.classList.add('admin-mode'); indicator.textContent = '🔐 Admin Mode'; indicator.classList.add('admin'); }
             else { app.classList.remove('admin-mode'); indicator.textContent = '👥 Public View'; indicator.classList.remove('admin'); }
             updateDetailModalVisibility();
         }
@@ -345,6 +369,24 @@
             document.getElementById('newBookTitle').focus();
         }
         function closeAddBookModal() { document.getElementById('addBookModal').classList.remove('show'); }
+
+        // Edit Book Modal
+        function openEditModal(bookId) {
+            if (!isAdmin) { openLoginModal(); return; }
+            const book = books.find(b => b.id === bookId);
+            if (!book) return;
+            document.getElementById('editBookId').value = book.id;
+            document.getElementById('editBookTitle').value = book.title;
+            document.getElementById('editBookAuthor').value = book.author;
+            document.getElementById('editBookGenre').value = book.genre || '';
+            document.getElementById('editBookLocation').value = book.location;
+            document.getElementById('editBookRRL').value = book.rrlLevel || '';
+            document.getElementById('editBookCover').value = '';
+            document.getElementById('editImageSizeWarning').classList.remove('show');
+            document.getElementById('editBookModal').classList.add('show');
+            document.getElementById('editBookTitle').focus();
+        }
+        function closeEditBookModal() { document.getElementById('editBookModal').classList.remove('show'); }
         
         // Detail Modal
         function openBookDetail(bookId) {
@@ -526,6 +568,56 @@
             if (await saveBooks()) { updateStats(); renderBooks(); showToast(`"${title}" added successfully`, 'success'); }
         }
         
+        async function processEditBook() {
+            const btn = document.getElementById('editBookBtn');
+            const warningEl = document.getElementById('editImageSizeWarning');
+            const id = parseInt(document.getElementById('editBookId').value);
+            const title = document.getElementById('editBookTitle').value.trim();
+            const author = document.getElementById('editBookAuthor').value.trim();
+            const genre = document.getElementById('editBookGenre').value.trim();
+            const location = document.getElementById('editBookLocation').value.trim();
+            const rrlLevel = document.getElementById('editBookRRL').value.trim();
+            const fileInput = document.getElementById('editBookCover');
+
+            if (!title || !author || !location) { showToast('Please fill in title, author, and location', 'error'); return; }
+
+            const book = books.find(b => b.id === id);
+            if (!book) return;
+
+            btn.disabled = true; btn.textContent = 'Saving...'; warningEl.classList.remove('show');
+
+            try {
+                let coverImage = book.coverImage; // Keep existing by default
+                const file = fileInput.files[0];
+                if (file) {
+                    if (file.size > 500 * 1024) {
+                        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`;
+                        warningEl.classList.add('show');
+                    }
+                    coverImage = await compressImage(file, 300, 0.2);
+                }
+
+                book.title = title;
+                book.author = author;
+                book.genre = genre || 'Uncategorized';
+                book.location = location;
+                book.rrlLevel = rrlLevel || 'N/A';
+                book.coverImage = coverImage;
+
+                if (await saveBooks()) {
+                    closeEditBookModal();
+                    renderBooks();
+                    openBookDetail(id); // Refresh detail modal if open
+                    showToast(`"${title}" updated successfully`, 'success');
+                }
+            } catch (error) {
+                console.error('Edit error:', error);
+                showToast(`Error updating book: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Update Book'; warningEl.classList.remove('show');
+            }
+        }
+        
         async function removeBook(id) {
             const book = books.find(b => b.id === id);
             if (book && confirm(`Remove "${book.title}"?`)) {
@@ -588,7 +680,7 @@
             const emptyState = document.getElementById('emptyState');
             const filteredBooks = getFilteredAndSortedBooks();
             if (filteredBooks.length === 0 && books.length > 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = 'No matching books'; emptyState.querySelector('p').textContent = 'Try adjusting your search or filter'; return; }
-            if (books.length === 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = '📚 Library is empty'; emptyState.querySelector('p').textContent = isAdmin ? 'Click ➕ to add your first book' : 'Check back soon!'; return; }
+            if (books.length === 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = '📚 Library is empty'; emptyState.querySelector('p').textContent = isAdmin ? 'Click  to add your first book' : 'Check back soon!'; return; }
             emptyState.style.display = 'none';
             
             grid.innerHTML = filteredBooks.map(book => `
@@ -606,6 +698,7 @@
                     ${book.status === 'borrowed' ? `<div style="margin-top:0.5rem;"><span class="borrower-badge"> ${escapeHtml(book.borrower)}</span><br><small style="color:#64748b;display:block;margin-top:0.25rem">Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><small style="color:#94a3b8;display:block">Since: ${book.borrowDate}</small></div>` : ''}
                     <div class="book-actions" onclick="event.stopPropagation()">
                         ${book.status === 'available' ? `<button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` : `<button class="btn btn-success" onclick="returnBook(${book.id})">✅ Return</button>`}
+                        <button class="btn btn-primary btn-small admin-only" onclick="openEditModal(${book.id})" style="background:#7c3aed">✏️ Edit</button>
                         <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">🗑 Remove</button>
                     </div>
                 </div>
@@ -632,10 +725,19 @@
         ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL'].forEach(id => {
             document.getElementById(id)?.addEventListener('keypress', e => { if (e.key === 'Enter') processAddBook(); });
         });
+        document.getElementById('editBookCover')?.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const warningEl = document.getElementById('editImageSizeWarning');
+            if (file && file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress to 300px @ 20%.`; warningEl.classList.add('show'); } else { warningEl.classList.remove('show'); }
+        });
+        ['editBookTitle','editBookAuthor','editBookGenre','editBookLocation','editBookRRL'].forEach(id => {
+            document.getElementById(id)?.addEventListener('keypress', e => { if (e.key === 'Enter') processEditBook(); });
+        });
         // Close modals on outside click
         document.getElementById('loginOverlay')?.addEventListener('click', e => { if (e.target.id === 'loginOverlay') closeLoginModal(); });
         document.getElementById('borrowModal')?.addEventListener('click', e => { if (e.target.id === 'borrowModal') closeBorrowModal(); });
         document.getElementById('addBookModal')?.addEventListener('click', e => { if (e.target.id === 'addBookModal') closeAddBookModal(); });
+        document.getElementById('editBookModal')?.addEventListener('click', e => { if (e.target.id === 'editBookModal') closeEditBookModal(); });
         document.getElementById('visitorBorrowModal')?.addEventListener('click', e => { if (e.target.id === 'visitorBorrowModal') closeVisitorBorrowModal(); });
         document.getElementById('detailModal')?.addEventListener('click', e => { if (e.target.id === 'detailModal') closeDetailModal(); });
         

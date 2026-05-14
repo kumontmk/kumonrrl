@@ -106,7 +106,7 @@ header h1 {
 .banner-image {
     width: 100%;
     height: auto;
-    max-height: 500px;
+    max-height: 600px;
     object-fit: cover;
     display: block;
 }

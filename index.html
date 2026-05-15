@@ -9,6 +9,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Unsaved Changes Indicator */
+        .unsaved-indicator {
+            animation: pulse 2s infinite;
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+            color: #f59e0b;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+    </style>
 </head>
 <body>
     <!-- ══════════ LOGIN MODAL ══════════ -->
@@ -180,6 +193,7 @@
             <div class="header-left" onclick="goHome()" style="cursor: pointer;">
                 <img src="logo.png" alt="Kumon Taipa Mei Keng" class="header-logo">
                 <h1>Kumon RRL Online Library</h1>
+                <span id="unsavedIndicator" class="unsaved-indicator" style="display:none;">● Unsaved changes</span>
             </div>
             <div class="header-actions">
                 <span class="mode-indicator" id="modeIndicator">👥 Public View</span>

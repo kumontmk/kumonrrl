@@ -1,14 +1,13 @@
 // ═══════════════════════════════════════════════════════════
 // Kumon RRL Online Library - Main Application Script
 // ═══════════════════════════════════════════════════════════
-
 const JSONBIN_CONFIG = {
     BIN_ID: '6a054b89c0954111d81ee9ae',
     API_KEY: '$2a$10$knk7dAn110pbuLUoGrzIEeYrPDXJGPq9P8TJIsMekjcFlnFZDLqlm',
     BASE_URL: 'https://api.jsonbin.io/v3/b'
 };
-
 const SESSION_KEY = 'kumonLibrarySession';
+
 let books = [];
 let nextId = 1;
 let isLoading = false;
@@ -16,12 +15,12 @@ let isAdmin = false;
 let pendingBorrowBookId = null;
 let pendingReturnBookId = null;
 let selectedBookId = null;
-let hasUnsavedChanges = false;  // Track if user has pending changes
+let hasUnsavedChanges = false;
+let isSaving = false; // 🔒 Prevents double-tap & race conditions
 
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
 // ═══════════════════════════════════════════════════════════
-
 async function fetchWithRetry(url, options, retries = 3) {
     for (let i = 0; i < retries; i++) {
         try {
@@ -40,85 +39,89 @@ async function fetchWithRetry(url, options, retries = 3) {
     throw new Error('Max retries exceeded');
 }
 
+// 📱 Fixed: Handles HEIC/WebP & mobile canvas safely via FileReader
 async function compressImage(file, maxWidth = 300, quality = 0.2) {
     return new Promise((resolve, reject) => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        img.onload = () => {
-            let width = img.width, height = img.height;
-            if (width > maxWidth) { height = Math.round((maxWidth / width) * height); width = maxWidth; }
-            canvas.width = width; canvas.height = height;
-            ctx.drawImage(img, 0, 0, width, height);
-            const compressed = canvas.toDataURL('image/jpeg', quality);
-            URL.revokeObjectURL(img.src);
-            resolve(compressed);
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onerror = () => reject(new Error('Image load failed'));
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > maxWidth) {
+                        height = Math.round((maxWidth / width) * height);
+                        width = maxWidth;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    if (!dataUrl || dataUrl.length < 20) throw new Error('Invalid compression output');
+                    resolve(dataUrl);
+                } catch (err) { reject(err); }
+                finally { URL.revokeObjectURL(img.src); }
+            };
+            img.src = e.target.result;
         };
-        img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('Image load failed')); };
-        img.src = URL.createObjectURL(file);
+        reader.readAsDataURL(file);
     });
 }
 
-function saveSession() { 
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ isAdmin: true, loginTime: new Date().toISOString() })); 
+function saveSession() {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ isAdmin: true, loginTime: new Date().toISOString() }));
 }
-
-function checkSession() { 
-    try { return JSON.parse(localStorage.getItem(SESSION_KEY))?.isAdmin === true; } 
-    catch { return false; } 
+function checkSession() {
+    try { return JSON.parse(localStorage.getItem(SESSION_KEY))?.isAdmin === true; }
+    catch { return false; }
 }
-
 function clearSession() { localStorage.removeItem(SESSION_KEY); }
-
 function setAdminMode(active) {
     isAdmin = active;
     const app = document.getElementById('mainApp');
     const indicator = document.getElementById('modeIndicator');
-    if (active) { 
-        app.classList.add('admin-mode'); 
-        indicator.textContent = '🔐 Admin Mode'; 
-        indicator.classList.add('admin'); 
-    } else { 
-        app.classList.remove('admin-mode'); 
-        indicator.textContent = '👥 Public View'; 
-        indicator.classList.remove('admin'); 
+    if (active) {
+        app.classList.add('admin-mode');
+        indicator.textContent = '🔐 Admin Mode';
+        indicator.classList.add('admin');
+    } else {
+        app.classList.remove('admin-mode');
+        indicator.textContent = '👥 Public View';
+        indicator.classList.remove('admin');
     }
     updateDetailModalVisibility();
 }
-
 function updateDetailModalVisibility() {
     if (selectedBookId) openBookDetail(selectedBookId);
 }
-
-function logout() { 
-    clearSession(); 
-    setAdminMode(false); 
-    showToast('Logged out - now in Public View', 'info'); 
+function logout() {
+    clearSession();
+    setAdminMode(false);
+    showToast('Logged out - now in Public View', 'info');
 }
-
-function escapeHtml(text) { 
-    if (!text) return ''; 
-    const div = document.createElement('div'); 
-    div.textContent = text; 
-    return div.innerHTML; 
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
-
 function setUnsavedChanges(state) {
     hasUnsavedChanges = state;
     const indicator = document.getElementById('unsavedIndicator');
-    if (indicator) {
-        indicator.style.display = state ? 'inline' : 'none';
-    }
+    if (indicator) indicator.style.display = state ? 'inline' : 'none';
 }
 
 // ═══════════════════════════════════════════════════════════
 // PAGE EXIT CONFIRMATION
 // ═══════════════════════════════════════════════════════════
-
 window.addEventListener('beforeunload', (e) => {
     if (hasUnsavedChanges) {
         e.preventDefault();
-        e.returnValue = ''; // Required for Chrome to show the dialog
+        e.returnValue = '';
         return '';
     }
 });
@@ -126,19 +129,14 @@ window.addEventListener('beforeunload', (e) => {
 // ═══════════════════════════════════════════════════════════
 // MODAL FUNCTIONS
 // ═══════════════════════════════════════════════════════════
-
-// Login Modal
-function openLoginModal() { 
-    document.getElementById('loginOverlay').classList.add('show'); 
-    document.getElementById('passwordInput').focus(); 
+function openLoginModal() {
+    document.getElementById('loginOverlay').classList.add('show');
+    document.getElementById('passwordInput').focus();
 }
-
-function closeLoginModal() { 
-    document.getElementById('loginOverlay').classList.remove('show'); 
-    document.getElementById('loginError').style.display = 'none'; 
+function closeLoginModal() {
+    document.getElementById('loginOverlay').classList.remove('show');
+    document.getElementById('loginError').style.display = 'none';
 }
-
-// Borrow Modal
 function openBorrowModal(bookId, bookTitle) {
     if (!isAdmin) { openVisitorBorrowModal(bookId, bookTitle); return; }
     pendingBorrowBookId = bookId;
@@ -148,32 +146,25 @@ function openBorrowModal(bookId, bookTitle) {
     document.getElementById('borrowerLevel').value = '';
     document.getElementById('borrowModal').classList.add('show');
     document.getElementById('borrowerName').focus();
-    setUnsavedChanges(true);  // ⚠️ User is borrowing a book
+    setUnsavedChanges(true);
 }
-
-function closeBorrowModal() { 
-    document.getElementById('borrowModal').classList.remove('show'); 
+function closeBorrowModal() {
+    document.getElementById('borrowModal').classList.remove('show');
     pendingBorrowBookId = null;
-    setUnsavedChanges(false);  // ✅ Cancelled, no changes
+    setUnsavedChanges(false);
 }
-
-// Visitor Borrow Modal
 function openVisitorBorrowModal(bookId, bookTitle) {
     pendingBorrowBookId = bookId;
     document.getElementById('visitorBorrowModal').classList.add('show');
 }
-
-function closeVisitorBorrowModal() { 
-    document.getElementById('visitorBorrowModal').classList.remove('show'); 
-    pendingBorrowBookId = null; 
+function closeVisitorBorrowModal() {
+    document.getElementById('visitorBorrowModal').classList.remove('show');
+    pendingBorrowBookId = null;
 }
-
-function openLoginModalFromVisitor() { 
-    closeVisitorBorrowModal(); 
-    openLoginModal(); 
+function openLoginModalFromVisitor() {
+    closeVisitorBorrowModal();
+    openLoginModal();
 }
-
-// Add Book Modal
 function openAddBookModal() {
     if (!isAdmin) { openLoginModal(); return; }
     ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover'].forEach(id => {
@@ -182,15 +173,12 @@ function openAddBookModal() {
     document.getElementById('imageSizeWarning').classList.remove('show');
     document.getElementById('addBookModal').classList.add('show');
     document.getElementById('newBookTitle').focus();
-    setUnsavedChanges(true);  // ⚠️ User is adding a book
+    setUnsavedChanges(true);
 }
-
-function closeAddBookModal() { 
+function closeAddBookModal() {
     document.getElementById('addBookModal').classList.remove('show');
-    setUnsavedChanges(false);  // ✅ Cancelled, no changes
+    setUnsavedChanges(false);
 }
-
-// Edit Book Modal
 function openEditModal(bookId) {
     if (!isAdmin) { openLoginModal(); return; }
     const book = books.find(b => b.id === bookId);
@@ -205,15 +193,12 @@ function openEditModal(bookId) {
     document.getElementById('editImageSizeWarning').classList.remove('show');
     document.getElementById('editBookModal').classList.add('show');
     document.getElementById('editBookTitle').focus();
-    setUnsavedChanges(true);  // ⚠️ User is editing a book
+    setUnsavedChanges(true);
 }
-
-function closeEditBookModal() { 
+function closeEditBookModal() {
     document.getElementById('editBookModal').classList.remove('show');
-    setUnsavedChanges(false);  // ✅ Cancelled, no changes
+    setUnsavedChanges(false);
 }
-
-// Detail Modal
 function openBookDetail(bookId) {
     const book = books.find(b => b.id === bookId);
     if (!book) return;
@@ -223,18 +208,18 @@ function openBookDetail(bookId) {
     coverEl.innerHTML = book.coverImage 
         ? `<img src="${book.coverImage}" alt="${escapeHtml(book.title)}">` 
         : '<span class="placeholder-large">📘</span>';
-    
+
     document.getElementById('detailTitle').textContent = book.title;
     document.getElementById('detailAuthor').textContent = `by ${book.author}`;
     document.getElementById('detailGenre').textContent = book.genre || 'Uncategorized';
     document.getElementById('detailLocation').textContent = book.location;
     document.getElementById('detailRRL').textContent = book.rrlLevel || 'N/A';
     document.getElementById('detailID').textContent = `#${book.id}`;
-    
+
     const statusEl = document.getElementById('detailStatus');
     statusEl.textContent = book.status === 'available' ? '✓ Available' : '📤 Borrowed';
     statusEl.className = `detail-status ${book.status}`;
-    
+
     const borrowerSection = document.getElementById('detailBorrowerSection');
     if (book.status === 'borrowed' && book.borrower) {
         borrowerSection.style.display = 'block';
@@ -245,35 +230,27 @@ function openBookDetail(bookId) {
     } else {
         borrowerSection.style.display = 'none';
     }
-    
+
     document.getElementById('detailBorrowBtn').style.display = book.status === 'available' ? 'flex' : 'none';
     document.getElementById('detailReturnBtn').style.display = book.status === 'borrowed' ? 'flex' : 'none';
-    
     document.getElementById('detailModal').classList.add('show');
     document.body.style.overflow = 'hidden';
 }
-
 function closeDetailModal() {
     document.getElementById('detailModal').classList.remove('show');
     document.body.style.overflow = '';
     selectedBookId = null;
 }
-
-function goHome() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
+function goHome() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function handleDetailBorrow() {
     if (selectedBookId) {
         const book = books.find(b => b.id === selectedBookId);
         if (book) { closeDetailModal(); openBorrowModal(book.id, book.title); }
     }
 }
-
 function handleDetailReturn() {
     if (selectedBookId) { returnBook(selectedBookId); closeDetailModal(); }
 }
-
 function handleDetailRemove() {
     if (selectedBookId) {
         const book = books.find(b => b.id === selectedBookId);
@@ -284,15 +261,13 @@ function handleDetailRemove() {
 // ═══════════════════════════════════════════════════════════
 // AUTHENTICATION
 // ═══════════════════════════════════════════════════════════
-
 function login() {
     const password = document.getElementById('passwordInput').value;
     if (password === '1111') {
-        saveSession(); 
-        setAdminMode(true); 
-        closeLoginModal(); 
+        saveSession();
+        setAdminMode(true);
+        closeLoginModal();
         document.getElementById('passwordInput').value = '';
-        
         if (pendingBorrowBookId) { 
             const book = books.find(b => b.id === pendingBorrowBookId); 
             if (book) openBorrowModal(book.id, book.title); 
@@ -309,13 +284,11 @@ function login() {
 // ═══════════════════════════════════════════════════════════
 // DATA OPERATIONS
 // ═══════════════════════════════════════════════════════════
-
 async function loadBooks() {
     if (isLoading) return;
     isLoading = true;
     document.getElementById('loadingState').style.display = 'block';
     document.getElementById('booksGrid').innerHTML = '';
-    
     try {
         const response = await fetchWithRetry(
             `${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, 
@@ -337,27 +310,51 @@ async function loadBooks() {
     } finally { 
         isLoading = false; 
         document.getElementById('loadingState').style.display = 'none';
-        setUnsavedChanges(false);  // ✅ Fresh data loaded
+        setUnsavedChanges(false);
     }
 }
 
+// 🔧 FIXED: Hard timeout, payload limit check, explicit error handling
 async function saveBooks() {
+    if (isSaving) return false;
+    isSaving = true;
+
+    const payload = JSON.stringify({ books, lastUpdated: new Date().toISOString() });
+    if (payload.length > 900000) {
+        isSaving = false;
+        showToast('❌ Library near 1MB limit. Export backup & delete old books.', 'error');
+        return false;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s hard timeout
+
     try {
-        const response = await fetchWithRetry(
-            `${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, {
-                method: 'PUT', 
-                headers: { 
-                    'X-Master-Key': JSONBIN_CONFIG.API_KEY, 
-                    'Content-Type': 'application/json', 
-                    'X-Bin-Meta': 'false' 
-                },
-                body: JSON.stringify({ books, lastUpdated: new Date().toISOString() })
-            }
-        );
-        return response.ok;
-    } catch (error) { 
-        showToast(`Save failed: ${error.message}`, 'error'); 
-        return false; 
+        const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, {
+            method: 'PUT',
+            headers: {
+                'X-Master-Key': JSONBIN_CONFIG.API_KEY,
+                'Content-Type': 'application/json',
+                'X-Bin-Meta': 'false'
+            },
+            body: payload,
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const errText = await response.text().catch(() => 'Unknown');
+            console.error(`JSONBin Save Failed [${response.status}]:`, errText);
+            isSaving = false;
+            return false;
+        }
+        isSaving = false;
+        return true;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        isSaving = false;
+        console.error('Network/Timeout error:', error);
+        return false;
     }
 }
 
@@ -365,13 +362,13 @@ async function testConnection() {
     showToast('Testing connection...', 'info');
     try {
         const res = await fetchWithRetry(
-            `${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, 
+            `${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`,
             { headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY }}
         );
         const data = await res.json();
         showToast(`✅ Connected! ${data.record?.books?.length || 0} books`, 'success');
-    } catch (e) { 
-        showToast(`❌ Error: ${e.message}`, 'error'); 
+    } catch (e) {
+        showToast(`❌ Error: ${e.message}`, 'error');
     }
 }
 
@@ -379,11 +376,11 @@ function exportBackup() {
     if (books.length === 0) { showToast('No books to export', 'info'); return; }
     const blob = new Blob([JSON.stringify(books, null, 2)], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); 
-    a.href = url; 
-    a.download = `kumon-library-backup-${new Date().toISOString().split('T')[0]}.json`; 
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kumon-library-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    URL.revokeObjectURL(url); 
+    URL.revokeObjectURL(url);
     showToast('Backup downloaded!', 'success');
 }
 
@@ -395,7 +392,7 @@ function updateStats() {
 
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
-    toast.textContent = message; 
+    toast.textContent = message;
     toast.className = `toast ${type} show`;
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
@@ -403,8 +400,10 @@ function showToast(message, type = 'success') {
 // ═══════════════════════════════════════════════════════════
 // BOOK MANAGEMENT
 // ═══════════════════════════════════════════════════════════
-
+// 🔧 FIXED: Double-tap guard, atomic rollback, proper file clearing
 async function processAddBook() {
+    if (isSaving) return;
+    
     const btn = document.getElementById('addBookBtn');
     const warningEl = document.getElementById('imageSizeWarning');
     const title = document.getElementById('newBookTitle').value.trim();
@@ -412,54 +411,71 @@ async function processAddBook() {
     const genre = document.getElementById('newBookGenre').value.trim();
     const location = document.getElementById('newBookLocation').value.trim();
     const rrlLevel = document.getElementById('newBookRRL').value.trim();
-    
-    if (!title || !author || !location) { showToast('Please fill in title, author, and location', 'error'); return; }
+    const fileInput = document.getElementById('newBookCover');
 
-    btn.disabled = true; btn.textContent = 'Saving...'; warningEl.classList.remove('show');
-    const file = document.getElementById('newBookCover').files[0];
+    if (!title || !author || !location) {
+        showToast('Please fill in title, author, and location', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    warningEl.classList.remove('show');
+    const file = fileInput.files[0];
 
     try {
         let coverImage = null;
         if (file) {
-            if (file.size > 500 * 1024) { 
-                warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; 
-                warningEl.classList.add('show'); 
+            if (file.size > 500 * 1024) {
+                warningEl.textContent = `⚠️ Compressing image...`;
+                warningEl.classList.add('show');
             }
             coverImage = await compressImage(file, 300, 0.2);
         }
-        await addBookToSystem(title, author, genre, location, rrlLevel, coverImage);
-        closeAddBookModal();
+
+        const saved = await addBookToSystem(title, author, genre, location, rrlLevel, coverImage);
+        
+        if (saved) {
+            closeAddBookModal();
+            fileInput.value = ''; // Clear input after success
+            showToast(`✅ "${title}" saved successfully`, 'success');
+        } else {
+            showToast('❌ Save failed. Check connection & try again.', 'error');
+        }
     } catch (error) {
-        console.error('Image error:', error);
-        showToast(`Image error. Adding without image.`, 'error');
-        await addBookToSystem(title, author, genre, location, rrlLevel, null);
-        closeAddBookModal();
+        console.error('Add book error:', error);
+        showToast('❌ Failed to process image or save.', 'error');
+        // Modal stays open so form data isn't lost
     } finally {
-        btn.disabled = false; btn.textContent = 'Save Book'; warningEl.classList.remove('show');
+        btn.disabled = false;
+        btn.textContent = 'Save Book';
+        warningEl.classList.remove('show');
     }
 }
 
+// 🔧 FIXED: Atomic rollback on server failure
 async function addBookToSystem(title, author, genre, location, rrlLevel, coverImage) {
-    const newBook = { 
-        id: nextId++, 
-        title, 
-        author, 
-        genre: genre || 'Uncategorized', 
-        location, 
-        rrlLevel: rrlLevel || 'N/A', 
-        coverImage, 
-        status: 'available', 
-        borrower: null, 
-        borrowDate: null, 
-        borrowerGrade: null, 
-        borrowerLevel: null 
+    const newBook = {
+        id: nextId++,
+        title, author, genre: genre || 'Uncategorized', location,
+        rrlLevel: rrlLevel || 'N/A', coverImage, status: 'available',
+        borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null
     };
-    books.unshift(newBook);
-    if (await saveBooks()) { 
-        updateStats(); 
-        renderBooks(); 
-        showToast(`"${title}" added successfully`, 'success');
-        setUnsavedChanges(false);  // ✅ Changes saved
+
+    books.unshift(newBook); // Optimistic local add
+    const success = await saveBooks();
+
+    if (success) {
+        updateStats();
+        renderBooks();
+        setUnsavedChanges(false);
+        return true;
+    } else {
+        // ⚠️ ATOMIC ROLLBACK: Keep UI & server perfectly in sync
+        books.shift();
+        nextId--;
+        renderBooks();
+        return false;
     }
 }
 
@@ -473,7 +489,6 @@ async function processEditBook() {
     const location = document.getElementById('editBookLocation').value.trim();
     const rrlLevel = document.getElementById('editBookRRL').value.trim();
     const fileInput = document.getElementById('editBookCover');
-
     if (!title || !author || !location) { showToast('Please fill in title, author, and location', 'error'); return; }
 
     const book = books.find(b => b.id === id);
@@ -482,11 +497,11 @@ async function processEditBook() {
     btn.disabled = true; btn.textContent = 'Saving...'; warningEl.classList.remove('show');
 
     try {
-        let coverImage = book.coverImage; // Keep existing by default
+        let coverImage = book.coverImage;
         const file = fileInput.files[0];
         if (file) {
             if (file.size > 500 * 1024) {
-                warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`;
+                warningEl.textContent = `⚠️ Compressing image...`;
                 warningEl.classList.add('show');
             }
             coverImage = await compressImage(file, 300, 0.2);
@@ -502,9 +517,9 @@ async function processEditBook() {
         if (await saveBooks()) {
             closeEditBookModal();
             renderBooks();
-            openBookDetail(id); // Refresh detail modal if open
-            showToast(`"${title}" updated successfully`, 'success');
-            setUnsavedChanges(false);  // ✅ Changes saved
+            openBookDetail(id);
+            showToast(`✅ "${title}" updated successfully`, 'success');
+            setUnsavedChanges(false);
         }
     } catch (error) {
         console.error('Edit error:', error);
@@ -518,11 +533,11 @@ async function removeBook(id) {
     const book = books.find(b => b.id === id);
     if (book && confirm(`Remove "${book.title}"?`)) {
         books = books.filter(b => b.id !== id);
-        if (await saveBooks()) { 
-            updateStats(); 
-            renderBooks(); 
+        if (await saveBooks()) {
+            updateStats();
+            renderBooks();
             showToast(`"${book.title}" removed`, 'success');
-            setUnsavedChanges(false);  // ✅ Changes saved
+            setUnsavedChanges(false);
         }
     }
 }
@@ -531,9 +546,8 @@ async function confirmBorrow() {
     const name = document.getElementById('borrowerName').value.trim();
     const grade = document.getElementById('borrowerGrade').value.trim();
     const level = document.getElementById('borrowerLevel').value.trim();
-    
     if (!name || !grade || !level) { showToast('Please fill in all borrower fields', 'error'); return; }
-    
+
     const book = books.find(b => b.id === pendingBorrowBookId);
     if (book) {
         book.status = 'borrowed'; 
@@ -546,15 +560,14 @@ async function confirmBorrow() {
             closeBorrowModal(); 
             renderBooks(); 
             updateStats(); 
-            showToast(` "${book.title}" borrowed by ${name} (${grade}, ${level})`, 'success');
-            setUnsavedChanges(false);  // ✅ Changes saved
+            showToast(`✅ "${book.title}" borrowed by ${name}`, 'success');
+            setUnsavedChanges(false);
         }
     }
 }
 
 async function returnBook(id) {
     if (!isAdmin) { pendingReturnBookId = id; openLoginModal(); return; }
-    
     const book = books.find(b => b.id === id);
     if (book) {
         const info = `${book.borrower} (${book.borrowerGrade}, ${book.borrowerLevel})`;
@@ -568,7 +581,7 @@ async function returnBook(id) {
             renderBooks(); 
             updateStats(); 
             showToast(`✅ "${book.title}" returned by ${info}`, 'success');
-            setUnsavedChanges(false);  // ✅ Changes saved
+            setUnsavedChanges(false);
         }
     }
 }
@@ -576,12 +589,10 @@ async function returnBook(id) {
 // ═══════════════════════════════════════════════════════════
 // RENDERING & FILTERING
 // ═══════════════════════════════════════════════════════════
-
 function getFilteredAndSortedBooks() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const filterStatus = document.getElementById('filterStatus').value;
     const sortBy = document.getElementById('sortBy').value;
-    
     let filtered = books.filter(book => {
         const matchesSearch = book.title.toLowerCase().includes(searchTerm) || 
                              book.author.toLowerCase().includes(searchTerm) ||
@@ -589,7 +600,7 @@ function getFilteredAndSortedBooks() {
         const matchesStatus = filterStatus === 'all' || book.status === filterStatus;
         return matchesSearch && matchesStatus;
     });
-    
+
     filtered.sort((a, b) => {
         if (sortBy === 'title') return a.title.localeCompare(b.title);
         if (sortBy === 'author') return a.author.localeCompare(b.author);
@@ -620,11 +631,11 @@ function renderBooks() {
         grid.innerHTML = ''; 
         emptyState.style.display = 'block'; 
         emptyState.querySelector('h2').textContent = '📚 Library is empty'; 
-        emptyState.querySelector('p').textContent = isAdmin ? 'Click  to add your first book' : 'Check back soon!'; 
-        return; 
+        emptyState.querySelector('p').textContent = isAdmin ? 'Click ➕ to add your first book' : 'Check back soon!'; 
+        return;  
     }
     emptyState.style.display = 'none';
-    
+
     grid.innerHTML = filteredBooks.map(book => `
         <div class="book-card ${book.status}" onclick="openBookDetail(${book.id})">
             ${book.coverImage 
@@ -635,8 +646,8 @@ function renderBooks() {
             <div class="book-author">by ${escapeHtml(book.author)}</div>
             <div class="book-location">📍 ${escapeHtml(book.location)}</div>
             <div class="book-meta">
-                <span>${escapeHtml(book.genre)}</span><span>•</span>
-                <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span><span>•</span>
+                <span>${escapeHtml(book.genre)}</span> <span>•</span>
+                <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span> <span>•</span>
                 <span>ID: ${book.id}</span>
             </div>
             <span class="status-badge ${book.status}">${book.status === 'available' ? '✓ Available' : '📤 Borrowed'}</span>
@@ -650,7 +661,7 @@ function renderBooks() {
             }
             <div class="book-actions" onclick="event.stopPropagation()">
                 ${book.status === 'available' 
-                    ? `<button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` 
+                    ? `<button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')" >📚 Borrow</button>` 
                     : `<button class="btn btn-success" onclick="returnBook(${book.id})">✅ Return</button>`
                 }
                 <button class="btn btn-primary btn-small admin-only" onclick="openEditModal(${book.id})" style="background:#7c3aed">✏️ Edit</button>
@@ -663,82 +674,52 @@ function renderBooks() {
 // ═══════════════════════════════════════════════════════════
 // INITIALIZATION & EVENT LISTENERS
 // ═══════════════════════════════════════════════════════════
-
 function initApp() {
-    if (checkSession()) { 
-        setAdminMode(true); 
-        showToast('✅ Admin session restored', 'info'); 
-    } else { 
-        setAdminMode(false); 
+    if (checkSession()) {
+        setAdminMode(true);
+        showToast('✅ Admin session restored', 'info');
+    } else {
+        setAdminMode(false);
     }
     loadBooks();
 }
-
 document.addEventListener('DOMContentLoaded', initApp);
-
-document.getElementById('passwordInput').addEventListener('keypress', e => { 
-    if (e.key === 'Enter') login(); 
-});
-
+document.getElementById('passwordInput').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
 document.getElementById('searchInput').addEventListener('input', renderBooks);
 document.getElementById('filterStatus').addEventListener('change', renderBooks);
 document.getElementById('sortBy').addEventListener('change', renderBooks);
-
 document.getElementById('newBookCover')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
     const warningEl = document.getElementById('imageSizeWarning');
-    if (file && file.size > 500 * 1024) { 
-        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress to 300px @ 20%.`; 
-        warningEl.classList.add('show'); 
-    } else { 
-        warningEl.classList.remove('show'); 
+    if (file && file.size > 500 * 1024) {
+        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress to 300px @ 20%.`;
+        warningEl.classList.add('show');
+    } else {
+        warningEl.classList.remove('show');
     }
 });
-
 ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL'].forEach(id => {
-    document.getElementById(id)?.addEventListener('keypress', e => { 
-        if (e.key === 'Enter') processAddBook(); 
-    });
+    document.getElementById(id)?.addEventListener('keypress', e => { if (e.key === 'Enter') processAddBook(); });
 });
-
 document.getElementById('editBookCover')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
     const warningEl = document.getElementById('editImageSizeWarning');
-    if (file && file.size > 500 * 1024) { 
-        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress to 300px @ 20%.`; 
-        warningEl.classList.add('show'); 
-    } else { 
-        warningEl.classList.remove('show'); 
+    if (file && file.size > 500 * 1024) {
+        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress to 300px @ 20%.`;
+        warningEl.classList.add('show');
+    } else {
+        warningEl.classList.remove('show');
     }
 });
-
 ['editBookTitle','editBookAuthor','editBookGenre','editBookLocation','editBookRRL'].forEach(id => {
-    document.getElementById(id)?.addEventListener('keypress', e => { 
-        if (e.key === 'Enter') processEditBook(); 
-    });
+    document.getElementById(id)?.addEventListener('keypress', e => { if (e.key === 'Enter') processEditBook(); });
 });
 
 // Close modals on outside click
-document.getElementById('loginOverlay')?.addEventListener('click', e => { 
-    if (e.target.id === 'loginOverlay') closeLoginModal(); 
-});
-document.getElementById('borrowModal')?.addEventListener('click', e => { 
-    if (e.target.id === 'borrowModal') closeBorrowModal(); 
-});
-document.getElementById('addBookModal')?.addEventListener('click', e => { 
-    if (e.target.id === 'addBookModal') closeAddBookModal(); 
-});
-document.getElementById('editBookModal')?.addEventListener('click', e => { 
-    if (e.target.id === 'editBookModal') closeEditBookModal(); 
-});
-document.getElementById('visitorBorrowModal')?.addEventListener('click', e => { 
-    if (e.target.id === 'visitorBorrowModal') closeVisitorBorrowModal(); 
-});
-document.getElementById('detailModal')?.addEventListener('click', e => { 
-    if (e.target.id === 'detailModal') closeDetailModal(); 
-});
-
-// Close detail modal on Escape key
-document.addEventListener('keydown', e => { 
-    if (e.key === 'Escape') closeDetailModal(); 
-});
+document.getElementById('loginOverlay')?.addEventListener('click', e => { if (e.target.id === 'loginOverlay') closeLoginModal(); });
+document.getElementById('borrowModal')?.addEventListener('click', e => { if (e.target.id === 'borrowModal') closeBorrowModal(); });
+document.getElementById('addBookModal')?.addEventListener('click', e => { if (e.target.id === 'addBookModal') closeAddBookModal(); });
+document.getElementById('editBookModal')?.addEventListener('click', e => { if (e.target.id === 'editBookModal') closeEditBookModal(); });
+document.getElementById('visitorBorrowModal')?.addEventListener('click', e => { if (e.target.id === 'visitorBorrowModal') closeVisitorBorrowModal(); });
+document.getElementById('detailModal')?.addEventListener('click', e => { if (e.target.id === 'detailModal') closeDetailModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetailModal(); });

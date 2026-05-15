@@ -39,7 +39,7 @@ async function fetchWithRetry(url, options, retries = 3) {
     throw new Error('Max retries exceeded');
 }
 
-// 📱 Fixed: Handles HEIC/WebP & mobile canvas safely via FileReader
+// 📱 Fixed: Uses FileReader to safely handle iOS/Android HEIC & WebP formats
 async function compressImage(file, maxWidth = 300, quality = 0.2) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -314,20 +314,20 @@ async function loadBooks() {
     }
 }
 
-// 🔧 FIXED: Hard timeout, payload limit check, explicit error handling
+// 🔧 FIXED: Hard timeout, payload limit check, explicit HTTP status reporting
 async function saveBooks() {
     if (isSaving) return false;
     isSaving = true;
 
     const payload = JSON.stringify({ books, lastUpdated: new Date().toISOString() });
-    if (payload.length > 900000) {
+    if (payload.length > 800000) {
         isSaving = false;
-        showToast('❌ Library near 1MB limit. Export backup & delete old books.', 'error');
+        showToast(`❌ Library too large (${(payload.length/1024/1024).toFixed(2)}MB). Export backup & delete old books.`, 'error');
         return false;
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s hard timeout
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s hard timeout
 
     try {
         const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BIN_ID}`, {
@@ -343,8 +343,17 @@ async function saveBooks() {
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-            const errText = await response.text().catch(() => 'Unknown');
-            console.error(`JSONBin Save Failed [${response.status}]:`, errText);
+            const errText = await response.text().catch(() => '');
+            console.error(`[JSONBin] Status ${response.status}:`, errText);
+            
+            let userMsg = 'Save failed';
+            if (response.status === 400) userMsg = 'Invalid data format';
+            else if (response.status === 401) userMsg = 'API Key rejected/invalid';
+            else if (response.status === 413) userMsg = 'Data too large for server';
+            else if (response.status === 429) userMsg = 'Too many requests. Wait 10s & retry.';
+            else userMsg = `Server Error ${response.status}`;
+
+            showToast(`❌ ${userMsg}`, 'error');
             isSaving = false;
             return false;
         }
@@ -353,7 +362,9 @@ async function saveBooks() {
     } catch (error) {
         clearTimeout(timeoutId);
         isSaving = false;
-        console.error('Network/Timeout error:', error);
+        console.error('[JSONBin] Network Error:', error);
+        if (error.name === 'AbortError') showToast('❌ Request timed out. Check internet/WiFi.', 'error');
+        else showToast(`❌ Network error: ${error.message}`, 'error');
         return false;
     }
 }
@@ -400,7 +411,7 @@ function showToast(message, type = 'success') {
 // ═══════════════════════════════════════════════════════════
 // BOOK MANAGEMENT
 // ═══════════════════════════════════════════════════════════
-// 🔧 FIXED: Double-tap guard, atomic rollback, proper file clearing
+// 🔧 FIXED: Double-tap guard, proper error flow, clears file input on success
 async function processAddBook() {
     if (isSaving) return;
     
@@ -440,12 +451,11 @@ async function processAddBook() {
             fileInput.value = ''; // Clear input after success
             showToast(`✅ "${title}" saved successfully`, 'success');
         } else {
-            showToast('❌ Save failed. Check connection & try again.', 'error');
+            // saveBooks() already shows the exact error. Modal stays open for retry.
         }
     } catch (error) {
         console.error('Add book error:', error);
-        showToast('❌ Failed to process image or save.', 'error');
-        // Modal stays open so form data isn't lost
+        showToast('❌ Failed to process image.', 'error');
     } finally {
         btn.disabled = false;
         btn.textContent = 'Save Book';

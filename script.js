@@ -16,7 +16,6 @@ let isAdmin = false;
 let pendingBorrowBookId = null;
 let pendingReturnBookId = null;
 let selectedBookId = null;
-let hasUnsavedChanges = false;  // Track if user has pending changes
 
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
@@ -103,26 +102,6 @@ function escapeHtml(text) {
     return div.innerHTML; 
 }
 
-function setUnsavedChanges(state) {
-    hasUnsavedChanges = state;
-    const indicator = document.getElementById('unsavedIndicator');
-    if (indicator) {
-        indicator.style.display = state ? 'inline' : 'none';
-    }
-}
-
-// ═══════════════════════════════════════════════════════════
-// PAGE EXIT CONFIRMATION
-// ═══════════════════════════════════════════════════════════
-
-window.addEventListener('beforeunload', (e) => {
-    if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = ''; // Required for Chrome to show the dialog
-        return '';
-    }
-});
-
 // ═══════════════════════════════════════════════════════════
 // MODAL FUNCTIONS
 // ═══════════════════════════════════════════════════════════
@@ -148,13 +127,11 @@ function openBorrowModal(bookId, bookTitle) {
     document.getElementById('borrowerLevel').value = '';
     document.getElementById('borrowModal').classList.add('show');
     document.getElementById('borrowerName').focus();
-    setUnsavedChanges(true);  // ⚠️ User is borrowing a book
 }
 
 function closeBorrowModal() { 
     document.getElementById('borrowModal').classList.remove('show'); 
-    pendingBorrowBookId = null;
-    setUnsavedChanges(false);  // ✅ Cancelled, no changes
+    pendingBorrowBookId = null; 
 }
 
 // Visitor Borrow Modal
@@ -182,12 +159,10 @@ function openAddBookModal() {
     document.getElementById('imageSizeWarning').classList.remove('show');
     document.getElementById('addBookModal').classList.add('show');
     document.getElementById('newBookTitle').focus();
-    setUnsavedChanges(true);  // ⚠️ User is adding a book
 }
 
 function closeAddBookModal() { 
-    document.getElementById('addBookModal').classList.remove('show');
-    setUnsavedChanges(false);  // ✅ Cancelled, no changes
+    document.getElementById('addBookModal').classList.remove('show'); 
 }
 
 // Edit Book Modal
@@ -205,12 +180,10 @@ function openEditModal(bookId) {
     document.getElementById('editImageSizeWarning').classList.remove('show');
     document.getElementById('editBookModal').classList.add('show');
     document.getElementById('editBookTitle').focus();
-    setUnsavedChanges(true);  // ⚠️ User is editing a book
 }
 
 function closeEditBookModal() { 
-    document.getElementById('editBookModal').classList.remove('show');
-    setUnsavedChanges(false);  // ✅ Cancelled, no changes
+    document.getElementById('editBookModal').classList.remove('show'); 
 }
 
 // Detail Modal
@@ -336,8 +309,7 @@ async function loadBooks() {
         books = []; renderBooks();
     } finally { 
         isLoading = false; 
-        document.getElementById('loadingState').style.display = 'none';
-        setUnsavedChanges(false);  // ✅ Fresh data loaded
+        document.getElementById('loadingState').style.display = 'none'; 
     }
 }
 
@@ -458,8 +430,7 @@ async function addBookToSystem(title, author, genre, location, rrlLevel, coverIm
     if (await saveBooks()) { 
         updateStats(); 
         renderBooks(); 
-        showToast(`"${title}" added successfully`, 'success');
-        setUnsavedChanges(false);  // ✅ Changes saved
+        showToast(`"${title}" added successfully`, 'success'); 
     }
 }
 
@@ -504,7 +475,6 @@ async function processEditBook() {
             renderBooks();
             openBookDetail(id); // Refresh detail modal if open
             showToast(`"${title}" updated successfully`, 'success');
-            setUnsavedChanges(false);  // ✅ Changes saved
         }
     } catch (error) {
         console.error('Edit error:', error);
@@ -521,8 +491,7 @@ async function removeBook(id) {
         if (await saveBooks()) { 
             updateStats(); 
             renderBooks(); 
-            showToast(`"${book.title}" removed`, 'success');
-            setUnsavedChanges(false);  // ✅ Changes saved
+            showToast(`"${book.title}" removed`, 'success'); 
         }
     }
 }
@@ -546,8 +515,7 @@ async function confirmBorrow() {
             closeBorrowModal(); 
             renderBooks(); 
             updateStats(); 
-            showToast(` "${book.title}" borrowed by ${name} (${grade}, ${level})`, 'success');
-            setUnsavedChanges(false);  // ✅ Changes saved
+            showToast(` "${book.title}" borrowed by ${name} (${grade}, ${level})`, 'success'); 
         }
     }
 }
@@ -567,8 +535,7 @@ async function returnBook(id) {
         if (await saveBooks()) { 
             renderBooks(); 
             updateStats(); 
-            showToast(`✅ "${book.title}" returned by ${info}`, 'success');
-            setUnsavedChanges(false);  // ✅ Changes saved
+            showToast(`✅ "${book.title}" returned by ${info}`, 'success'); 
         }
     }
 }

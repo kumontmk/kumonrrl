@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════
 const JSONBIN_CONFIG = {
     BIN_ID: '6a054b89c0954111d81ee9ae',
-    API_KEY: '$2a$10$knk7dAn110pbuLUoGrzIEeYrPDXJGPq9P8TJIsMekjcFlnFZDLqlm',
+    API_KEY: '$2a$10$qpIr10Jqth.YmzBxSKxOGOhrZca7MHe5TVL0CzCc1uzkh/U9A1GHW',
     BASE_URL: 'https://api.jsonbin.io/v3/b'
 };
 const SESSION_KEY = 'kumonLibrarySession';

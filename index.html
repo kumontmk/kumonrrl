@@ -18,7 +18,7 @@
       <h1>📚 Kumon RRL Online Library</h1>
     </div>
     <div class="header-actions">
-      <span id="modeIndicator" class="mode-indicator">👥 Public View</span>
+      <span id="modeIndicator" class="mode-indicator"> Public View</span>
       <span id="unsavedIndicator" style="display:none;color:#dc2626;font-weight:600;font-size:0.85rem">● Unsaved changes</span>
       <button id="logoutBtn" class="btn btn-logout btn-small admin-only" onclick="logout()">🚪 Logout</button>
       <button class="btn btn-login btn-small public-only" onclick="openLoginModal()">🔐 Login to Borrow/Manage</button>
@@ -144,7 +144,7 @@
       <div class="contact-info">
         <h4>📞 Visit or Call Us</h4>
         <p><strong>Kumon Taipa Mei Keng</strong></p>
-        <p>📞 <a href="tel:+85328831773">+853 2883 1773</a></p>
+        <p> <a href="tel:+85328831773">+853 2883 1773</a></p>
         <p>🏠 澳門仔柯維納馬路美景花園美德閣地下AU座<br>
            NA TAIPA, ESTRADA GOVERNADOR ALBANO DE OLIVEIRA N° 24,<br>
            MEI KENG FA UN RÉS-DO-CHÃO AU</p>
@@ -164,7 +164,7 @@
   <!-- Add Book Modal -->
   <div id="addBookModal" class="modal-overlay">
     <div class="modal">
-      <h3>➕ Add New Book</h3>
+      <h3> Add New Book</h3>
       <div class="modal-form">
         <input type="text" id="newBookTitle" placeholder="Book Title *" maxlength="100">
         <input type="text" id="newBookAuthor" placeholder="Author Name *" maxlength="60">
@@ -237,7 +237,7 @@
           </div>
 
           <div class="borrower-section" id="detailBorrowerSection" style="display:none">
-            <h4>📤 Borrower Information</h4>
+            <h4> Borrower Information</h4>
             <div class="borrower-details">
               <div class="borrower-row">
                 <span class="borrower-label">Name</span>
@@ -282,13 +282,12 @@
   </footer>
 
   <!-- ═══════════════════════════════════════════════════════════
-       FIREBASE SDK (Compat version for simple usage)
+       FIREBASE SDK (Compat version)
        ═══════════════════════════════════════════════════════════ -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <!-- App Scripts -->
-  <script src="books-data.js"></script>
+  <!-- App Script -->
   <script src="script.js"></script>
 </body>
 </html>

@@ -13,13 +13,17 @@
   <header>
     <div class="header-left">
       <img src="logo.png" alt="Kumon Logo" class="header-logo" onerror="this.style.display='none'">
-      <h1> Kumon RRL Online Library</h1>
+      <h1>📚 Kumon RRL Online Library</h1>
     </div>
     <div class="header-actions">
       <span id="modeIndicator" class="mode-indicator">👥 Public View</span>
       <span id="unsavedIndicator" style="display:none;color:#dc2626;font-weight:600;font-size:0.85rem">● Unsaved changes</span>
+      
+      <!-- Admin Button: Only visible in Admin Mode -->
       <button id="logoutBtn" class="btn btn-logout btn-small admin-only" onclick="logout()">🚪 Logout</button>
-      <button class="btn btn-login btn-small public-only" onclick="openLoginModal()"> Login to Borrow/Manage</button>
+      
+      <!-- Public Button: Only visible in Public Mode -->
+      <button class="btn btn-login btn-small public-only" onclick="openLoginModal()">🔐 Login to Borrow/Manage</button>
     </div>
   </header>
 
@@ -123,7 +127,7 @@
       <div class="contact-info">
         <h4>📞 Visit or Call Us</h4>
         <p><strong>Kumon Taipa Mei Keng</strong></p>
-        <p> <a href="tel:+85328831773">+853 2883 1773</a></p>
+        <p>📞 <a href="tel:+85328831773">+853 2883 1773</a></p>
         <p>🏠 澳門氹仔柯維納馬路美景花園美德閣地下AU座<br>
            NA TAIPA, ESTRADA GOVERNADOR ALBANO DE OLIVEIRA N° 24,<br>
            MEI KENG FA UN RÉS-DO-CHÃO AU</p>
@@ -145,6 +149,8 @@
         <input type="text" id="newBookAuthor" placeholder="Author Name *" maxlength="60">
         <input type="text" id="newBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="newBookLocation" placeholder="Location/Shelf *" maxlength="30">
+        
+        <!-- RRL Dropdown -->
         <select id="newBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="">Select RRL Level</option>
           <option value="Read Together">Read Together</option>
@@ -160,6 +166,7 @@
           <option value="I">I</option>
           <option value="Further Reading">Further Reading</option>
         </select>
+        
         <input type="file" id="newBookCover" accept="image/*">
         <small class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</small>
         <div id="imageSizeWarning" class="image-warning"></div>
@@ -181,6 +188,8 @@
         <input type="text" id="editBookAuthor" placeholder="Author Name *" maxlength="60">
         <input type="text" id="editBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="editBookLocation" placeholder="Location/Shelf *" maxlength="30">
+        
+        <!-- RRL Dropdown -->
         <select id="editBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="Read Together">Read Together</option>
           <option value="2A">2A</option>
@@ -195,6 +204,7 @@
           <option value="I">I</option>
           <option value="Further Reading">Further Reading</option>
         </select>
+        
         <input type="file" id="editBookCover" accept="image/*">
         <small class="camera-hint">Leave empty to keep current cover image.<br>📱 On mobile: tap to choose file OR take photo with camera</small>
         <div id="editImageSizeWarning" class="image-warning"></div>

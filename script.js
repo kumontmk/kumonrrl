@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════
-// Kumon RRL Online Library - Firebase Version
-// ═══════════════════════════════════════════════════════════
+// Kumon RRL Online Library - Firebase Realtime Version
+// ══════════════════════════════════════════════════════════
 
 // Firebase Configuration
 const firebaseConfig = {
@@ -70,6 +70,7 @@ function checkSession() {
 
 function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
+// Apply admin class to BODY so it affects Header, FAB, and Main
 function setAdminMode(active) {
   isAdmin = active;
   const indicator = document.getElementById('modeIndicator');
@@ -101,8 +102,8 @@ function setUnsavedChanges(state) {
   if (indicator) indicator.style.display = state ? 'inline' : 'none';
 }
 
-// ══════════════════════════════════════════════════════════
-// PAGE EXIT CONFIRMATION (For closing tab/window)
+// ═══════════════════════════════════════════════════════════
+// PAGE EXIT CONFIRMATION (Close tab/window)
 // ═══════════════════════════════════════════════════════════
 window.addEventListener('beforeunload', (e) => {
   if (hasUnsavedChanges) {
@@ -202,11 +203,12 @@ function openBookDetail(bookId) {
   document.getElementById('detailID').textContent = `#${book.id}`;
 
   const statusEl = document.getElementById('detailStatus');
-  statusEl.textContent = book.status === 'available' ? '✓ Available' : '📤 Borrowed';
-  statusEl.className = `detail-status ${book.status}`;
+  const isBorrowed = book.status === 'borrowed';
+  statusEl.textContent = !isBorrowed ? '✓ Available' : '📤 Borrowed';
+  statusEl.className = `detail-status ${isBorrowed ? 'borrowed' : 'available'}`;
 
   const borrowerSection = document.getElementById('detailBorrowerSection');
-  if (book.status === 'borrowed' && book.borrower) {
+  if (isBorrowed && book.borrower) {
     borrowerSection.style.display = 'block';
     document.getElementById('detailBorrowerName').textContent = book.borrower;
     document.getElementById('detailBorrowerGrade').textContent = book.borrowerGrade || '-';
@@ -216,8 +218,9 @@ function openBookDetail(bookId) {
     borrowerSection.style.display = 'none';
   }
 
-  document.getElementById('detailBorrowBtn').style.display = book.status === 'available' ? 'flex' : 'none';
-  document.getElementById('detailReturnBtn').style.display = book.status === 'borrowed' ? 'flex' : 'none';
+  // ✅ FIXED: Strict status checks for buttons
+  document.getElementById('detailBorrowBtn').style.display = !isBorrowed ? 'flex' : 'none';
+  document.getElementById('detailReturnBtn').style.display = isBorrowed ? 'flex' : 'none';
 
   document.getElementById('detailModal').classList.add('show');
   document.body.style.overflow = 'hidden';
@@ -227,7 +230,6 @@ function closeDetailModal() {
   document.body.style.overflow = '';
   selectedBookId = null;
 }
-function goHome() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function handleDetailBorrow() {
   if (selectedBookId) {
     const book = books.find(b => b.id === selectedBookId);
@@ -268,43 +270,32 @@ function login() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// FIREBASE DATA OPERATIONS
+// FIREBASE REALTIME OPERATIONS ⭐ FIXES BUG #1
 // ═══════════════════════════════════════════════════════════
-async function loadBooks() {
-  if (isLoading) return;
-  isLoading = true;
-  document.getElementById('loadingState').style.display = 'block';
-  document.getElementById('booksGrid').innerHTML = '';
-  
-  try {
-    const snapshot = await BOOKS_REF.once('value');
+function startRealtimeSync() {
+  // .on('value') listens for changes and pushes updates to ALL devices instantly
+  BOOKS_REF.on('value', (snapshot) => {
     const data = snapshot.val();
-    
     if (data) {
       books = Object.values(data);
+      books.sort((a, b) => b.id - a.id); // Keep newest first
       const maxId = Math.max(...books.map(b => b.id), 0);
       nextId = maxId + 1;
     } else {
       books = [];
       nextId = 1;
     }
-    
-    updateStats(); 
+    updateStats();
     renderBooks();
-    if (books.length > 0) showToast(`✅ Loaded ${books.length} books`, 'success');
-    
-  } catch (error) {
-    console.error('Load error:', error);
-    showToast(`Failed to load: ${error.message}`, 'error');
-    books = []; renderBooks();
-  } finally { 
-    isLoading = false; 
     document.getElementById('loadingState').style.display = 'none';
     setUnsavedChanges(false);
-  }
+  }, (error) => {
+    console.error('Firebase sync error:', error);
+    showToast('Connection lost. Retrying...', 'error');
+  });
 }
 
-async function saveBooks() {
+async function saveBooksToFirebase() {
   try {
     const booksObj = {};
     books.forEach(book => { booksObj[book.id] = book; });
@@ -364,7 +355,7 @@ async function processAddBook() {
   const author = document.getElementById('newBookAuthor').value.trim();
   const genre = document.getElementById('newBookGenre').value.trim();
   const location = document.getElementById('newBookLocation').value.trim();
-  const rrlLevel = document.getElementById('newBookRRL').value; // Dropdown value
+  const rrlLevel = document.getElementById('newBookRRL').value;
   
   if (!title || !author || !location) { showToast('Please fill in title, author, and location', 'error'); return; }
 
@@ -375,7 +366,7 @@ async function processAddBook() {
     let coverImage = null;
     if (file) {
       if (file.size > 500 * 1024) { 
-        warningEl.textContent = `️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; 
+        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; 
         warningEl.classList.add('show'); 
       }
       coverImage = await compressImage(file, 300, 0.2);
@@ -395,22 +386,18 @@ async function processAddBook() {
 async function addBookToSystem(title, author, genre, location, rrlLevel, coverImage) {
   const newBook = {
     id: nextId++,
-    title,
-    author,
+    title, author,
     genre: genre || 'Uncategorized',
     location,
     rrlLevel: rrlLevel || 'N/A',
     coverImage,
     status: 'available',
-    borrower: null,
-    borrowDate: null,
-    borrowerGrade: null,
-    borrowerLevel: null
+    borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null
   };
   books.unshift(newBook);
-  if (await saveBooks()) {
+  if (await saveBooksToFirebase()) {
     updateStats();
-    renderBooks();
+    renderBooks(); // Instant UI feedback before network sync confirms
     showToast(`"${title}" added successfully`, 'success');
     setUnsavedChanges(false);
   }
@@ -424,7 +411,7 @@ async function processEditBook() {
   const author = document.getElementById('editBookAuthor').value.trim();
   const genre = document.getElementById('editBookGenre').value.trim();
   const location = document.getElementById('editBookLocation').value.trim();
-  const rrlLevel = document.getElementById('editBookRRL').value; // Dropdown value
+  const rrlLevel = document.getElementById('editBookRRL').value;
   const fileInput = document.getElementById('editBookCover');
   
   if (!title || !author || !location) { showToast('Please fill in title, author, and location', 'error'); return; }
@@ -445,14 +432,11 @@ async function processEditBook() {
       coverImage = await compressImage(file, 300, 0.2);
     }
 
-    book.title = title;
-    book.author = author;
-    book.genre = genre || 'Uncategorized';
-    book.location = location;
-    book.rrlLevel = rrlLevel || 'N/A';
-    book.coverImage = coverImage;
+    book.title = title; book.author = author;
+    book.genre = genre || 'Uncategorized'; book.location = location;
+    book.rrlLevel = rrlLevel || 'N/A'; book.coverImage = coverImage;
 
-    if (await saveBooks()) {
+    if (await saveBooksToFirebase()) {
       closeEditBookModal();
       renderBooks();
       openBookDetail(id);
@@ -471,7 +455,7 @@ async function removeBook(id) {
   const book = books.find(b => b.id === id);
   if (book && confirm(`Remove "${book.title}"?`)) {
     books = books.filter(b => b.id !== id);
-    if (await saveBooks()) {
+    if (await saveBooksToFirebase()) {
       updateStats();
       renderBooks();
       showToast(`"${book.title}" removed`, 'success');
@@ -489,11 +473,10 @@ async function confirmBorrow() {
   const book = books.find(b => b.id === pendingBorrowBookId);
   if (book) {
     book.status = 'borrowed'; 
-    book.borrower = name; 
-    book.borrowerGrade = grade; 
-    book.borrowerLevel = level; 
+    book.borrower = name; book.borrowerGrade = grade; book.borrowerLevel = level; 
     book.borrowDate = new Date().toISOString().split('T')[0];
-    if (await saveBooks()) { 
+    
+    if (await saveBooksToFirebase()) { 
       closeBorrowModal(); 
       renderBooks(); 
       updateStats(); 
@@ -509,11 +492,9 @@ async function returnBook(id) {
   if (book) {
     const info = `${book.borrower} (${book.borrowerGrade}, ${book.borrowerLevel})`;
     book.status = 'available'; 
-    book.borrower = null; 
-    book.borrowerGrade = null; 
-    book.borrowerLevel = null; 
-    book.borrowDate = null;
-    if (await saveBooks()) { 
+    book.borrower = null; book.borrowerGrade = null; book.borrowerLevel = null; book.borrowDate = null;
+    
+    if (await saveBooksToFirebase()) { 
       renderBooks(); 
       updateStats(); 
       showToast(`✅ "${book.title}" returned by ${info}`, 'success');
@@ -523,12 +504,12 @@ async function returnBook(id) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// RENDERING & FILTERING
+// RENDERING & FILTERING ⭐ FIXES BUG #2
 // ═══════════════════════════════════════════════════════════
 function getFilteredAndSortedBooks() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
   const filterStatus = document.getElementById('filterStatus').value;
-  const filterRRL = document.getElementById('filterRRL').value; // NEW: RRL Filter
+  const filterRRL = document.getElementById('filterRRL').value;
   const sortBy = document.getElementById('sortBy').value;
   
   let filtered = books.filter(book => {
@@ -536,7 +517,7 @@ function getFilteredAndSortedBooks() {
                          book.author.toLowerCase().includes(searchTerm) ||
                          book.location.toLowerCase().includes(searchTerm);
     const matchesStatus = filterStatus === 'all' || book.status === filterStatus;
-    const matchesRRL = filterRRL === '' || book.rrlLevel === filterRRL; // NEW: RRL Matching
+    const matchesRRL = filterRRL === '' || book.rrlLevel === filterRRL;
     return matchesSearch && matchesStatus && matchesRRL;
   });
 
@@ -575,8 +556,13 @@ function renderBooks() {
   }
   emptyState.style.display = 'none';
 
-  grid.innerHTML = filteredBooks.map(book => `
-    <div class="book-card ${book.status}" onclick="openBookDetail(${book.id})">
+  grid.innerHTML = filteredBooks.map(book => {
+    // ✅ STRICT STATUS CHECKS
+    const isBorrowed = book.status === 'borrowed';
+    const isAvailable = book.status === 'available';
+
+    return `
+    <div class="book-card ${isAvailable ? 'available' : 'borrowed'}" onclick="openBookDetail(${book.id})">
       ${book.coverImage 
         ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` 
         : `<div class="book-cover">📘</div>`
@@ -589,8 +575,10 @@ function renderBooks() {
         <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span> <span>•</span>
         <span>ID: ${book.id}</span>
       </div>
-      <span class="status-badge ${book.status}">${book.status === 'available' ? '✓ Available' : '📤 Borrowed'}</span>
-      ${book.status === 'borrowed' 
+      <span class="status-badge ${isAvailable ? 'available' : 'borrowed'}">
+        ${isAvailable ? '✓ Available' : '📤 Borrowed'}
+      </span>
+      ${isBorrowed 
         ? `<div style="margin-top:0.5rem;">
             <span class="borrower-badge">${escapeHtml(book.borrower)}</span><br>
             <small style="color:#64748b;display:block;margin-top:0.25rem">Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small>
@@ -599,15 +587,16 @@ function renderBooks() {
         : ''
       }
       <div class="book-actions" onclick="event.stopPropagation()">
-        ${book.status === 'available' 
+        ${isAvailable 
           ? `<button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` 
           : `<button class="btn btn-success" onclick="returnBook(${book.id})">✅ Return</button>`
         }
         <button class="btn btn-primary btn-small admin-only" onclick="openEditModal(${book.id})" style="background:#7c3aed">✏️ Edit</button>
-        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">🗑 Remove</button>
+        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})"> Remove</button>
       </div>
     </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -620,18 +609,16 @@ function initApp() {
   } else {
     setAdminMode(false);
   }
-  loadBooks();
+  
+  // ✅ START REALTIME SYNC INSTEAD OF ONE-TIME LOAD
+  startRealtimeSync();
 
   // ── BACK BUTTON CONFIRM DIALOG ──
-  // Pushes a state so that tapping back triggers 'popstate' instead of leaving
   window.history.pushState(null, null, window.location.href);
   window.addEventListener('popstate', function () {
     if (confirm('Are you sure you want to exit?')) {
-      // If confirmed, allow leaving (go back again to clear the history stack)
-      // On some devices this closes the app/tab, on others it goes to the previous page
       window.history.back(); 
     } else {
-      // If cancelled, push state again to keep them on the current page
       window.history.pushState(null, null, window.location.href);
     }
   });
@@ -644,7 +631,7 @@ document.getElementById('passwordInput').addEventListener('keypress', e => {
 });
 document.getElementById('searchInput').addEventListener('input', renderBooks);
 document.getElementById('filterStatus').addEventListener('change', renderBooks);
-document.getElementById('filterRRL').addEventListener('change', renderBooks); // NEW: RRL Filter Listener
+document.getElementById('filterRRL').addEventListener('change', renderBooks);
 document.getElementById('sortBy').addEventListener('change', renderBooks);
 
 document.getElementById('newBookCover')?.addEventListener('change', function(e) {

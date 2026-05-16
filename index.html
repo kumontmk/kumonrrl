@@ -1,281 +1,294 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kumon RRL Online Library</title>
-    <!-- Google Keep Font (Roboto) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        /* Unsaved Changes Indicator */
-        .unsaved-indicator {
-            animation: pulse 2s infinite;
-            font-size: 0.85rem;
-            margin-left: 0.5rem;
-            color: #f59e0b;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kumon RRL Online Library</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- ══════════ LOGIN MODAL ══════════ -->
-    <div class="login-overlay" id="loginOverlay">
-        <div class="login-box">
-            <h2> Admin Login</h2>
-            <p>Enter password to manage library</p>
-            <input type="password" id="passwordInput" placeholder="Enter password" maxlength="10">
-            <button class="btn btn-primary" onclick="login()" style="width: 100%;">Login as Admin</button>
-            <button class="btn btn-small" onclick="closeLoginModal()" style="background:transparent;border:2px solid rgba(255,255,255,0.3);margin-top:0.75rem;width:100%;color:white">Continue as Visitor</button>
-            <p id="loginError" style="color: #fecaca; margin-top: 1rem; display: none;"> Invalid password</p>
-        </div>
+  <!-- ═══════════════════════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════════════════════ -->
+  <header>
+    <div class="header-left">
+      <img src="https://via.placeholder.com/150x50/87CEEB/0f172a?text=Kumon" alt="Kumon Logo" class="header-logo">
+      <h1>📚 Kumon RRL Online Library</h1>
     </div>
-
-    <!-- ══════════ BORROW MODAL ══════════ -->
-    <div class="modal-overlay" id="borrowModal">
-        <div class="modal">
-            <h3>📚 Borrow Book</h3>
-            <p id="borrowBookTitle" style="color:#64748b;margin-bottom:1.5rem;font-style:italic;"></p>
-            <div class="modal-form">
-                <input type="text" id="borrowerName" placeholder="Student Name *" required>
-                <input type="text" id="borrowerGrade" placeholder="Grade (e.g., Grade 3) *" required>
-                <input type="text" id="borrowerLevel" placeholder="Kumon Level (e.g., CII, D) *" required>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-success" onclick="confirmBorrow()">Confirm Borrow</button>
-                <button class="btn btn-small" onclick="closeBorrowModal()" style="background:#64748b">Cancel</button>
-            </div>
-        </div>
+    <div class="header-actions">
+      <span id="modeIndicator" class="mode-indicator">👥 Public View</span>
+      <span id="unsavedIndicator" style="display:none;color:#dc2626;font-weight:600;font-size:0.85rem">● Unsaved changes</span>
+      <button id="logoutBtn" class="btn btn-logout btn-small admin-only" onclick="logout()">🚪 Logout</button>
+      <button class="btn btn-login btn-small public-only" onclick="openLoginModal()">🔐 Login to Borrow/Manage</button>
     </div>
+  </header>
 
-    <!-- ══════════ VISITOR BORROW MODAL ══════════ -->
-    <div class="modal-overlay" id="visitorBorrowModal">
-        <div class="modal">
-            <h3>📚 Borrow a Book</h3>
-            <p style="color:#64748b;margin-bottom:1rem;">To borrow books from our library, please:</p>
-            <div class="contact-info">
-                <h4> Visit or Call Us</h4>
-                <p><strong>Kumon Taipa Mei Keng</strong></p>
-                <p>📞 <a href="tel:+85328831773">+853 2883 1773</a></p>
-                <p>🏠 澳門仔柯維納馬路美景花園美德閣地下AU座</p>
-                <p style="font-size:0.85rem;color:#64748b;margin-top:0.5rem;">
-                    NA TAIPA, ESTRADA GOVERNADOR ALBANO DE OLIVEIRA N° 24,<br>
-                    MEI KENG FA UN RÉS-DO-CHÃO AU
-                </p>
-            </div>
-            <p style="color:#64748b;margin:1.5rem 0 1rem;font-size:0.9rem;">
-                Or if you are an admin, you can log in to manage borrowings:
-            </p>
-            <div class="modal-actions">
-                <button class="btn btn-primary" onclick="openLoginModalFromVisitor()">🔐 Login as Admin</button>
-                <button class="btn btn-small" onclick="closeVisitorBorrowModal()" style="background:#64748b">Close</button>
-            </div>
-        </div>
-    </div>
+  <!-- ═══════════════════════════════════════════════════════════
+       BANNER
+       ═══════════════════════════════════════════════════════════ -->
+  <section class="banner-section">
+    <img src="https://via.placeholder.com/1200x150/e0e7ff/1e40af?text=Read+Grow+Learn" alt="Library Banner" class="banner-image">
+  </section>
 
-    <!-- ══════════ ADD BOOK MODAL ══════════ -->
-    <div class="modal-overlay" id="addBookModal">
-        <div class="modal">
-            <h3>➕ Add New Book</h3>
-            <div class="modal-form">
-                <input type="text" id="newBookTitle" placeholder="Book Title *">
-                <input type="text" id="newBookAuthor" placeholder="Author *">
-                <input type="text" id="newBookGenre" placeholder="Genre">
-                <input type="text" id="newBookLocation" placeholder="Location (e.g., Shelf A3) *">
-                <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, C)">
-                <input type="file" id="newBookCover" accept="image/*" capture="environment" title="Upload or take photo">
-            </div>
-            <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
-            <p id="imageSizeWarning" class="image-warning">⚠️ Large images may fail to save. Images are auto-compressed to 300px @ 20% quality.</p>
-            <div class="modal-actions">
-                <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Save Book</button>
-                <button class="btn btn-small" onclick="closeAddBookModal()" style="background:#64748b">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════ EDIT BOOK MODAL ══════════ -->
-    <div class="modal-overlay" id="editBookModal">
-        <div class="modal">
-            <h3>✏️ Edit Book</h3>
-            <div class="modal-form">
-                <input type="hidden" id="editBookId">
-                <input type="text" id="editBookTitle" placeholder="Book Title *">
-                <input type="text" id="editBookAuthor" placeholder="Author *">
-                <input type="text" id="editBookGenre" placeholder="Genre">
-                <input type="text" id="editBookLocation" placeholder="Location (e.g., Shelf A3) *">
-                <input type="text" id="editBookRRL" placeholder="RRL Level (e.g., A, B, C)">
-                <input type="file" id="editBookCover" accept="image/*" capture="environment" title="Upload or take photo">
-                <p id="editImageHint" style="font-size:0.8rem;color:#64748b;margin-top:0.5rem;">Leave empty to keep current cover image.</p>
-            </div>
-            <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
-            <p id="editImageSizeWarning" class="image-warning">⚠️ Large images may fail to save. Images are auto-compressed to 300px @ 20% quality.</p>
-            <div class="modal-actions">
-                <button class="btn btn-primary" id="editBookBtn" onclick="processEditBook()">Update Book</button>
-                <button class="btn btn-small" onclick="closeEditBookModal()" style="background:#64748b">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════ BOOK DETAIL MODAL ══════════ -->
-    <div class="detail-modal-overlay" id="detailModal">
-        <div class="detail-modal">
-            <button class="close-detail-btn" onclick="closeDetailModal()">✕</button>
-            <div class="detail-content">
-                <div class="detail-cover-full" id="detailCoverFull">
-                    <span class="placeholder-large">📘</span>
-                </div>
-                <div class="detail-info">
-                    <span class="detail-status" id="detailStatus">Available</span>
-                    <h2 class="detail-title" id="detailTitle">Book Title</h2>
-                    <p class="detail-author" id="detailAuthor">by Author Name</p>
-                    
-                    <div class="detail-meta-grid">
-                        <div class="detail-meta-item">
-                            <span class="meta-label">Genre</span>
-                            <span class="meta-value" id="detailGenre">Fiction</span>
-                        </div>
-                        <div class="detail-meta-item">
-                            <span class="meta-label">Location</span>
-                            <span class="meta-value" id="detailLocation">Shelf A3</span>
-                        </div>
-                        <div class="detail-meta-item">
-                            <span class="meta-label">RRL Level</span>
-                            <span class="meta-value" id="detailRRL">A</span>
-                        </div>
-                        <div class="detail-meta-item">
-                            <span class="meta-label">Book ID</span>
-                            <span class="meta-value" id="detailID">#1</span>
-                        </div>
-                    </div>
-
-                    <div class="borrower-section admin-only" id="detailBorrowerSection" style="display:none;">
-                        <h4>Borrower Information</h4>
-                        <div class="borrower-details">
-                            <div class="borrower-row">
-                                <span class="borrower-label">Name:</span>
-                                <span class="borrower-value" id="detailBorrowerName">-</span>
-                            </div>
-                            <div class="borrower-row">
-                                <span class="borrower-label">Grade:</span>
-                                <span class="borrower-value" id="detailBorrowerGrade">-</span>
-                            </div>
-                            <div class="borrower-row">
-                                <span class="borrower-label">Level:</span>
-                                <span class="borrower-value" id="detailBorrowerLevel">-</span>
-                            </div>
-                            <div class="borrower-row">
-                                <span class="borrower-label">Borrowed:</span>
-                                <span class="borrower-value" id="detailBorrowDate">-</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="detail-actions-full">
-                        <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()"> Borrow Book</button>
-                        <button class="btn btn-success btn-large" id="detailReturnBtn" onclick="handleDetailReturn()" style="display:none;">✅ Return Book</button>
-                        <button class="btn btn-primary btn-large admin-only" onclick="openEditModal(selectedBookId)" style="background:#7c3aed">✏️ Edit</button>
-                        <button class="btn btn-danger btn-large admin-only" onclick="handleDetailRemove()">🗑 Remove</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════ MAIN APP ══════════ -->
-    <div id="mainApp">
-        <header>
-            <div class="header-left" onclick="goHome()" style="cursor: pointer;">
-                <img src="logo.png" alt="Kumon Taipa Mei Keng" class="header-logo">
-                <h1>Kumon RRL Online Library</h1>
-                <span id="unsavedIndicator" class="unsaved-indicator" style="display:none;">● Unsaved changes</span>
-            </div>
-            <div class="header-actions">
-                <span class="mode-indicator" id="modeIndicator">👥 Public View</span>
-                <button class="btn btn-small btn-logout admin-only" onclick="logout()">🚪 Logout</button>
-            </div>
-        </header>
-        
-        <!-- Banner Section -->
-        <div class="banner-section">
-            <img src="banner.jpg" alt="Library Banner" class="banner-image">
-        </div>
-        
-        <div class="container">
-            <!-- Stats Container (Admin Only) -->
-            <div class="stats admin-only">
-                <div class="stat-card">
-                    <h3>Total Books</h3>
-                    <div class="number" id="totalBooks">0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Available</h3>
-                    <div class="number" id="availableBooks">0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Borrowed</h3>
-                    <div class="number" id="borrowedBooks">0</div>
-                </div>
-            </div>
-            
-            <!-- Public notice -->
-            <div class="public-notice">
-                <p style="color:#64748b;margin:0; font-size: 1.1rem;">
-                    👋 Welcome! Browse our library below. 
-                    <button class="btn btn-small btn-login admin-only" onclick="openAddBookModal()" style="margin-left:0.75rem;vertical-align:middle">➕ Add Book</button>
-                    <button class="btn btn-small btn-login public-only" onclick="openLoginModal()" style="margin-left:0.75rem;vertical-align:middle">🔐 Login to Borrow/Manage</button>
-                </p>
-            </div>
-            
-            <div class="controls">
-                <input type="text" id="searchInput" placeholder="🔍 Search books by title or author...">
-                <select id="filterStatus">
-                    <option value="all">All Books</option>
-                    <option value="available">Available Only</option>
-                    <option value="borrowed">Borrowed Only</option>
-                </select>
-                <select id="sortBy">
-                    <option value="title">Sort by Title</option>
-                    <option value="author">Sort by Author</option>
-                    <option value="status">Sort by Status</option>
-                    <option value="rrl">Sort by RRL Level</option>
-                </select>
-            </div>
-            
-            <div id="loadingState" class="loading" style="display:none;">
-                <div class="spinner"></div>
-                <p>Loading books from server...</p>
-            </div>
-            
-            <div class="books-grid" id="booksGrid">
-                <!-- Books will be rendered here -->
-            </div>
-            
-            <div class="empty-state" id="emptyState" style="display: none;">
-                <h2>No books found</h2>
-                <p>Try adjusting your search or filter criteria</p>
-            </div>
-        </div>
-
-        <!-- ══════════ FOOTER ══════════ -->
-        <footer class="site-footer">
-            <div class="footer-content">
-                <p>📚 Kumon Taipa Mei Keng &nbsp;•&nbsp; 📞 <a href="tel:+85328831773">2883 1773</a></p>
-            </div>
-        </footer>
-    </div>
+  <!-- ═══════════════════════════════════════════════════════════
+       MAIN APP
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="mainApp" class="container">
     
-    <!-- Floating Action Button for Admin -->
-    <button class="btn btn-primary btn-fab admin-only" onclick="openAddBookModal()" title="Add New Book">➕</button>
-    
-    <div class="toast" id="toast"></div>
-    
-    <!-- External JavaScript -->
-    <script src="script.js" defer></script>
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <h3>Total Books</h3>
+        <div class="number" id="totalBooks">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>Available</h3>
+        <div class="number" id="availableBooks">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>Borrowed</h3>
+        <div class="number" id="borrowedBooks">0</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="🔍 Search title, author, location...">
+      <select id="filterStatus">
+        <option value="all">All Books</option>
+        <option value="available">Available Only</option>
+        <option value="borrowed">Borrowed Only</option>
+      </select>
+      <select id="sortBy">
+        <option value="title">Sort by Title</option>
+        <option value="author">Sort by Author</option>
+        <option value="status">Sort by Status</option>
+        <option value="rrl">Sort by RRL Level</option>
+      </select>
+      <button class="btn btn-primary admin-only" onclick="openAddBookModal()">➕ Add Book</button>
+      <button class="btn btn-primary admin-only" onclick="testConnection()">🔗 Test Firebase</button>
+      <button class="btn btn-success admin-only" onclick="exportBackup()">💾 Export Backup</button>
+    </div>
+
+    <!-- Public Notice -->
+    <div class="public-notice public-only">
+      <p>👋 Welcome! Browse our library below. <strong class="admin-only">➕ Add Book</strong> <strong class="public-only">🔐 Login to Borrow/Manage</strong></p>
+    </div>
+
+    <!-- Books Grid -->
+    <div id="booksGrid" class="books-grid"></div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="empty-state" style="display:none">
+      <h2>📚 Library is empty</h2>
+      <p>Try adjusting your search or filter criteria</p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="loading" style="display:none">
+      <div class="spinner"></div>
+      <p>Loading books from Firebase...</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       FLOATING ACTION BUTTON (Admin Only)
+       ═══════════════════════════════════════════════════════════ -->
+  <button class="btn btn-fab admin-only" onclick="openAddBookModal()">➕</button>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MODALS
+       ═══════════════════════════════════════════════════════════ -->
+
+  <!-- Login Modal -->
+  <div id="loginOverlay" class="login-overlay">
+    <div class="login-box">
+      <h2>🔐 Admin Login</h2>
+      <p>Enter password to manage library</p>
+      <input type="password" id="passwordInput" placeholder="Enter admin password" maxlength="10">
+      <div id="loginError" class="image-warning" style="display:none;margin:0.5rem 0">Invalid password</div>
+      <div class="modal-actions">
+        <button class="btn btn-primary btn-large" onclick="login()">Login as Admin</button>
+        <button class="btn btn-secondary btn-large" onclick="closeLoginModal()">Continue as Visitor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Borrow Modal (Admin) -->
+  <div id="borrowModal" class="modal-overlay">
+    <div class="modal">
+      <h3>📚 Borrow Book</h3>
+      <p style="margin-bottom:1rem;color:var(--text-secondary)">Borrowing: <strong id="borrowBookTitle"></strong></p>
+      <div class="modal-form">
+        <input type="text" id="borrowerName" placeholder="Student Name *" maxlength="50">
+        <input type="text" id="borrowerGrade" placeholder="Grade/Class *" maxlength="20">
+        <input type="text" id="borrowerLevel" placeholder="Kumon Level *" maxlength="10">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-success" onclick="confirmBorrow()">Confirm Borrow</button>
+        <button class="btn btn-secondary" onclick="closeBorrowModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visitor Borrow Modal -->
+  <div id="visitorBorrowModal" class="modal-overlay">
+    <div class="modal">
+      <h3>📚 Borrow a Book</h3>
+      <p style="margin-bottom:1.25rem;color:var(--text-secondary)">
+        To borrow books from our library, please:
+      </p>
+      
+      <div class="contact-info">
+        <h4>📞 Visit or Call Us</h4>
+        <p><strong>Kumon Taipa Mei Keng</strong></p>
+        <p>📞 <a href="tel:+85328831773">+853 2883 1773</a></p>
+        <p>🏠 澳門仔柯維納馬路美景花園美德閣地下AU座<br>
+           NA TAIPA, ESTRADA GOVERNADOR ALBANO DE OLIVEIRA N° 24,<br>
+           MEI KENG FA UN RÉS-DO-CHÃO AU</p>
+      </div>
+      
+      <p style="font-size:0.9rem;color:var(--text-muted);margin-top:1rem">
+        Or if you are an admin, you can log in to manage borrowings:
+      </p>
+      
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="openLoginModalFromVisitor()">🔐 Login as Admin</button>
+        <button class="btn btn-secondary" onclick="closeVisitorBorrowModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Book Modal -->
+  <div id="addBookModal" class="modal-overlay">
+    <div class="modal">
+      <h3>➕ Add New Book</h3>
+      <div class="modal-form">
+        <input type="text" id="newBookTitle" placeholder="Book Title *" maxlength="100">
+        <input type="text" id="newBookAuthor" placeholder="Author Name *" maxlength="60">
+        <input type="text" id="newBookGenre" placeholder="Genre (optional)" maxlength="40">
+        <input type="text" id="newBookLocation" placeholder="Location/Shelf *" maxlength="30">
+        <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, 7A)" maxlength="10">
+        <input type="file" id="newBookCover" accept="image/*">
+        <small class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</small>
+        <div id="imageSizeWarning" class="image-warning"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Save Book</button>
+        <button class="btn btn-secondary" onclick="closeAddBookModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Book Modal -->
+  <div id="editBookModal" class="modal-overlay">
+    <div class="modal">
+      <h3>✏️ Edit Book</h3>
+      <input type="hidden" id="editBookId">
+      <div class="modal-form">
+        <input type="text" id="editBookTitle" placeholder="Book Title *" maxlength="100">
+        <input type="text" id="editBookAuthor" placeholder="Author Name *" maxlength="60">
+        <input type="text" id="editBookGenre" placeholder="Genre (optional)" maxlength="40">
+        <input type="text" id="editBookLocation" placeholder="Location/Shelf *" maxlength="30">
+        <input type="text" id="editBookRRL" placeholder="RRL Level (e.g., A, B, 7A)" maxlength="10">
+        <input type="file" id="editBookCover" accept="image/*">
+        <small class="camera-hint">Leave empty to keep current cover image.<br>📱 On mobile: tap to choose file OR take photo with camera</small>
+        <div id="editImageSizeWarning" class="image-warning"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="editBookBtn" onclick="processEditBook()">Update Book</button>
+        <button class="btn btn-secondary" onclick="closeEditBookModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Book Detail Modal -->
+  <div id="detailModal" class="detail-modal-overlay">
+    <div class="detail-modal">
+      <button class="close-detail-btn" onclick="closeDetailModal()">✕</button>
+      <div class="detail-content">
+        <div class="detail-cover-full" id="detailCoverFull">
+          <span class="placeholder-large">📘</span>
+        </div>
+        <div class="detail-info">
+          <span class="detail-status available" id="detailStatus">✓ Available</span>
+          <h2 class="detail-title" id="detailTitle">Book Title</h2>
+          <p class="detail-author" id="detailAuthor">by Author Name</p>
+          
+          <div class="detail-meta-grid">
+            <div class="detail-meta-item">
+              <span class="meta-label">Genre</span>
+              <span class="meta-value" id="detailGenre">Fiction</span>
+            </div>
+            <div class="detail-meta-item">
+              <span class="meta-label">Location</span>
+              <span class="meta-value" id="detailLocation">Shelf A3</span>
+            </div>
+            <div class="detail-meta-item">
+              <span class="meta-label">RRL Level</span>
+              <span class="meta-value" id="detailRRL">A</span>
+            </div>
+            <div class="detail-meta-item">
+              <span class="meta-label">Book ID</span>
+              <span class="meta-value" id="detailID">#1</span>
+            </div>
+          </div>
+
+          <div class="borrower-section" id="detailBorrowerSection" style="display:none">
+            <h4>📤 Borrower Information</h4>
+            <div class="borrower-details">
+              <div class="borrower-row">
+                <span class="borrower-label">Name</span>
+                <span class="borrower-value" id="detailBorrowerName">-</span>
+              </div>
+              <div class="borrower-row">
+                <span class="borrower-label">Grade</span>
+                <span class="borrower-value" id="detailBorrowerGrade">-</span>
+              </div>
+              <div class="borrower-row">
+                <span class="borrower-label">Level</span>
+                <span class="borrower-value" id="detailBorrowerLevel">-</span>
+              </div>
+              <div class="borrower-row">
+                <span class="borrower-label">Borrowed</span>
+                <span class="borrower-value" id="detailBorrowDate">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-actions-full">
+            <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()" style="display:none">📚 Borrow Book</button>
+            <button class="btn btn-success btn-large admin-only" id="detailReturnBtn" onclick="handleDetailReturn()" style="display:none">✅ Return Book</button>
+            <button class="btn btn-primary btn-small admin-only" id="detailEditBtn" onclick="openEditModal(selectedBookId)">✏️ Edit</button>
+            <button class="btn btn-danger btn-small admin-only" onclick="handleDetailRemove()">🗑 Remove</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════ -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <p>📚 Kumon Taipa Mei Keng  •  📞 <a href="tel:+85328831773">2883 1773</a></p>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       FIREBASE SDK (Compat version for simple usage)
+       ═══════════════════════════════════════════════════════════ -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- App Scripts -->
+  <script src="books-data.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

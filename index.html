@@ -9,48 +9,34 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- ═══════════════════════════════════════════════════════════
-       HEADER
-       ═══════════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════════════ HEADER ═══════════════════════════════════════════════════════════ -->
   <header>
     <div class="header-left">
       <img src="logo.png" alt="Kumon Logo" class="header-logo" onerror="this.style.display='none'">
-      <h1>📚 Kumon RRL Online Library</h1>
+      <h1> Kumon RRL Online Library</h1>
     </div>
     <div class="header-actions">
       <span id="modeIndicator" class="mode-indicator">👥 Public View</span>
       <span id="unsavedIndicator" style="display:none;color:#dc2626;font-weight:600;font-size:0.85rem">● Unsaved changes</span>
       <button id="logoutBtn" class="btn btn-logout btn-small admin-only" onclick="logout()">🚪 Logout</button>
-      <button class="btn btn-login btn-small public-only" onclick="openLoginModal()">🔐 Login to Borrow/Manage</button>
+      <button class="btn btn-login btn-small public-only" onclick="openLoginModal()"> Login to Borrow/Manage</button>
     </div>
   </header>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       BANNER
-       ═══════════════════════════════════════════════════════════ -->
+  <!-- ══════════════════════════════════════════════════════════ BANNER ═══════════════════════════════════════════════════════════ -->
   <section class="banner-section">
-    <img src="banner.jpg" alt="Library Banner" class="banner-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221200%22 height=%22150%22%3E%3Crect fill=%22%23e0e7ff%22 width=%221200%22 height=%22150%22/%3E%3Ctext fill=%22%231e40af%22 font-family=%22Arial%22 font-size=%2240%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22>Read • Grow • Learn</text%3E%3C/svg%3E'">
+    <img src="banner.jpg" alt="Library Banner" class="banner-image" 
+         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221200%22 height=%22150%22%3E%3Crect fill=%22%23e0e7ff%22 width=%221200%22 height=%22150%22/%3E%3Ctext fill=%22%231e40af%22 font-family=%22Arial%22 font-size=%2240%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22>Read • Grow • Learn</text%3E%3C/svg%3E'">
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       MAIN APP
-       ═══════════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════════════ MAIN APP ══════════════════════════════════════════════════════════ -->
   <div id="mainApp" class="container">
     
-    <!-- Stats -->
-    <div class="stats">
-      <div class="stat-card">
-        <h3>Total Books</h3>
-        <div class="number" id="totalBooks">0</div>
-      </div>
-      <div class="stat-card">
-        <h3>Available</h3>
-        <div class="number" id="availableBooks">0</div>
-      </div>
-      <div class="stat-card">
-        <h3>Borrowed</h3>
-        <div class="number" id="borrowedBooks">0</div>
-      </div>
+    <!-- Stats (Admin Only) -->
+    <div class="stats admin-only">
+      <div class="stat-card"><h3>Total Books</h3><div class="number" id="totalBooks">0</div></div>
+      <div class="stat-card"><h3>Available</h3><div class="number" id="availableBooks">0</div></div>
+      <div class="stat-card"><h3>Borrowed</h3><div class="number" id="borrowedBooks">0</div></div>
     </div>
 
     <!-- Controls -->
@@ -74,7 +60,7 @@
 
     <!-- Public Notice -->
     <div class="public-notice public-only">
-      <p>👋 Welcome! Browse our library below. <strong class="admin-only">➕ Add Book</strong> <strong class="public-only">🔐 Login to Borrow/Manage</strong></p>
+      <p>👋 Welcome! Browse our library below. 🔐 Login to Borrow/Manage</p>
     </div>
 
     <!-- Books Grid -->
@@ -93,15 +79,11 @@
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       FLOATING ACTION BUTTON (Admin Only)
-       ═══════════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════════════ FAB (Admin Only) ═══════════════════════════════════════════════════════════ -->
   <button class="btn btn-fab admin-only" onclick="openAddBookModal()">➕</button>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       MODALS
-       ═══════════════════════════════════════════════════════════ -->
-
+  <!-- ═══════════════════════════════════════════════════════════ MODALS ═══════════════════════════════════════════════════════════ -->
+  
   <!-- Login Modal -->
   <div id="loginOverlay" class="login-overlay">
     <div class="login-box">
@@ -116,7 +98,7 @@
     </div>
   </div>
 
-  <!-- Borrow Modal (Admin) -->
+  <!-- Borrow Modal -->
   <div id="borrowModal" class="modal-overlay">
     <div class="modal">
       <h3>📚 Borrow Book</h3>
@@ -137,23 +119,16 @@
   <div id="visitorBorrowModal" class="modal-overlay">
     <div class="modal">
       <h3>📚 Borrow a Book</h3>
-      <p style="margin-bottom:1.25rem;color:var(--text-secondary)">
-        To borrow books from our library, please:
-      </p>
-      
+      <p style="margin-bottom:1.25rem;color:var(--text-secondary)">To borrow books from our library, please:</p>
       <div class="contact-info">
         <h4>📞 Visit or Call Us</h4>
         <p><strong>Kumon Taipa Mei Keng</strong></p>
-        <p>📞 <a href="tel:+85328831773">+853 2883 1773</a></p>
+        <p> <a href="tel:+85328831773">+853 2883 1773</a></p>
         <p>🏠 澳門氹仔柯維納馬路美景花園美德閣地下AU座<br>
            NA TAIPA, ESTRADA GOVERNADOR ALBANO DE OLIVEIRA N° 24,<br>
            MEI KENG FA UN RÉS-DO-CHÃO AU</p>
       </div>
-      
-      <p style="font-size:0.9rem;color:var(--text-muted);margin-top:1rem">
-        Or if you are an admin, you can log in to manage borrowings:
-      </p>
-      
+      <p style="font-size:0.9rem;color:var(--text-muted);margin-top:1rem">Or if you are an admin, you can log in to manage borrowings:</p>
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="openLoginModalFromVisitor()">🔐 Login as Admin</button>
         <button class="btn btn-secondary" onclick="closeVisitorBorrowModal()">Close</button>
@@ -170,8 +145,6 @@
         <input type="text" id="newBookAuthor" placeholder="Author Name *" maxlength="60">
         <input type="text" id="newBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="newBookLocation" placeholder="Location/Shelf *" maxlength="30">
-        
-        <!-- RRL Level Dropdown -->
         <select id="newBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="">Select RRL Level</option>
           <option value="Read Together">Read Together</option>
@@ -187,7 +160,6 @@
           <option value="I">I</option>
           <option value="Further Reading">Further Reading</option>
         </select>
-        
         <input type="file" id="newBookCover" accept="image/*">
         <small class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</small>
         <div id="imageSizeWarning" class="image-warning"></div>
@@ -209,8 +181,6 @@
         <input type="text" id="editBookAuthor" placeholder="Author Name *" maxlength="60">
         <input type="text" id="editBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="editBookLocation" placeholder="Location/Shelf *" maxlength="30">
-        
-        <!-- RRL Level Dropdown -->
         <select id="editBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="Read Together">Read Together</option>
           <option value="2A">2A</option>
@@ -225,7 +195,6 @@
           <option value="I">I</option>
           <option value="Further Reading">Further Reading</option>
         </select>
-        
         <input type="file" id="editBookCover" accept="image/*">
         <small class="camera-hint">Leave empty to keep current cover image.<br>📱 On mobile: tap to choose file OR take photo with camera</small>
         <div id="editImageSizeWarning" class="image-warning"></div>
@@ -242,55 +211,26 @@
     <div class="detail-modal">
       <button class="close-detail-btn" onclick="closeDetailModal()">✕</button>
       <div class="detail-content">
-        <div class="detail-cover-full" id="detailCoverFull">
-          <span class="placeholder-large">📘</span>
-        </div>
+        <div class="detail-cover-full" id="detailCoverFull"><span class="placeholder-large">📘</span></div>
         <div class="detail-info">
           <span class="detail-status available" id="detailStatus">✓ Available</span>
           <h2 class="detail-title" id="detailTitle">Book Title</h2>
           <p class="detail-author" id="detailAuthor">by Author Name</p>
-          
           <div class="detail-meta-grid">
-            <div class="detail-meta-item">
-              <span class="meta-label">Genre</span>
-              <span class="meta-value" id="detailGenre">Fiction</span>
-            </div>
-            <div class="detail-meta-item">
-              <span class="meta-label">Location</span>
-              <span class="meta-value" id="detailLocation">Shelf A3</span>
-            </div>
-            <div class="detail-meta-item">
-              <span class="meta-label">RRL Level</span>
-              <span class="meta-value" id="detailRRL">A</span>
-            </div>
-            <div class="detail-meta-item">
-              <span class="meta-label">Book ID</span>
-              <span class="meta-value" id="detailID">#1</span>
-            </div>
+            <div class="detail-meta-item"><span class="meta-label">Genre</span><span class="meta-value" id="detailGenre">Fiction</span></div>
+            <div class="detail-meta-item"><span class="meta-label">Location</span><span class="meta-value" id="detailLocation">Shelf A3</span></div>
+            <div class="detail-meta-item"><span class="meta-label">RRL Level</span><span class="meta-value" id="detailRRL">A</span></div>
+            <div class="detail-meta-item"><span class="meta-label">Book ID</span><span class="meta-value" id="detailID">#1</span></div>
           </div>
-
           <div class="borrower-section" id="detailBorrowerSection" style="display:none">
             <h4>📤 Borrower Information</h4>
             <div class="borrower-details">
-              <div class="borrower-row">
-                <span class="borrower-label">Name</span>
-                <span class="borrower-value" id="detailBorrowerName">-</span>
-              </div>
-              <div class="borrower-row">
-                <span class="borrower-label">Grade</span>
-                <span class="borrower-value" id="detailBorrowerGrade">-</span>
-              </div>
-              <div class="borrower-row">
-                <span class="borrower-label">Level</span>
-                <span class="borrower-value" id="detailBorrowerLevel">-</span>
-              </div>
-              <div class="borrower-row">
-                <span class="borrower-label">Borrowed</span>
-                <span class="borrower-value" id="detailBorrowDate">-</span>
-              </div>
+              <div class="borrower-row"><span class="borrower-label">Name</span><span class="borrower-value" id="detailBorrowerName">-</span></div>
+              <div class="borrower-row"><span class="borrower-label">Grade</span><span class="borrower-value" id="detailBorrowerGrade">-</span></div>
+              <div class="borrower-row"><span class="borrower-label">Level</span><span class="borrower-value" id="detailBorrowerLevel">-</span></div>
+              <div class="borrower-row"><span class="borrower-label">Borrowed</span><span class="borrower-value" id="detailBorrowDate">-</span></div>
             </div>
           </div>
-
           <div class="detail-actions-full">
             <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()" style="display:none">📚 Borrow Book</button>
             <button class="btn btn-success btn-large admin-only" id="detailReturnBtn" onclick="handleDetailReturn()" style="display:none">✅ Return Book</button>
@@ -302,25 +242,19 @@
     </div>
   </div>
 
-  <!-- Toast Notification -->
+  <!-- Toast -->
   <div id="toast" class="toast"></div>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       FOOTER
-       ═══════════════════════════════════════════════════════════ -->
+  <!-- Footer -->
   <footer class="site-footer">
     <div class="footer-content">
       <p>📚 Kumon Taipa Mei Keng  •  📞 <a href="tel:+85328831773">2883 1773</a></p>
     </div>
   </footer>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       FIREBASE SDK (Compat version)
-       ═══════════════════════════════════════════════════════════ -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-  <!-- App Script -->
   <script src="script.js"></script>
 </body>
 </html>

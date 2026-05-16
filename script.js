@@ -70,6 +70,7 @@ function checkSession() {
 
 function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
+// Apply admin class to BODY so it affects Header, FAB, and Main
 function setAdminMode(active) {
   isAdmin = active;
   const indicator = document.getElementById('modeIndicator');
@@ -204,8 +205,8 @@ function openBookDetail(bookId) {
   document.getElementById('detailRRL').textContent = book.rrlLevel || 'N/A';
   document.getElementById('detailID').textContent = `#${book.id}`;
 
-  // ✅ Strict status check without typos
-  const isBorrowed = book.status === 'borrowed';
+  // ✅ Robust status check: handles spaces, case sensitivity, and undefined values
+  const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
   
   const statusEl = document.getElementById('detailStatus');
   statusEl.textContent = isBorrowed ? '📤 Borrowed' : '✓ Available';
@@ -222,9 +223,18 @@ function openBookDetail(bookId) {
     borrowerSection.style.display = 'none';
   }
 
-  // ✅ Explicitly toggle buttons based on strict boolean
-  document.getElementById('detailBorrowBtn').style.display = isBorrowed ? 'none' : 'flex';
-  document.getElementById('detailReturnBtn').style.display = isBorrowed ? 'flex' : 'none';
+  // ✅ FORCED VISIBILITY TOGGLE
+  // Uses setProperty('display', ..., 'important') to override any CSS !important rules
+  const returnBtn = document.getElementById('detailReturnBtn');
+  const borrowBtn = document.getElementById('detailBorrowBtn');
+
+  if (isBorrowed) {
+    returnBtn.style.setProperty('display', 'flex', 'important');
+    borrowBtn.style.setProperty('display', 'none', 'important');
+  } else {
+    returnBtn.style.setProperty('display', 'none', 'important');
+    borrowBtn.style.setProperty('display', 'flex', 'important');
+  }
 
   document.getElementById('detailModal').classList.add('show');
   document.body.style.overflow = 'hidden';
@@ -548,9 +558,10 @@ function renderBooks() {
   }
   emptyState.style.display = 'none';
 
-  // ✅ Clean template literal without syntax errors
   grid.innerHTML = filteredBooks.map(book => {
-    const isBorrowed = book.status === 'borrowed';
+    // ✅ Robust status check
+    const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
+    
     return `
     <div class="book-card ${isBorrowed ? 'borrowed' : 'available'}" onclick="openBookDetail(${book.id})">
       ${book.coverImage 

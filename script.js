@@ -70,7 +70,6 @@ function checkSession() {
 
 function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
-// Apply admin class to BODY so it affects Header, FAB, and Main
 function setAdminMode(active) {
   isAdmin = active;
   const indicator = document.getElementById('modeIndicator');
@@ -131,6 +130,7 @@ function openBorrowModal(bookId, bookTitle) {
   document.getElementById('borrowerName').value = '';
   document.getElementById('borrowerGrade').value = '';
   document.getElementById('borrowerLevel').value = '';
+  document.getElementById('borrowerCenter').value = ''; // Reset center dropdown
   document.getElementById('borrowModal').classList.add('show');
   document.getElementById('borrowerName').focus();
   setUnsavedChanges(true);
@@ -205,7 +205,6 @@ function openBookDetail(bookId) {
   document.getElementById('detailRRL').textContent = book.rrlLevel || 'N/A';
   document.getElementById('detailID').textContent = `#${book.id}`;
 
-  // ✅ Robust status check: handles spaces, case sensitivity, and undefined values
   const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
   
   const statusEl = document.getElementById('detailStatus');
@@ -218,13 +217,12 @@ function openBookDetail(bookId) {
     document.getElementById('detailBorrowerName').textContent = book.borrower;
     document.getElementById('detailBorrowerGrade').textContent = book.borrowerGrade || '-';
     document.getElementById('detailBorrowerLevel').textContent = book.borrowerLevel || '-';
+    document.getElementById('detailBorrowerCenter').textContent = book.borrowerCenter || 'No Center'; // NEW
     document.getElementById('detailBorrowDate').textContent = book.borrowDate || '-';
   } else {
     borrowerSection.style.display = 'none';
   }
 
-  // ✅ FORCED VISIBILITY TOGGLE
-  // Uses setProperty('display', ..., 'important') to override any CSS !important rules
   const returnBtn = document.getElementById('detailReturnBtn');
   const borrowBtn = document.getElementById('detailBorrowBtn');
 
@@ -403,7 +401,7 @@ async function addBookToSystem(title, author, genre, location, rrlLevel, coverIm
     genre: genre || 'Uncategorized', location,
     rrlLevel: rrlLevel || 'N/A', coverImage,
     status: 'available',
-    borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null
+    borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null, borrowerCenter: null
   };
   books.unshift(newBook);
   if (await saveBooksToFirebase()) {
@@ -475,12 +473,17 @@ async function confirmBorrow() {
   const name = document.getElementById('borrowerName').value.trim();
   const grade = document.getElementById('borrowerGrade').value.trim();
   const level = document.getElementById('borrowerLevel').value.trim();
+  const center = document.getElementById('borrowerCenter').value; // NEW
+  
   if (!name || !grade || !level) { showToast('Please fill in all borrower fields', 'error'); return; }
 
   const book = books.find(b => b.id === pendingBorrowBookId);
   if (book) {
     book.status = 'borrowed'; 
-    book.borrower = name; book.borrowerGrade = grade; book.borrowerLevel = level; 
+    book.borrower = name; 
+    book.borrowerGrade = grade; 
+    book.borrowerLevel = level; 
+    book.borrowerCenter = center || null; // NEW
     book.borrowDate = new Date().toISOString().split('T')[0];
     if (await saveBooksToFirebase()) { 
       closeBorrowModal(); renderBooks(); updateStats();
@@ -496,7 +499,9 @@ async function returnBook(id) {
   if (book) {
     const info = `${book.borrower} (${book.borrowerGrade}, ${book.borrowerLevel})`;
     book.status = 'available'; 
-    book.borrower = null; book.borrowerGrade = null; book.borrowerLevel = null; book.borrowDate = null;
+    book.borrower = null; book.borrowerGrade = null; book.borrowerLevel = null; 
+    book.borrowerCenter = null; // NEW
+    book.borrowDate = null;
     if (await saveBooksToFirebase()) { 
       renderBooks(); updateStats();
       showToast(`✅ "${book.title}" returned by ${info}`, 'success');
@@ -559,9 +564,7 @@ function renderBooks() {
   emptyState.style.display = 'none';
 
   grid.innerHTML = filteredBooks.map(book => {
-    // ✅ Robust status check
     const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
-    
     return `
     <div class="book-card ${isBorrowed ? 'borrowed' : 'available'}" onclick="openBookDetail(${book.id})">
       ${book.coverImage 
@@ -583,7 +586,8 @@ function renderBooks() {
         ? `<div style="margin-top:0.5rem;">
             <span class="borrower-badge">${escapeHtml(book.borrower)}</span><br>
             <small style="color:#64748b;display:block;margin-top:0.25rem">Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small>
-            <small style="color:#94a3b8;display:block">Since: ${book.borrowDate}</small>
+            <small style="color:#64748b;display:block;margin-top:0.15rem">Center: ${escapeHtml(book.borrowerCenter || 'No Center')}</small>
+            <small style="color:#94a3b8;display:block;margin-top:0.15rem">Since: ${book.borrowDate}</small>
            </div>` 
         : ''
       }

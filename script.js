@@ -70,17 +70,18 @@ function checkSession() {
 
 function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
+// FIXED: Applies class to BODY so it affects Header and Main
 function setAdminMode(active) {
   isAdmin = active;
-  const app = document.getElementById('mainApp');
   const indicator = document.getElementById('modeIndicator');
+  
   if (active) {
-    app.classList.add('admin-mode');
+    document.body.classList.add('admin-mode');
     indicator.textContent = '🔐 Admin Mode';
     indicator.classList.add('admin');
   } else {
-    app.classList.remove('admin-mode');
-    indicator.textContent = ' Public View';
+    document.body.classList.remove('admin-mode');
+    indicator.textContent = '👥 Public View';
     indicator.classList.remove('admin');
   }
   updateDetailModalVisibility();
@@ -115,7 +116,7 @@ window.addEventListener('beforeunload', (e) => {
 
 // ═══════════════════════════════════════════════════════════
 // MODAL FUNCTIONS
-// ══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 function openLoginModal() {
   document.getElementById('loginOverlay').classList.add('show');
   document.getElementById('passwordInput').focus();
@@ -569,7 +570,7 @@ function renderBooks() {
     grid.innerHTML = ''; 
     emptyState.style.display = 'block'; 
     emptyState.querySelector('h2').textContent = '📚 Library is empty'; 
-    emptyState.querySelector('p').textContent = isAdmin ? 'Click  to add your first book' : 'Check back soon!'; 
+    emptyState.querySelector('p').textContent = isAdmin ? 'Click ➕ to add your first book' : 'Check back soon!'; 
     return;  
   }
   emptyState.style.display = 'none';
@@ -588,7 +589,7 @@ function renderBooks() {
         <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span> <span>•</span>
         <span>ID: ${book.id}</span>
       </div>
-      <span class="status-badge ${book.status}">${book.status === 'available' ? '✓ Available' : ' Borrowed'}</span>
+      <span class="status-badge ${book.status}">${book.status === 'available' ? '✓ Available' : '📤 Borrowed'}</span>
       ${book.status === 'borrowed' 
         ? `<div style="margin-top:0.5rem;">
             <span class="borrower-badge">${escapeHtml(book.borrower)}</span><br>
@@ -651,7 +652,7 @@ document.getElementById('editBookCover')?.addEventListener('change', function(e)
   const file = e.target.files[0];
   const warningEl = document.getElementById('editImageSizeWarning');
   if (file && file.size > 500 * 1024) {
-    warningEl.textContent = `️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress to 300px @ 20%.`;
+    warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress to 300px @ 20%.`;
     warningEl.classList.add('show');
   } else {
     warningEl.classList.remove('show');

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <base href="/kumonrrl/">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Kumon Recommended Reading List Online Library</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,7 +57,7 @@
         <option value="borrowed">Borrowed Only</option>
       </select>
       
-      <!-- NEW: RRL Level Filter Dropdown -->
+      <!-- RRL Level Filter Dropdown -->
       <select id="filterRRL">
         <option value="">All RRL Levels</option>
         <option value="Read Together">Read Together</option>
@@ -134,7 +135,7 @@
         <input type="text" id="borrowerGrade" placeholder="Grade/Class *" maxlength="20">
         <input type="text" id="borrowerLevel" placeholder="Kumon Level *" maxlength="10">
         
-        <!-- NEW: Borrower Center Dropdown -->
+        <!-- Borrower Center Dropdown -->
         <select id="borrowerCenter" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="">No Center</option>
           <option value="Kumon Taipa Mei Keng">Kumon Taipa Mei Keng</option>
@@ -270,7 +271,6 @@
               <div class="borrower-row"><span class="borrower-label">Name</span><span class="borrower-value" id="detailBorrowerName">-</span></div>
               <div class="borrower-row"><span class="borrower-label">Grade</span><span class="borrower-value" id="detailBorrowerGrade">-</span></div>
               <div class="borrower-row"><span class="borrower-label">Level</span><span class="borrower-value" id="detailBorrowerLevel">-</span></div>
-              <!-- NEW: Center Row -->
               <div class="borrower-row"><span class="borrower-label">Center</span><span class="borrower-value" id="detailBorrowerCenter">-</span></div>
               <div class="borrower-row"><span class="borrower-label">Borrowed</span><span class="borrower-value" id="detailBorrowDate">-</span></div>
             </div>
@@ -305,8 +305,8 @@
   <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then(reg => console.log('Service Worker registered'))
+      navigator.serviceWorker.register('/kumonrrl/sw.js', { scope: '/kumonrrl/' })
+        .then(reg => console.log('Service Worker registered with scope:', reg.scope))
         .catch(err => console.log('Service Worker registration failed:', err));
     });
   }

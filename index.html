@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- ══════════════════════════════════════════════════════════ HEADER ═══════════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════════════ HEADER ═══════════════════════════════════════════════════════════ -->
   <header>
     <div class="header-left">
       <img src="logo.png" alt="Kumon Logo" class="header-logo" onerror="this.style.display='none'">
@@ -19,7 +19,6 @@
       <span id="modeIndicator" class="mode-indicator">👥 Public View</span>
       <span id="unsavedIndicator" style="display:none;color:#dc2626;font-weight:600;font-size:0.85rem">● Unsaved changes</span>
       <button id="logoutBtn" class="btn btn-logout btn-small admin-only" onclick="logout()">🚪 Logout</button>
-      <!-- UPDATED: Button text -->
       <button class="btn btn-login btn-small public-only" onclick="openLoginModal()">🔐 Admin Login</button>
     </div>
   </header>
@@ -77,7 +76,6 @@
 
     <!-- Public Notice -->
     <div class="public-notice public-only">
-      <!-- UPDATED: Removed login text -->
       <p>👋 Welcome! Browse our library below.</p>
     </div>
 
@@ -125,6 +123,16 @@
         <input type="text" id="borrowerName" placeholder="Student Name *" maxlength="50">
         <input type="text" id="borrowerGrade" placeholder="Grade/Class *" maxlength="20">
         <input type="text" id="borrowerLevel" placeholder="Kumon Level *" maxlength="10">
+        
+        <!-- NEW: Center Dropdown -->
+        <select id="borrowerCenter" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
+          <option value="">No Center</option>
+          <option value="Kumon Taipa Mei Keng">Kumon Taipa Mei Keng</option>
+          <option value="Kumon Taipa Pac Tat">Kumon Taipa Pac Tat</option>
+          <option value="Kumon Champs">Kumon Champs</option>
+          <option value="Kumon Tap Siac">Kumon Tap Siac</option>
+        </select>
+        
       </div>
       <div class="modal-actions">
         <button class="btn btn-success" onclick="confirmBorrow()">Confirm Borrow</button>
@@ -139,7 +147,7 @@
       <h3>📚 Borrow a Book</h3>
       <p style="margin-bottom:1.25rem;color:var(--text-secondary)">To borrow books from our library, please:</p>
       <div class="contact-info">
-        <h4> Visit or Call Us</h4>
+        <h4>📞 Visit or Call Us</h4>
         <p><strong>Kumon Taipa Mei Keng</strong></p>
         <p>📞 <a href="tel:+85328831773">+853 2883 1773</a></p>
         <p>🏠 澳門氹仔柯維納馬路美景花園美德閣地下AU座<br>
@@ -163,8 +171,6 @@
         <input type="text" id="newBookAuthor" placeholder="Author Name *" maxlength="60">
         <input type="text" id="newBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="newBookLocation" placeholder="Location/Shelf *" maxlength="30">
-        
-        <!-- RRL Dropdown -->
         <select id="newBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="">Select RRL Level</option>
           <option value="Read Together">Read Together</option>
@@ -180,7 +186,6 @@
           <option value="I">I</option>
           <option value="Further Reading">Further Reading</option>
         </select>
-        
         <input type="file" id="newBookCover" accept="image/*">
         <small class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</small>
         <div id="imageSizeWarning" class="image-warning"></div>
@@ -202,8 +207,6 @@
         <input type="text" id="editBookAuthor" placeholder="Author Name *" maxlength="60">
         <input type="text" id="editBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="editBookLocation" placeholder="Location/Shelf *" maxlength="30">
-        
-        <!-- RRL Dropdown -->
         <select id="editBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="Read Together">Read Together</option>
           <option value="2A">2A</option>
@@ -218,7 +221,6 @@
           <option value="I">I</option>
           <option value="Further Reading">Further Reading</option>
         </select>
-        
         <input type="file" id="editBookCover" accept="image/*">
         <small class="camera-hint">Leave empty to keep current cover image.<br>📱 On mobile: tap to choose file OR take photo with camera</small>
         <div id="editImageSizeWarning" class="image-warning"></div>
@@ -247,11 +249,13 @@
             <div class="detail-meta-item"><span class="meta-label">Book ID</span><span class="meta-value" id="detailID">#1</span></div>
           </div>
           <div class="borrower-section" id="detailBorrowerSection" style="display:none">
-            <h4> Borrower Information</h4>
+            <h4>📤 Borrower Information</h4>
             <div class="borrower-details">
               <div class="borrower-row"><span class="borrower-label">Name</span><span class="borrower-value" id="detailBorrowerName">-</span></div>
               <div class="borrower-row"><span class="borrower-label">Grade</span><span class="borrower-value" id="detailBorrowerGrade">-</span></div>
               <div class="borrower-row"><span class="borrower-label">Level</span><span class="borrower-value" id="detailBorrowerLevel">-</span></div>
+              <!-- NEW: Center Row -->
+              <div class="borrower-row"><span class="borrower-label">Center</span><span class="borrower-value" id="detailBorrowerCenter">-</span></div>
               <div class="borrower-row"><span class="borrower-label">Borrowed</span><span class="borrower-value" id="detailBorrowDate">-</span></div>
             </div>
           </div>

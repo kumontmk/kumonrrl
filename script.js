@@ -1,17 +1,17 @@
 // ═══════════════════════════════════════════════════════════
-// Kumon RRL Online Library - Firebase Migrated Script
+// Kumon RRL Online Library - Realtime Database + Storage
 // ═══════════════════════════════════════════════════════════
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+import { getDatabase, ref as dbRef, onValue, push, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-// 1. FIREBASE CONFIG (Trimmed spaces)
+// 1. FIREBASE CONFIG (Spaces trimmed)
 const firebaseConfig = {
   apiKey: "AIzaSyBo0DXOWKztyMXUXfPhNyoFo9P_Fu-MEn4",
   authDomain: "kumon-library.firebaseapp.com",
   databaseURL: "https://kumon-library-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "kumon-library",
-  storageBucket: "kumon-library.appspot.com", // Updated to standard format
+  storageBucket: "kumon-library.firebasestorage.app",
   messagingSenderId: "479472870788",
   appId: "1:479472870788:web:624ae89b2ce853beac29d1",
   measurementId: "G-V4BJ8FP9QR"
@@ -19,11 +19,11 @@ const firebaseConfig = {
 
 // 2. Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = getDatabase(app);
 const storage = getStorage(app);
-const booksCollection = collection(db, "books");
+const booksRef = dbRef(db, 'books');
 
-// 3. Global State Variables
+// 3. Global State
 let books = [];
 let isAdmin = false;
 let nextId = 1;
@@ -34,59 +34,63 @@ let selectedBookId = null;
 const SESSION_KEY = 'kumon_library_session';
 
 // ═══════════════════════════════════════════════════════════
-// DATA OPERATIONS (Firestore)
+// DATABASE OPERATIONS (Realtime Database)
 // ═══════════════════════════════════════════════════════════
-async function loadBooks() {
+function loadBooks() {
   if (isLoading) return;
   isLoading = true;
   document.getElementById('loadingState').style.display = 'block';
   document.getElementById('booksGrid').innerHTML = '';
-  
-  try {
-    const querySnapshot = await getDocs(booksCollection);
-    books = querySnapshot.docs.map(docSnap => ({
-      id: docSnap.id, // Firestore auto-generates string IDs
-      ...docSnap.data()
-    }));
-    nextId = books.length > 0 ? Math.max(...books.map(b => parseInt(b.id) || 0)) + 1 : 1;
+
+  onValue(booksRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      books = Object.keys(data).map(key => ({
+        id: key,
+        ...data[key]
+      }));
+      nextId = books.length > 0 ? Math.max(...books.map(b => parseInt(b.id) || 0)) + 1 : 1;
+    } else {
+      books = [];
+      nextId = 1;
+    }
     updateStats();
     renderBooks();
-    showToast(`✅ Loaded ${books.length} books`, 'success');
-  } catch (error) {
-    console.error("Load error:", error);
-    showToast("Failed to load library", "error");
-    books = [];
-  } finally {
     isLoading = false;
     document.getElementById('loadingState').style.display = 'none';
-  }
+  }, (error) => {
+    console.error("Load error:", error);
+    showToast("Failed to load library", "error");
+    isLoading = false;
+    document.getElementById('loadingState').style.display = 'none';
+  });
 }
 
-async function uploadImage(file, docId) {
+async function uploadImage(file, bookId) {
   if (!file) return null;
-  const storageRef = ref(storage, `covers/${docId}`);
-  const snapshot = await uploadBytes(storageRef, file);
+  const ref = storageRef(storage, `covers/${bookId}`);
+  const snapshot = await uploadBytes(ref, file);
   return await getDownloadURL(snapshot.ref);
 }
 
-async function addBookToSystem(title, author, genre, location, rrlLevel, coverImageData) {
+async function addBookToSystem(title, author, genre, location, rrlLevel, coverFile) {
   try {
-    const docRef = await addDoc(booksCollection, {
+    const newBookRef = push(booksRef);
+    const bookId = newBookRef.key;
+    
+    await set(newBookRef, {
       title, author, genre: genre || 'Uncategorized', location,
       rrlLevel: rrlLevel || 'N/A', status: 'available',
       borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null,
       lastUpdated: new Date().toISOString()
     });
 
-    if (coverImageData) {
-      // If it's a base64 string (from old compression), convert to blob for upload
-      let fileBlob = coverImageData instanceof File ? coverImageData : await (await fetch(coverImageData)).blob();
-      const url = await uploadImage(fileBlob, docRef.id);
-      await updateDoc(docRef, { coverImage: url });
+    if (coverFile) {
+      const url = await uploadImage(coverFile, bookId);
+      await update(newBookRef, { coverImage: url });
     }
 
     showToast(`"${title}" added successfully`, 'success');
-    loadBooks();
   } catch (error) {
     console.error("Add error:", error);
     showToast("Failed to save book", "error");
@@ -108,15 +112,13 @@ async function processAddBook() {
   const file = document.getElementById('newBookCover').files[0];
 
   try {
-    let coverData = null;
-    if (file) {
-      if (file.size > 500 * 1024) { 
-        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Compressing...`; 
-        warningEl.classList.add('show'); 
-      }
-      coverData = await compressImage(file, 300, 0.2);
+    let finalFile = file;
+    if (file && file.size > 500 * 1024) {
+      warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`;
+      warningEl.classList.add('show');
+      finalFile = await compressImageToBlob(file, 300, 0.2);
     }
-    await addBookToSystem(title, author, genre, location, rrlLevel, coverData);
+    await addBookToSystem(title, author, genre, location, rrlLevel, finalFile);
     closeAddBookModal();
   } catch (error) {
     showToast(`Image error. Adding without image.`, 'error');
@@ -129,6 +131,7 @@ async function processAddBook() {
 
 async function processEditBook() {
   const btn = document.getElementById('editBookBtn');
+  const warningEl = document.getElementById('editImageSizeWarning');
   const id = document.getElementById('editBookId').value;
   const title = document.getElementById('editBookTitle').value.trim();
   const author = document.getElementById('editBookAuthor').value.trim();
@@ -139,7 +142,6 @@ async function processEditBook() {
   if (!title || !author || !location) { showToast('Please fill required fields', 'error'); return; }
 
   btn.disabled = true; btn.textContent = 'Saving...';
-  const docRef = doc(db, "books", id);
   const file = document.getElementById('editBookCover').files[0];
 
   try {
@@ -150,14 +152,13 @@ async function processEditBook() {
       updates.coverImage = url;
     }
 
-    await updateDoc(docRef, updates);
+    await update(dbRef(db, `books/${id}`), updates);
     showToast(`"${title}" updated`, 'success');
     closeEditBookModal();
-    loadBooks();
   } catch (error) {
     showToast("Update failed", "error");
   } finally {
-    btn.disabled = false; btn.textContent = 'Update Book';
+    btn.disabled = false; btn.textContent = 'Update Book'; warningEl.classList.remove('show');
   }
 }
 
@@ -165,9 +166,8 @@ async function removeBook(id) {
   const book = books.find(b => b.id === id);
   if (book && confirm(`Remove "${book.title}"?`)) {
     try {
-      await deleteDoc(doc(db, "books", id));
+      await remove(dbRef(db, `books/${id}`));
       showToast(`"${book.title}" removed`, 'success');
-      loadBooks();
     } catch (error) {
       showToast("Delete failed", "error");
     }
@@ -184,13 +184,12 @@ async function confirmBorrow() {
   if (!book) return;
 
   try {
-    await updateDoc(doc(db, "books", book.id), {
+    await update(dbRef(db, `books/${book.id}`), {
       status: 'borrowed', borrower: name, borrowerGrade: grade,
       borrowerLevel: level, borrowDate: new Date().toISOString().split('T')[0]
     });
     closeBorrowModal();
     showToast(`Borrowed by ${name}`, 'success');
-    loadBooks();
   } catch (error) {
     showToast("Borrow failed", "error");
   }
@@ -202,12 +201,11 @@ async function returnBook(id) {
   if (!book) return;
 
   try {
-    await updateDoc(doc(db, "books", id), {
+    await update(dbRef(db, `books/${id}`), {
       status: 'available', borrower: null, borrowerGrade: null,
       borrowerLevel: null, borrowDate: null
     });
     showToast(`"${book.title}" returned`, 'success');
-    loadBooks();
   } catch (error) {
     showToast("Return failed", "error");
   }
@@ -216,7 +214,7 @@ async function returnBook(id) {
 // ═══════════════════════════════════════════════════════════
 // UTILITY & UI FUNCTIONS
 // ═══════════════════════════════════════════════════════════
-async function compressImage(file, maxWidth = 300, quality = 0.2) {
+function compressImageToBlob(file, maxWidth = 300, quality = 0.2) {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -226,42 +224,28 @@ async function compressImage(file, maxWidth = 300, quality = 0.2) {
       if (width > maxWidth) { height = Math.round((maxWidth / width) * height); width = maxWidth; }
       canvas.width = width; canvas.height = height;
       ctx.drawImage(img, 0, 0, width, height);
-      const compressed = canvas.toDataURL('image/jpeg', quality);
-      URL.revokeObjectURL(img.src);
-      resolve(compressed);
+      canvas.toBlob(blob => {
+        URL.revokeObjectURL(img.src);
+        resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+      }, 'image/jpeg', quality);
     };
     img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('Image load failed')); };
     img.src = URL.createObjectURL(file);
   });
 }
 
-function saveSession() {
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ isAdmin: true, loginTime: new Date().toISOString() }));
-}
-function checkSession() {
-  try { return JSON.parse(localStorage.getItem(SESSION_KEY))?.isAdmin === true; }
-  catch { return false; }
-}
+function saveSession() { localStorage.setItem(SESSION_KEY, JSON.stringify({ isAdmin: true, loginTime: new Date().toISOString() })); }
+function checkSession() { try { return JSON.parse(localStorage.getItem(SESSION_KEY))?.isAdmin === true; } catch { return false; } }
 function clearSession() { localStorage.removeItem(SESSION_KEY); }
-
 function setAdminMode(active) {
   isAdmin = active;
   const appEl = document.getElementById('mainApp');
   const indicator = document.getElementById('modeIndicator');
   if (!appEl || !indicator) return;
-  
-  if (active) {
-    appEl.classList.add('admin-mode');
-    indicator.textContent = '🔐 Admin Mode';
-    indicator.classList.add('admin');
-  } else {
-    appEl.classList.remove('admin-mode');
-    indicator.textContent = '👥 Public View';
-    indicator.classList.remove('admin');
-  }
+  if (active) { appEl.classList.add('admin-mode'); indicator.textContent = '🔐 Admin Mode'; indicator.classList.add('admin'); } 
+  else { appEl.classList.remove('admin-mode'); indicator.textContent = '👥 Public View'; indicator.classList.remove('admin'); }
   if (selectedBookId) openBookDetail(selectedBookId);
 }
-
 function logout() { clearSession(); setAdminMode(false); showToast('Logged out', 'info'); }
 function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 function updateStats() {
@@ -275,10 +259,6 @@ function showToast(message, type = 'success') {
   toast.textContent = message;
   toast.className = `toast ${type} show`;
   setTimeout(() => toast.classList.remove('show'), 3000);
-}
-function showLoading(show) {
-  const el = document.getElementById('loadingState');
-  if (el) el.style.display = show ? 'block' : 'none';
 }
 
 // Modals
@@ -368,24 +348,24 @@ function renderBooks() {
   emptyState.style.display = 'none';
 
   grid.innerHTML = filteredBooks.map(book => `
-     <div class="book-card ${book.status}" onclick="openBookDetail('${book.id}')">
-        ${book.coverImage ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` : `<div class="book-cover">📘</div>`}
-         <div class="book-title">${escapeHtml(book.title)}</div>
-         <div class="book-author">by ${escapeHtml(book.author)}</div>
-         <div class="book-location">📍 ${escapeHtml(book.location)}</div>
-         <div class="book-meta">
-             <span>${escapeHtml(book.genre)}</span> <span>• </span>
-             <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span> <span>• </span>
-             <span>ID: ${book.id}</span>
-         </div>
-         <span class="status-badge ${book.status}">${book.status === 'available' ? '✓ Available' : '📤 Borrowed'}</span>
-        ${book.status === 'borrowed' ? `<div style="margin-top:0.5rem;"><span class="borrower-badge">${escapeHtml(book.borrower)}</span><br><small style="color:#64748b;display:block;margin-top:0.25rem">Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><small style="color:#94a3b8;display:block">Since: ${book.borrowDate}</small></div>` : ''}
-         <div class="book-actions" onclick="event.stopPropagation()">
-            ${book.status === 'available' ? `<button class="btn btn-primary" onclick="openBorrowModal('${book.id}', '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` : `<button class="btn btn-success" onclick="returnBook('${book.id}')">✅ Return</button>`}
-             <button class="btn btn-primary btn-small admin-only" onclick="openEditModal('${book.id}')" style="background:#7c3aed">✏️ Edit</button>
-             <button class="btn btn-danger btn-small admin-only" onclick="removeBook('${book.id}')">🗑 Remove</button>
-         </div>
-     </div>`).join('');
+    <div class="book-card ${book.status}" onclick="openBookDetail('${book.id}')">
+      ${book.coverImage ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\'book-cover\'>📘</div>'">` : `<div class="book-cover">📘</div>`}
+      <div class="book-title">${escapeHtml(book.title)}</div>
+      <div class="book-author">by ${escapeHtml(book.author)}</div>
+      <div class="book-location">📍 ${escapeHtml(book.location)}</div>
+      <div class="book-meta">
+        <span>${escapeHtml(book.genre)}</span><span>•</span>
+        <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span><span>•</span>
+        <span>ID: ${book.id}</span>
+      </div>
+      <span class="status-badge ${book.status}">${book.status === 'available' ? '✓ Available' : '📤 Borrowed'}</span>
+      ${book.status === 'borrowed' ? `<div style="margin-top:0.5rem;"><span class="borrower-badge">${escapeHtml(book.borrower)}</span><br><small style="color:#64748b;display:block;margin-top:0.25rem">Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><small style="color:#94a3b8;display:block">Since: ${book.borrowDate}</small></div>` : ''}
+      <div class="book-actions" onclick="event.stopPropagation()">
+        ${book.status === 'available' ? `<button class="btn btn-primary" onclick="openBorrowModal('${book.id}', '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` : `<button class="btn btn-success" onclick="returnBook('${book.id}')">✅ Return</button>`}
+        <button class="btn btn-primary btn-small admin-only" onclick="openEditModal('${book.id}')" style="background:#7c3aed">✏️ Edit</button>
+        <button class="btn btn-danger btn-small admin-only" onclick="removeBook('${book.id}')">🗑 Remove</button>
+      </div>
+    </div>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -402,7 +382,6 @@ document.getElementById('searchInput').addEventListener('input', renderBooks);
 document.getElementById('filterStatus').addEventListener('change', renderBooks);
 document.getElementById('sortBy').addEventListener('change', renderBooks);
 
-// File input warnings
 document.getElementById('newBookCover')?.addEventListener('change', function(e) {
   const file = e.target.files[0]; const warningEl = document.getElementById('imageSizeWarning');
   if (file && file.size > 500 * 1024) { warningEl.textContent = `⚠️ Large image. Will auto-compress.`; warningEl.classList.add('show'); } 
@@ -414,11 +393,9 @@ document.getElementById('editBookCover')?.addEventListener('change', function(e)
   else { warningEl.classList.remove('show'); }
 });
 
-// Enter key for forms
 ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL'].forEach(id => document.getElementById(id)?.addEventListener('keypress', e => { if (e.key === 'Enter') processAddBook(); }));
 ['editBookTitle','editBookAuthor','editBookGenre','editBookLocation','editBookRRL'].forEach(id => document.getElementById(id)?.addEventListener('keypress', e => { if (e.key === 'Enter') processEditBook(); }));
 
-// Close modals on outside click
 ['loginOverlay','borrowModal','addBookModal','editBookModal','visitorBorrowModal','detailModal'].forEach(id => {
   document.getElementById(id)?.addEventListener('click', e => { if (e.target.id === id) { if(id==='detailModal')closeDetailModal(); else if(id==='loginOverlay')closeLoginModal(); else if(id==='borrowModal')closeBorrowModal(); else if(id==='addBookModal')closeAddBookModal(); else if(id==='editBookModal')closeEditBookModal(); else if(id==='visitorBorrowModal')closeVisitorBorrowModal(); } });
 });

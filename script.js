@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════
-// Kumon RRL Online Library - Firebase Realtime Database Version
+// Kumon RRL Online Library - Firebase Version
 // ═══════════════════════════════════════════════════════════
 
 // Firebase Configuration
@@ -73,14 +73,13 @@ function clearSession() { localStorage.removeItem(SESSION_KEY); }
 function setAdminMode(active) {
   isAdmin = active;
   const indicator = document.getElementById('modeIndicator');
-  
   if (active) {
     document.body.classList.add('admin-mode');
     indicator.textContent = '🔐 Admin Mode';
     indicator.classList.add('admin');
   } else {
     document.body.classList.remove('admin-mode');
-    indicator.textContent = ' Public View';
+    indicator.textContent = '👥 Public View';
     indicator.classList.remove('admin');
   }
   updateDetailModalVisibility();
@@ -102,8 +101,8 @@ function setUnsavedChanges(state) {
   if (indicator) indicator.style.display = state ? 'inline' : 'none';
 }
 
-// ═══════════════════════════════════════════════════════════
-// PAGE EXIT CONFIRMATION
+// ══════════════════════════════════════════════════════════
+// PAGE EXIT CONFIRMATION (For closing tab/window)
 // ═══════════════════════════════════════════════════════════
 window.addEventListener('beforeunload', (e) => {
   if (hasUnsavedChanges) {
@@ -115,7 +114,7 @@ window.addEventListener('beforeunload', (e) => {
 
 // ═══════════════════════════════════════════════════════════
 // MODAL FUNCTIONS
-// ══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 function openLoginModal() {
   document.getElementById('loginOverlay').classList.add('show');
   document.getElementById('passwordInput').focus();
@@ -376,7 +375,7 @@ async function processAddBook() {
     let coverImage = null;
     if (file) {
       if (file.size > 500 * 1024) { 
-        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; 
+        warningEl.textContent = `️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; 
         warningEl.classList.add('show'); 
       }
       coverImage = await compressImage(file, 300, 0.2);
@@ -440,7 +439,7 @@ async function processEditBook() {
     const file = fileInput.files[0];
     if (file) {
       if (file.size > 500 * 1024) {
-        warningEl.textContent = `️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`;
+        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`;
         warningEl.classList.add('show');
       }
       coverImage = await compressImage(file, 300, 0.2);
@@ -524,7 +523,7 @@ async function returnBook(id) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// RENDERING & FILTERING  UPDATED WITH RRL FILTER
+// RENDERING & FILTERING
 // ═══════════════════════════════════════════════════════════
 function getFilteredAndSortedBooks() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -570,8 +569,8 @@ function renderBooks() {
   if (books.length === 0) { 
     grid.innerHTML = ''; 
     emptyState.style.display = 'block'; 
-    emptyState.querySelector('h2').textContent = '📚 Library is empty'; 
-    emptyState.querySelector('p').textContent = isAdmin ? 'Click  to add your first book' : 'Check back soon!'; 
+    emptyState.querySelector('h2').textContent = ' Library is empty'; 
+    emptyState.querySelector('p').textContent = isAdmin ? 'Click ➕ to add your first book' : 'Check back soon!'; 
     return;  
   }
   emptyState.style.display = 'none';
@@ -584,7 +583,7 @@ function renderBooks() {
       }
       <div class="book-title">${escapeHtml(book.title)}</div>
       <div class="book-author">by ${escapeHtml(book.author)}</div>
-      <div class="book-location"> ${escapeHtml(book.location)}</div>
+      <div class="book-location">📍 ${escapeHtml(book.location)}</div>
       <div class="book-meta">
         <span>${escapeHtml(book.genre)}</span> <span>•</span>
         <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span> <span>•</span>
@@ -605,14 +604,14 @@ function renderBooks() {
           : `<button class="btn btn-success" onclick="returnBook(${book.id})">✅ Return</button>`
         }
         <button class="btn btn-primary btn-small admin-only" onclick="openEditModal(${book.id})" style="background:#7c3aed">✏️ Edit</button>
-        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})"> Remove</button>
+        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">🗑 Remove</button>
       </div>
     </div>
   `).join('');
 }
 
 // ═══════════════════════════════════════════════════════════
-// INITIALIZATION & EVENT LISTENERS ⭐ UPDATED
+// INITIALIZATION & EVENT LISTENERS
 // ═══════════════════════════════════════════════════════════
 function initApp() {
   if (checkSession()) {
@@ -622,6 +621,20 @@ function initApp() {
     setAdminMode(false);
   }
   loadBooks();
+
+  // ── BACK BUTTON CONFIRM DIALOG ──
+  // Pushes a state so that tapping back triggers 'popstate' instead of leaving
+  window.history.pushState(null, null, window.location.href);
+  window.addEventListener('popstate', function () {
+    if (confirm('Are you sure you want to exit?')) {
+      // If confirmed, allow leaving (go back again to clear the history stack)
+      // On some devices this closes the app/tab, on others it goes to the previous page
+      window.history.back(); 
+    } else {
+      // If cancelled, push state again to keep them on the current page
+      window.history.pushState(null, null, window.location.href);
+    }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', initApp);

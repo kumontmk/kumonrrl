@@ -70,7 +70,6 @@ function checkSession() {
 
 function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
-// FIXED: Applies class to BODY so it affects Header and Main
 function setAdminMode(active) {
   isAdmin = active;
   const indicator = document.getElementById('modeIndicator');
@@ -81,7 +80,7 @@ function setAdminMode(active) {
     indicator.classList.add('admin');
   } else {
     document.body.classList.remove('admin-mode');
-    indicator.textContent = '👥 Public View';
+    indicator.textContent = ' Public View';
     indicator.classList.remove('admin');
   }
   updateDetailModalVisibility();
@@ -116,7 +115,7 @@ window.addEventListener('beforeunload', (e) => {
 
 // ═══════════════════════════════════════════════════════════
 // MODAL FUNCTIONS
-// ═══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function openLoginModal() {
   document.getElementById('loginOverlay').classList.add('show');
   document.getElementById('passwordInput').focus();
@@ -441,7 +440,7 @@ async function processEditBook() {
     const file = fileInput.files[0];
     if (file) {
       if (file.size > 500 * 1024) {
-        warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`;
+        warningEl.textContent = `️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`;
         warningEl.classList.add('show');
       }
       coverImage = await compressImage(file, 300, 0.2);
@@ -525,11 +524,12 @@ async function returnBook(id) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// RENDERING & FILTERING
+// RENDERING & FILTERING  UPDATED WITH RRL FILTER
 // ═══════════════════════════════════════════════════════════
 function getFilteredAndSortedBooks() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
   const filterStatus = document.getElementById('filterStatus').value;
+  const filterRRL = document.getElementById('filterRRL').value; // NEW: RRL Filter
   const sortBy = document.getElementById('sortBy').value;
   
   let filtered = books.filter(book => {
@@ -537,7 +537,8 @@ function getFilteredAndSortedBooks() {
                          book.author.toLowerCase().includes(searchTerm) ||
                          book.location.toLowerCase().includes(searchTerm);
     const matchesStatus = filterStatus === 'all' || book.status === filterStatus;
-    return matchesSearch && matchesStatus;
+    const matchesRRL = filterRRL === '' || book.rrlLevel === filterRRL; // NEW: RRL Matching
+    return matchesSearch && matchesStatus && matchesRRL;
   });
 
   filtered.sort((a, b) => {
@@ -570,7 +571,7 @@ function renderBooks() {
     grid.innerHTML = ''; 
     emptyState.style.display = 'block'; 
     emptyState.querySelector('h2').textContent = '📚 Library is empty'; 
-    emptyState.querySelector('p').textContent = isAdmin ? 'Click ➕ to add your first book' : 'Check back soon!'; 
+    emptyState.querySelector('p').textContent = isAdmin ? 'Click  to add your first book' : 'Check back soon!'; 
     return;  
   }
   emptyState.style.display = 'none';
@@ -583,7 +584,7 @@ function renderBooks() {
       }
       <div class="book-title">${escapeHtml(book.title)}</div>
       <div class="book-author">by ${escapeHtml(book.author)}</div>
-      <div class="book-location">📍 ${escapeHtml(book.location)}</div>
+      <div class="book-location"> ${escapeHtml(book.location)}</div>
       <div class="book-meta">
         <span>${escapeHtml(book.genre)}</span> <span>•</span>
         <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span> <span>•</span>
@@ -604,14 +605,14 @@ function renderBooks() {
           : `<button class="btn btn-success" onclick="returnBook(${book.id})">✅ Return</button>`
         }
         <button class="btn btn-primary btn-small admin-only" onclick="openEditModal(${book.id})" style="background:#7c3aed">✏️ Edit</button>
-        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">🗑 Remove</button>
+        <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})"> Remove</button>
       </div>
     </div>
   `).join('');
 }
 
 // ═══════════════════════════════════════════════════════════
-// INITIALIZATION & EVENT LISTENERS
+// INITIALIZATION & EVENT LISTENERS ⭐ UPDATED
 // ═══════════════════════════════════════════════════════════
 function initApp() {
   if (checkSession()) {
@@ -630,6 +631,7 @@ document.getElementById('passwordInput').addEventListener('keypress', e => {
 });
 document.getElementById('searchInput').addEventListener('input', renderBooks);
 document.getElementById('filterStatus').addEventListener('change', renderBooks);
+document.getElementById('filterRRL').addEventListener('change', renderBooks); // NEW: RRL Filter Listener
 document.getElementById('sortBy').addEventListener('change', renderBooks);
 
 document.getElementById('newBookCover')?.addEventListener('change', function(e) {

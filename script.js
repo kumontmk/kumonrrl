@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════
-// Kumon RRL Online Library - Realtime Database + Storage
+// Kumon RRL Online Library - Realtime Database (Fixed)
 // ═══════════════════════════════════════════════════════════
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref as dbRef, onValue, push, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-// 1. FIREBASE CONFIG (Spaces trimmed)
+// 1. FIREBASE CONFIG (Cleaned spaces)
 const firebaseConfig = {
   apiKey: "AIzaSyBo0DXOWKztyMXUXfPhNyoFo9P_Fu-MEn4",
   authDomain: "kumon-library.firebaseapp.com",
@@ -42,6 +42,7 @@ function loadBooks() {
   document.getElementById('loadingState').style.display = 'block';
   document.getElementById('booksGrid').innerHTML = '';
 
+  // Realtime Listener - updates automatically
   onValue(booksRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
@@ -78,13 +79,15 @@ async function addBookToSystem(title, author, genre, location, rrlLevel, coverFi
     const newBookRef = push(booksRef);
     const bookId = newBookRef.key;
     
-    await set(newBookRef, {
+    // Save basic data first
+    await update(newBookRef, {
       title, author, genre: genre || 'Uncategorized', location,
       rrlLevel: rrlLevel || 'N/A', status: 'available',
       borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null,
       lastUpdated: new Date().toISOString()
     });
 
+    // Then save image if exists
     if (coverFile) {
       const url = await uploadImage(coverFile, bookId);
       await update(newBookRef, { coverImage: url });
@@ -114,7 +117,7 @@ async function processAddBook() {
   try {
     let finalFile = file;
     if (file && file.size > 500 * 1024) {
-      warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`;
+      warningEl.textContent = `⚠️ Large image. Auto-compressing...`;
       warningEl.classList.add('show');
       finalFile = await compressImageToBlob(file, 300, 0.2);
     }
@@ -276,14 +279,14 @@ function closeEditBookModal() { document.getElementById('editBookModal').classLi
 function openBookDetail(bookId) {
   const book = books.find(b => b.id === bookId); if (!book) return;
   selectedBookId = bookId;
-  document.getElementById('detailCoverFull').innerHTML = book.coverImage ? `<img src="${book.coverImage}" alt="${escapeHtml(book.title)}">` : '<span class="placeholder-large">📘</span>';
+  document.getElementById('detailCoverFull').innerHTML = book.coverImage ? `<img src="${book.coverImage}" alt="${escapeHtml(book.title)}">` : '<span class="placeholder-large"></span>';
   document.getElementById('detailTitle').textContent = book.title;
   document.getElementById('detailAuthor').textContent = `by ${book.author}`;
   document.getElementById('detailGenre').textContent = book.genre || 'Uncategorized';
   document.getElementById('detailLocation').textContent = book.location;
   document.getElementById('detailRRL').textContent = book.rrlLevel || 'N/A';
   document.getElementById('detailID').textContent = `#${book.id}`;
-  const statusEl = document.getElementById('detailStatus'); statusEl.textContent = book.status === 'available' ? '✓ Available' : '📤 Borrowed'; statusEl.className = `detail-status ${book.status}`;
+  const statusEl = document.getElementById('detailStatus'); statusEl.textContent = book.status === 'available' ? '✓ Available' : ' Borrowed'; statusEl.className = `detail-status ${book.status}`;
   const borrowerSection = document.getElementById('detailBorrowerSection');
   if (book.status === 'borrowed' && book.borrower) {
     borrowerSection.style.display = 'block';

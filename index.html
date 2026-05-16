@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Kumon RRL Online Library</title>
+  <title>Kumon Recommended Reading List Online Library</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
@@ -13,16 +13,12 @@
   <header>
     <div class="header-left">
       <img src="logo.png" alt="Kumon Logo" class="header-logo" onerror="this.style.display='none'">
-      <h1>📚 Kumon RRL Online Library</h1>
+      <h1>Kumon Recommended Reading List Online Library</h1>
     </div>
     <div class="header-actions">
       <span id="modeIndicator" class="mode-indicator">👥 Public View</span>
       <span id="unsavedIndicator" style="display:none;color:#dc2626;font-weight:600;font-size:0.85rem">● Unsaved changes</span>
-      
-      <!-- Admin Button: Only visible in Admin Mode -->
       <button id="logoutBtn" class="btn btn-logout btn-small admin-only" onclick="logout()">🚪 Logout</button>
-      
-      <!-- Public Button: Only visible in Public Mode -->
       <button class="btn btn-login btn-small public-only" onclick="openLoginModal()">🔐 Login to Borrow/Manage</button>
     </div>
   </header>
@@ -33,7 +29,7 @@
          onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221200%22 height=%22150%22%3E%3Crect fill=%22%23e0e7ff%22 width=%221200%22 height=%22150%22/%3E%3Ctext fill=%22%231e40af%22 font-family=%22Arial%22 font-size=%2240%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22>Read • Grow • Learn</text%3E%3C/svg%3E'">
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════ MAIN APP ══════════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════════════ MAIN APP ═════════════════════════════════════════════════════════ -->
   <div id="mainApp" class="container">
     
     <!-- Stats (Admin Only) -->
@@ -50,6 +46,22 @@
         <option value="all">All Books</option>
         <option value="available">Available Only</option>
         <option value="borrowed">Borrowed Only</option>
+      </select>
+      <!-- NEW: RRL Level Filter Dropdown -->
+      <select id="filterRRL">
+        <option value="">All RRL Levels</option>
+        <option value="Read Together">Read Together</option>
+        <option value="2A">2A</option>
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+        <option value="E">E</option>
+        <option value="F">F</option>
+        <option value="G">G</option>
+        <option value="H">H</option>
+        <option value="I">I</option>
+        <option value="Further Reading">Further Reading</option>
       </select>
       <select id="sortBy">
         <option value="title">Sort by Title</option>
@@ -125,7 +137,7 @@
       <h3>📚 Borrow a Book</h3>
       <p style="margin-bottom:1.25rem;color:var(--text-secondary)">To borrow books from our library, please:</p>
       <div class="contact-info">
-        <h4>📞 Visit or Call Us</h4>
+        <h4> Visit or Call Us</h4>
         <p><strong>Kumon Taipa Mei Keng</strong></p>
         <p>📞 <a href="tel:+85328831773">+853 2883 1773</a></p>
         <p>🏠 澳門氹仔柯維納馬路美景花園美德閣地下AU座<br>
@@ -150,7 +162,7 @@
         <input type="text" id="newBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="newBookLocation" placeholder="Location/Shelf *" maxlength="30">
         
-        <!-- RRL Dropdown -->
+        <!-- RRL Dropdown for Adding -->
         <select id="newBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="">Select RRL Level</option>
           <option value="Read Together">Read Together</option>
@@ -168,7 +180,7 @@
         </select>
         
         <input type="file" id="newBookCover" accept="image/*">
-        <small class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</small>
+        <small class="camera-hint"> On mobile: tap to choose file OR take photo with camera</small>
         <div id="imageSizeWarning" class="image-warning"></div>
       </div>
       <div class="modal-actions">
@@ -189,7 +201,7 @@
         <input type="text" id="editBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="editBookLocation" placeholder="Location/Shelf *" maxlength="30">
         
-        <!-- RRL Dropdown -->
+        <!-- RRL Dropdown for Editing -->
         <select id="editBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="Read Together">Read Together</option>
           <option value="2A">2A</option>
@@ -245,7 +257,7 @@
             <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()" style="display:none">📚 Borrow Book</button>
             <button class="btn btn-success btn-large admin-only" id="detailReturnBtn" onclick="handleDetailReturn()" style="display:none">✅ Return Book</button>
             <button class="btn btn-primary btn-small admin-only" id="detailEditBtn" onclick="openEditModal(selectedBookId)">✏️ Edit</button>
-            <button class="btn btn-danger btn-small admin-only" onclick="handleDetailRemove()">🗑 Remove</button>
+            <button class="btn btn-danger btn-small admin-only" onclick="handleDetailRemove()"> Remove</button>
           </div>
         </div>
       </div>

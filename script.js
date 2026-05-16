@@ -130,7 +130,7 @@ function openBorrowModal(bookId, bookTitle) {
   document.getElementById('borrowerName').value = '';
   document.getElementById('borrowerGrade').value = '';
   document.getElementById('borrowerLevel').value = '';
-  document.getElementById('borrowerCenter').value = ''; // Reset center dropdown
+  document.getElementById('borrowerCenter').value = '';
   document.getElementById('borrowModal').classList.add('show');
   document.getElementById('borrowerName').focus();
   setUnsavedChanges(true);
@@ -205,6 +205,7 @@ function openBookDetail(bookId) {
   document.getElementById('detailRRL').textContent = book.rrlLevel || 'N/A';
   document.getElementById('detailID').textContent = `#${book.id}`;
 
+  // ✅ Robust status check
   const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
   
   const statusEl = document.getElementById('detailStatus');
@@ -217,12 +218,13 @@ function openBookDetail(bookId) {
     document.getElementById('detailBorrowerName').textContent = book.borrower;
     document.getElementById('detailBorrowerGrade').textContent = book.borrowerGrade || '-';
     document.getElementById('detailBorrowerLevel').textContent = book.borrowerLevel || '-';
-    document.getElementById('detailBorrowerCenter').textContent = book.borrowerCenter || 'No Center'; // NEW
+    document.getElementById('detailBorrowerCenter').textContent = book.borrowerCenter || 'No Center';
     document.getElementById('detailBorrowDate').textContent = book.borrowDate || '-';
   } else {
     borrowerSection.style.display = 'none';
   }
 
+  // ✅ FORCED VISIBILITY TOGGLE
   const returnBtn = document.getElementById('detailReturnBtn');
   const borrowBtn = document.getElementById('detailBorrowBtn');
 
@@ -473,7 +475,7 @@ async function confirmBorrow() {
   const name = document.getElementById('borrowerName').value.trim();
   const grade = document.getElementById('borrowerGrade').value.trim();
   const level = document.getElementById('borrowerLevel').value.trim();
-  const center = document.getElementById('borrowerCenter').value; // NEW
+  const center = document.getElementById('borrowerCenter').value;
   
   if (!name || !grade || !level) { showToast('Please fill in all borrower fields', 'error'); return; }
 
@@ -483,7 +485,7 @@ async function confirmBorrow() {
     book.borrower = name; 
     book.borrowerGrade = grade; 
     book.borrowerLevel = level; 
-    book.borrowerCenter = center || null; // NEW
+    book.borrowerCenter = center || null;
     book.borrowDate = new Date().toISOString().split('T')[0];
     if (await saveBooksToFirebase()) { 
       closeBorrowModal(); renderBooks(); updateStats();
@@ -500,7 +502,7 @@ async function returnBook(id) {
     const info = `${book.borrower} (${book.borrowerGrade}, ${book.borrowerLevel})`;
     book.status = 'available'; 
     book.borrower = null; book.borrowerGrade = null; book.borrowerLevel = null; 
-    book.borrowerCenter = null; // NEW
+    book.borrowerCenter = null;
     book.borrowDate = null;
     if (await saveBooksToFirebase()) { 
       renderBooks(); updateStats();

@@ -7,6 +7,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#87CEEB">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kumon RRL Library">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
   <!-- ═══════════════════════════════════════════════════════════ HEADER ═══════════════════════════════════════════════════════════ -->
@@ -47,7 +55,8 @@
         <option value="available">Available Only</option>
         <option value="borrowed">Borrowed Only</option>
       </select>
-      <!-- RRL Level Filter Dropdown -->
+      
+      <!-- NEW: RRL Level Filter Dropdown -->
       <select id="filterRRL">
         <option value="">All RRL Levels</option>
         <option value="Read Together">Read Together</option>
@@ -63,6 +72,7 @@
         <option value="I">I</option>
         <option value="Further Reading">Further Reading</option>
       </select>
+
       <select id="sortBy">
         <option value="title">Sort by Title</option>
         <option value="author">Sort by Author</option>
@@ -124,7 +134,7 @@
         <input type="text" id="borrowerGrade" placeholder="Grade/Class *" maxlength="20">
         <input type="text" id="borrowerLevel" placeholder="Kumon Level *" maxlength="10">
         
-        <!-- NEW: Center Dropdown -->
+        <!-- NEW: Borrower Center Dropdown -->
         <select id="borrowerCenter" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="">No Center</option>
           <option value="Kumon Taipa Mei Keng">Kumon Taipa Mei Keng</option>
@@ -171,6 +181,8 @@
         <input type="text" id="newBookAuthor" placeholder="Author Name *" maxlength="60">
         <input type="text" id="newBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="newBookLocation" placeholder="Location/Shelf *" maxlength="30">
+        
+        <!-- RRL Dropdown for Adding -->
         <select id="newBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="">Select RRL Level</option>
           <option value="Read Together">Read Together</option>
@@ -186,6 +198,7 @@
           <option value="I">I</option>
           <option value="Further Reading">Further Reading</option>
         </select>
+        
         <input type="file" id="newBookCover" accept="image/*">
         <small class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</small>
         <div id="imageSizeWarning" class="image-warning"></div>
@@ -207,6 +220,8 @@
         <input type="text" id="editBookAuthor" placeholder="Author Name *" maxlength="60">
         <input type="text" id="editBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="editBookLocation" placeholder="Location/Shelf *" maxlength="30">
+        
+        <!-- RRL Dropdown for Editing -->
         <select id="editBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="Read Together">Read Together</option>
           <option value="2A">2A</option>
@@ -221,6 +236,7 @@
           <option value="I">I</option>
           <option value="Further Reading">Further Reading</option>
         </select>
+        
         <input type="file" id="editBookCover" accept="image/*">
         <small class="camera-hint">Leave empty to keep current cover image.<br>📱 On mobile: tap to choose file OR take photo with camera</small>
         <div id="editImageSizeWarning" class="image-warning"></div>
@@ -284,5 +300,16 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="script.js"></script>
+
+  <!-- PWA Service Worker Registration -->
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('Service Worker registered'))
+        .catch(err => console.log('Service Worker registration failed:', err));
+    });
+  }
+  </script>
 </body>
 </html>

@@ -2,20 +2,93 @@
 // Kumon RRL Online Library - Main Application Script
 // ═══════════════════════════════════════════════════════════
 
-const JSONBIN_CONFIG = {
-    BIN_ID: '6a054b89c0954111d81ee9ae',
-    API_KEY: '$2a$10$qpIr10Jqth.YmzBxSKxOGOhrZca7MHe5TVL0CzCc1uzkh/U9A1GHW',
-    BASE_URL: 'https://api.jsonbin.io/v3/b'
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
+
+// 1. YOUR FIREBASE CONFIG (Paste from Firebase Console here)
+const firebaseConfig = {
+    apiKey: "AIzaSyBo0DXOWKztyMXUXfPhNyoFo9P_Fu-MEn4",
+    authDomain: "kumon-library.firebaseapp.com",
+    databaseURL: "https://kumon-library-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "kumon-library",
+    storageBucket: "kumon-library.firebasestorage.app",
+    messagingSenderId: "479472870788",
+    appId: "1:479472870788:web:624ae89b2ce853beac29d1",
+    measurementId: "G-V4BJ8FP9QR"
 };
 
-const SESSION_KEY = 'kumonLibrarySession';
-let books = [];
-let nextId = 1;
-let isLoading = false;
-let isAdmin = false;
-let pendingBorrowBookId = null;
-let pendingReturnBookId = null;
-let selectedBookId = null;
+// 2. Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+const booksCollection = collection(db, "books");
+const analytics = getAnalytics(app);
+
+let books = []; // Still use the local array for the UI
+
+// 3. Updated Load Function
+async function loadBooks() {
+    showLoading(true);
+    try {
+        const querySnapshot = await getDocs(booksCollection);
+        books = querySnapshot.docs.map(doc => ({
+            id: doc.id, // Firestore uses string IDs
+            ...doc.data()
+        }));
+        renderBooks();
+    } catch (error) {
+        showToast("Error loading library", "error");
+        console.error(error);
+    } finally {
+        showLoading(false);
+    }
+}
+
+// 4. Updated Image Upload Logic
+async function uploadImage(file, bookId) {
+    if (!file) return null;
+    const storageRef = ref(storage, `covers/${bookId}`);
+    const snapshot = await uploadBytes(storageRef, file);
+    return await getDownloadURL(snapshot.ref);
+}
+
+// 5. Updated Save (Add) Function
+// Inside your existing processAddBook() function, replace the save part with this:
+async function processAddBook() {
+    // ... (keep your existing validation and field grabbing) ...
+
+    const newBookData = {
+        title, author, genre, location, rrlLevel,
+        status: 'available',
+        borrower: null,
+        borrowDate: null,
+        lastUpdated: new Date().toISOString()
+    };
+
+    try {
+        showLoading(true);
+        // Create the doc first to get an ID
+        const docRef = await addDoc(booksCollection, newBookData);
+        
+        // If there's an image, upload it and update the doc with the URL
+        const fileInput = document.getElementById('bookCover');
+        if (fileInput.files[0]) {
+            const imageUrl = await uploadImage(fileInput.files[0], docRef.id);
+            await updateDoc(docRef, { coverImage: imageUrl });
+        }
+
+        showToast("Book added successfully!");
+        closeAddBookModal();
+        loadBooks(); // Refresh list
+    } catch (error) {
+        showToast("Failed to save book", "error");
+    } finally {
+        showLoading(false);
+    }
+}
 
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS

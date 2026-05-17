@@ -21,14 +21,29 @@
   <!-- ═══════════════════════════════════════════════════════════ HEADER ═══════════════════════════════════════════════════════════ -->
   <header>
     <div class="header-left">
+      <!-- Hamburger Menu Button (Mobile Only) -->
+      <button class="hamburger-btn" onclick="toggleMobileMenu()" aria-label="Toggle menu">☰</button>
+      
       <img src="logo.png" alt="Kumon Logo" class="header-logo" onerror="this.style.display='none'">
       <h1>Kumon Recommended Reading List Online Library</h1>
     </div>
-    <div class="header-actions">
+    
+    <!-- Desktop Header Actions -->
+    <div class="header-actions desktop-actions">
       <span id="modeIndicator" class="mode-indicator">👥 Public View</span>
       <span id="unsavedIndicator" style="display:none;color:#dc2626;font-weight:600;font-size:0.85rem">● Unsaved changes</span>
       <button id="logoutBtn" class="btn btn-logout btn-small admin-only" onclick="logout()">🚪 Logout</button>
       <button class="btn btn-login btn-small public-only" onclick="openLoginModal()">🔐 Admin Login</button>
+    </div>
+    
+    <!-- Mobile Menu Dropdown -->
+    <div id="mobileMenu" class="mobile-menu">
+      <div class="mobile-menu-content">
+        <span id="mobileModeIndicator" class="mode-indicator">👥 Public View</span>
+        <span id="mobileUnsavedIndicator" style="display:none;color:#dc2626;font-weight:600;font-size:0.9rem;margin:0.5rem 0">● Unsaved changes</span>
+        <button id="mobileLogoutBtn" class="btn btn-logout admin-only" onclick="logout()" style="width:100%;margin:0.5rem 0">🚪 Logout</button>
+        <button class="btn btn-login public-only" onclick="openLoginModal();closeMobileMenu()" style="width:100%;margin:0.5rem 0">🔐 Admin Login</button>
+      </div>
     </div>
   </header>
 
@@ -203,7 +218,7 @@
         <h4>📞 Visit or Call Us</h4>
         <p><strong>Kumon Taipa Mei Keng</strong></p>
         <p>📞 <a href="tel:+85328831773">+853 2883 1773</a></p>
-        <p>🏠 澳門氹仔柯維納馬路美景花園美德閣地下AU座<br>
+        <p>🏠 澳門仔柯維納馬路美景花園美德閣地下AU座<br>
            NA TAIPA, ESTRADA GOVERNADOR ALBANO DE OLIVEIRA N° 24,<br>
            MEI KENG FA UN RÉS-DO-CHÃO AU</p>
       </div>

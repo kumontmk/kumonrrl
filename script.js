@@ -72,10 +72,11 @@ function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
 function setAdminMode(active) {
   isAdmin = active;
-  // ✅ FIX: Toggle body class so CSS rules apply correctly
   document.body.classList.toggle('admin-mode', active);
   
-  // Update both desktop and mobile indicators
+  // Reset unsaved changes on login to prevent immediate badge display
+  if (active) hasUnsavedChanges = false;
+
   const indicators = ['modeIndicator', 'mobileModeIndicator'];
   indicators.forEach(id => {
     const el = document.getElementById(id);
@@ -84,13 +85,22 @@ function setAdminMode(active) {
       el.classList.toggle('admin', active);
     }
   });
-  
-  // Update unsaved indicators
+
+  updateUnsavedIndicator();
+  updateDetailModalVisibility();
+}
+
+function updateUnsavedIndicator() {
+  const show = isAdmin && hasUnsavedChanges;
   ['unsavedIndicator', 'mobileUnsavedIndicator'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.style.display = hasUnsavedChanges ? 'inline' : 'none';
+    if (el) el.classList.toggle('show', show);
   });
-  updateDetailModalVisibility();
+}
+
+function setUnsavedChanges(state) {
+  hasUnsavedChanges = state;
+  updateUnsavedIndicator();
 }
 
 function updateDetailModalVisibility() {
@@ -106,19 +116,12 @@ function logout() {
   showToast('Logged out - now in Public View', 'info');
 }
 
-function setUnsavedChanges(state) {
-  hasUnsavedChanges = state;
-  ['unsavedIndicator', 'mobileUnsavedIndicator'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = state ? 'inline' : 'none';
-  });
-}
-
 // ═══════════════════════════════════════════════════════════
 // MOBILE MENU FUNCTIONS
 // ═══════════════════════════════════════════════════════════
 function toggleMobileMenu() {
-  document.getElementById('mobileMenu')?.classList.toggle('show');
+  const menu = document.getElementById('mobileMenu');
+  menu?.classList.toggle('show');
 }
 
 function closeMobileMenu() {
@@ -196,8 +199,7 @@ function getAverageRating(ratings) {
 function selectRating(val) {
   selectedRating = val;
   document.querySelectorAll('#detailStars .star-btn').forEach((btn, index) => {
-    if (index < val) btn.classList.add('active');
-    else btn.classList.remove('active');
+    btn.classList.toggle('active', index < val);
   });
 }
 
@@ -239,10 +241,7 @@ function openBorrowModal(bookId, bookTitle) {
   if (!isAdmin) { openVisitorBorrowModal(bookId, bookTitle); return; }
   pendingBorrowBookId = bookId;
   document.getElementById('borrowBookTitle').textContent = `"${bookTitle}"`;
-  document.getElementById('borrowerName').value = '';
-  document.getElementById('borrowerGrade').value = '';
-  document.getElementById('borrowerLevel').value = '';
-  document.getElementById('borrowerPhone').value = '';
+  ['borrowerName','borrowerGrade','borrowerLevel','borrowerPhone'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('borrowerCenter').value = '';
   document.getElementById('borrowModal').classList.add('show');
   document.getElementById('borrowerName').focus();
@@ -322,9 +321,10 @@ function openBookDetail(bookId) {
   const book = books.find(b => b.id === bookId);
   if (!book) return;
   selectedBookId = bookId;
+  
   const coverEl = document.getElementById('detailCoverFull');
-  coverEl.innerHTML = book.coverImage
-    ? `<img src="${book.coverImage}" alt="${escapeHtml(book.title)}">`
+  coverEl.innerHTML = book.coverImage 
+    ? `<img src="${book.coverImage}" alt="${escapeHtml(book.title)}">` 
     : '<span class="placeholder-large">📘</span>';
     
   document.getElementById('detailTitle').textContent = book.title;
@@ -460,30 +460,6 @@ async function saveBooksToFirebase() {
     showToast(`Save failed: ${error.message}`, 'error');
     return false;
   }
-}
-
-async function testConnection() {
-  showToast('Testing Firebase connection...', 'info');
-  try {
-    const snapshot = await BOOKS_REF.once('value');
-    const data = snapshot.val();
-    const count = data ? Object.keys(data).length : 0;
-    showToast(`✅ Connected! ${count} books in database`, 'success');
-  } catch (error) {
-    showToast(`❌ Error: ${error.message}`, 'error');
-  }
-}
-
-function exportBackup() {
-  if (books.length === 0) { showToast('No books to export', 'info'); return; }
-  const blob = new Blob([JSON.stringify(books, null, 2)], {type: 'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `kumon-library-backup-${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Backup downloaded!', 'success');
 }
 
 function updateStats() {

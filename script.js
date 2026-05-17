@@ -29,6 +29,7 @@ let pendingBorrowBookId = null;
 let pendingReturnBookId = null;
 let selectedBookId = null;
 let hasUnsavedChanges = false;
+let selectedRating = 0; // For the rating picker in modal
 
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
@@ -88,7 +89,7 @@ function updateDetailModalVisibility() {
   if (selectedBookId) openBookDetail(selectedBookId);
 }
 
-// ✅ FIX: Logout now refreshes UI to hide private info
+// ✅ FIX: Logout refreshes UI to hide private info
 function logout() {
   clearSession();
   setAdminMode(false);
@@ -104,18 +105,43 @@ function setUnsavedChanges(state) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// PAGE EXIT & BACK BUTTON CONFIRMATION
+// RATING SYSTEM
 // ═══════════════════════════════════════════════════════════
-window.addEventListener('beforeunload', (e) => {
-  if (hasUnsavedChanges) {
-    e.preventDefault();
-    e.returnValue = '';
-    return '';
+function getAverageRating(ratings) {
+  if (!ratings || ratings.length === 0) return 0;
+  const sum = ratings.reduce((a, b) => a + b, 0);
+  return (sum / ratings.length).toFixed(1);
+}
+
+function selectRating(val) {
+  selectedRating = val;
+  const stars = document.querySelectorAll('#detailStars .star-btn');
+  stars.forEach((btn, index) => {
+    if (index < val) btn.classList.add('active');
+    else btn.classList.remove('active');
+  });
+}
+
+async function submitRating() {
+  if (selectedRating === 0) {
+    showToast('Please select a rating', 'error');
+    return;
   }
-});
+  const book = books.find(b => b.id === selectedBookId);
+  if (book) {
+    book.ratings = book.ratings || [];
+    book.ratings.push(selectedRating);
+    
+    if (await saveBooksToFirebase()) {
+      showToast('Rating submitted!', 'success');
+      openBookDetail(selectedBookId); // Refresh modal
+      renderBooks(); // Refresh grid
+    }
+  }
+}
 
 // ═══════════════════════════════════════════════════════════
-// CAROUSEL LOGIC (New)
+// CAROUSEL LOGIC
 // ═══════════════════════════════════════════════════════════
 let currentSlide = 0;
 let carouselInterval;
@@ -124,7 +150,6 @@ function initCarousel() {
   const slides = document.querySelectorAll('.carousel-slide');
   const dotsContainer = document.querySelector('.carousel-dots');
   
-  // Create dots
   slides.forEach((_, index) => {
     const dot = document.createElement('div');
     dot.classList.add('dot');
@@ -138,14 +163,9 @@ function initCarousel() {
 
 function updateCarousel() {
   const track = document.querySelector('.carousel-track');
-  const slides = document.querySelectorAll('.carousel-slide');
   const dots = document.querySelectorAll('.dot');
-  
   track.style.transform = `translateX(-${currentSlide * 100}%)`;
-  
-  dots.forEach((dot, index) => {
-    dot.classList.toggle('active', index === currentSlide);
-  });
+  dots.forEach((dot, index) => dot.classList.toggle('active', index === currentSlide));
 }
 
 function moveSlide(direction) {
@@ -162,9 +182,7 @@ function goToSlide(index) {
 }
 
 function startCarouselAutoPlay() {
-  carouselInterval = setInterval(() => {
-    moveSlide(1);
-  }, 5000); // Change slide every 5 seconds
+  carouselInterval = setInterval(() => moveSlide(1), 5000);
 }
 
 function resetCarouselAutoPlay() {
@@ -172,13 +190,8 @@ function resetCarouselAutoPlay() {
   startCarouselAutoPlay();
 }
 
-// Pause carousel on hover
-document.querySelector('.banner-carousel')?.addEventListener('mouseenter', () => {
-  clearInterval(carouselInterval);
-});
-document.querySelector('.banner-carousel')?.addEventListener('mouseleave', () => {
-  startCarouselAutoPlay();
-});
+document.querySelector('.banner-carousel')?.addEventListener('mouseenter', () => clearInterval(carouselInterval));
+document.querySelector('.banner-carousel')?.addEventListener('mouseleave', () => startCarouselAutoPlay());
 
 
 // ═══════════════════════════════════════════════════════════
@@ -295,8 +308,8 @@ function openBookDetail(bookId) {
   statusEl.textContent = isBorrowed ? '📤 Borrowed' : '✓ Available';
   statusEl.className = `detail-status ${isBorrowed ? 'borrowed' : 'available'}`;
 
+  // ✅ PRIVACY: Only show borrower info to admins
   const borrowerSection = document.getElementById('detailBorrowerSection');
-  // ✅ PRIVACY FIX: Only show borrower info to admins
   if (isBorrowed && book.borrower && isAdmin) {
     borrowerSection.style.display = 'block';
     document.getElementById('detailBorrowerName').textContent = book.borrower;
@@ -308,6 +321,13 @@ function openBookDetail(bookId) {
   } else {
     borrowerSection.style.display = 'none';
   }
+
+  // Update Rating UI
+  selectedRating = 0;
+  document.querySelectorAll('#detailStars .star-btn').forEach(btn => btn.classList.remove('active'));
+  const avg = getAverageRating(book.ratings);
+  const count = (book.ratings || []).length;
+  document.getElementById('detailRatingSummary').textContent = count > 0 ? `Overall: ⭐ ${avg} (${count} ratings)` : 'No ratings yet';
 
   const returnBtn = document.getElementById('detailReturnBtn');
   const borrowBtn = document.getElementById('detailBorrowBtn');
@@ -376,7 +396,10 @@ function startRealtimeSync() {
   BOOKS_REF.on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
-      books = Object.values(data);
+      books = Object.values(data).map(b => {
+        b.ratings = b.ratings || []; // ✅ Ensure ratings array exists
+        return b;
+      });
       books.sort((a, b) => b.id - a.id);
       const maxId = Math.max(...books.map(b => b.id), 0);
       nextId = maxId + 1;
@@ -488,6 +511,7 @@ async function addBookToSystem(title, author, genre, location, rrlLevel, coverIm
     genre: genre || 'Uncategorized', location,
     rrlLevel: rrlLevel || 'N/A', coverImage,
     status: 'available',
+    ratings: [], // ✅ Initialize ratings
     borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null, borrowerPhone: null, borrowerCenter: null
   };
   books.unshift(newBook);
@@ -655,6 +679,10 @@ function renderBooks() {
 
   grid.innerHTML = filteredBooks.map(book => {
     const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
+    const avg = getAverageRating(book.ratings);
+    const totalRatings = (book.ratings || []).length;
+    const ratingDisplay = totalRatings > 0 ? `<div class="book-rating">⭐ ${avg} <span class="rating-count">(${totalRatings})</span></div>` : '';
+
     return `
     <div class="book-card ${isBorrowed ? 'borrowed' : 'available'}" onclick="openBookDetail(${book.id})">
       ${book.coverImage 
@@ -669,6 +697,7 @@ function renderBooks() {
         <span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span> <span>•</span>
         <span>ID: ${book.id}</span>
       </div>
+      ${ratingDisplay}
       <span class="status-badge ${isBorrowed ? 'borrowed' : 'available'}">
         ${isBorrowed ? '📤 Borrowed' : '✓ Available'}
       </span>
@@ -708,7 +737,7 @@ function initApp() {
     setAdminMode(false);
   }
   startRealtimeSync();
-  initCarousel(); // ✅ Initialize Carousel
+  initCarousel();
 
   // ── BACK BUTTON CONFIRM DIALOG ──
   window.history.pushState(null, null, window.location.href);

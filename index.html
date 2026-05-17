@@ -32,10 +32,32 @@
     </div>
   </header>
 
-  <!-- ══════════════════════════════════════════════════════════ BANNER ═══════════════════════════════════════════════════════════ -->
-  <section class="banner-section">
-    <img src="banner.jpg" alt="Library Banner" class="banner-image" 
-         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221200%22 height=%22150%22%3E%3Crect fill=%22%23e0e7ff%22 width=%221200%22 height=%22150%22/%3E%3Ctext fill=%22%231e40af%22 font-family=%22Arial%22 font-size=%2240%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22>Read • Grow • Learn</text%3E%3C/svg%3E'">
+  <!-- ══════════════════════════════════════════════════════════ BANNER CAROUSEL (New) ═══════════════════════════════════════════════════════════ -->
+  <section class="banner-carousel">
+    <div class="carousel-track">
+      <!-- Slide 1 -->
+      <div class="carousel-slide active">
+        <img src="https://placehold.co/820x312/87CEEB/0f172a?text=Kumon+RRL+Library+Banner+1" alt="Banner 1">
+        <div class="carousel-caption">Read • Grow • Learn</div>
+      </div>
+      <!-- Slide 2 -->
+      <div class="carousel-slide">
+        <img src="https://placehold.co/820x312/e0e7ff/1e40af?text=Discover+New+Books" alt="Banner 2">
+        <div class="carousel-caption">Explore our Collection</div>
+      </div>
+      <!-- Slide 3 -->
+      <div class="carousel-slide">
+        <img src="https://placehold.co/820x312/fffbeb/d97706?text=Borrow+Your+Next+Adventure" alt="Banner 3">
+        <div class="carousel-caption">Start Your Journey</div>
+      </div>
+    </div>
+    
+    <!-- Navigation Buttons -->
+    <button class="carousel-btn prev-btn" onclick="moveSlide(-1)">&#10094;</button>
+    <button class="carousel-btn next-btn" onclick="moveSlide(1)">&#10095;</button>
+    
+    <!-- Dots Indicators -->
+    <div class="carousel-dots"></div>
   </section>
 
   <!-- ═══════════════════════════════════════════════════════════ MAIN APP ══════════════════════════════════════════════════════════ -->
@@ -48,7 +70,7 @@
       <div class="stat-card"><h3>Borrowed</h3><div class="number" id="borrowedBooks">0</div></div>
     </div>
 
-    <!-- UPDATED: Introduction Section -->
+    <!-- Introduction Section -->
     <div class="intro-section" style="background:var(--bg-card);padding:1.25rem 1.5rem;border-radius:var(--radius-md);margin-bottom:1rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);">
       <h3 style="margin:0 0 0.5rem 0;font-size:1.1rem;color:var(--text-primary);font-weight:600">📚What is the Kumon Recommended Reading List?</h3>
       <p style="margin:0 0 0.75rem 0;color:var(--text-secondary);line-height:1.5;font-size:0.95rem">The Kumon Recommended Reading List (RRL) is a list of books intended to help Kumon students find books that they will enjoy reading, and to encourage them to read books from a wide range of genres and styles.</p>
@@ -149,7 +171,7 @@
         <input type="text" id="borrowerGrade" placeholder="Grade/Class *" maxlength="20">
         <input type="text" id="borrowerLevel" placeholder="Kumon Level *" maxlength="10">
         
-        <!-- NEW: Phone Number with Fixed +853 -->
+        <!-- Phone Number with Fixed +853 -->
         <div style="display:flex;align-items:center;border:1px solid var(--border-light);border-radius:var(--radius-sm);overflow:hidden;background:var(--bg-input);">
           <span style="padding:0.75rem 1rem;background:#f1f5f9;color:var(--text-muted);font-weight:600;border-right:1px solid var(--border-light);white-space:nowrap;">+853</span>
           <input type="tel" id="borrowerPhone" placeholder="Phone Number *" maxlength="15" style="flex:1;border:none;padding:0.75rem 1rem;font-size:0.95rem;background:transparent;color:var(--text-primary);font-family:var(--font-family);outline:none;">
@@ -181,7 +203,7 @@
         <h4>📞 Visit or Call Us</h4>
         <p><strong>Kumon Taipa Mei Keng</strong></p>
         <p>📞 <a href="tel:+85328831773">+853 2883 1773</a></p>
-        <p>🏠 澳門仔柯維納馬路美景花園美德閣地下AU座<br>
+        <p>🏠 澳門氹仔柯維納馬路美景花園美德閣地下AU座<br>
            NA TAIPA, ESTRADA GOVERNADOR ALBANO DE OLIVEIRA N° 24,<br>
            MEI KENG FA UN RÉS-DO-CHÃO AU</p>
       </div>
@@ -202,6 +224,8 @@
         <input type="text" id="newBookAuthor" placeholder="Author Name *" maxlength="60">
         <input type="text" id="newBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="newBookLocation" placeholder="Location/Shelf *" maxlength="30">
+        
+        <!-- RRL Dropdown for Adding -->
         <select id="newBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="">Select RRL Level</option>
           <option value="Read Together">Read Together</option>
@@ -217,6 +241,7 @@
           <option value="I">I</option>
           <option value="Further Reading">Further Reading</option>
         </select>
+        
         <input type="file" id="newBookCover" accept="image/*">
         <small class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</small>
         <div id="imageSizeWarning" class="image-warning"></div>
@@ -238,6 +263,8 @@
         <input type="text" id="editBookAuthor" placeholder="Author Name *" maxlength="60">
         <input type="text" id="editBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="editBookLocation" placeholder="Location/Shelf *" maxlength="30">
+        
+        <!-- RRL Dropdown for Editing -->
         <select id="editBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
           <option value="Read Together">Read Together</option>
           <option value="2A">2A</option>
@@ -252,6 +279,7 @@
           <option value="I">I</option>
           <option value="Further Reading">Further Reading</option>
         </select>
+        
         <input type="file" id="editBookCover" accept="image/*">
         <small class="camera-hint">Leave empty to keep current cover image.<br>📱 On mobile: tap to choose file OR take photo with camera</small>
         <div id="editImageSizeWarning" class="image-warning"></div>
@@ -285,7 +313,6 @@
               <div class="borrower-row"><span class="borrower-label">Name</span><span class="borrower-value" id="detailBorrowerName">-</span></div>
               <div class="borrower-row"><span class="borrower-label">Grade</span><span class="borrower-value" id="detailBorrowerGrade">-</span></div>
               <div class="borrower-row"><span class="borrower-label">Level</span><span class="borrower-value" id="detailBorrowerLevel">-</span></div>
-              <!-- NEW: Phone Row -->
               <div class="borrower-row"><span class="borrower-label">Phone</span><span class="borrower-value" id="detailBorrowerPhone">-</span></div>
               <div class="borrower-row"><span class="borrower-label">Center</span><span class="borrower-value" id="detailBorrowerCenter">-</span></div>
               <div class="borrower-row"><span class="borrower-label">Borrowed</span><span class="borrower-value" id="detailBorrowDate">-</span></div>
@@ -315,7 +342,7 @@
         <div class="rrl-section"><h3>📖 Level 2A to Level I</h3><p>The thirty books in each level from Level 2A to Level I are listed in order of difficulty, with the easiest at number one. For Level D and above, genre icons are included to help readers navigate the list. Please refer to the genre definitions (opposite) for details.</p></div>
         <div class="rrl-section"><h3>🌟 Further Reading</h3><p>These thirty books are recommended for more confident, mature readers. They include classics and seminal works from a range of genres and periods, and are listed in order of difficulty.</p></div>
         <div class="rrl-section"><h3>📚 A Wide Range of Books for a Wide Range of Readers!</h3><p>The RRL contains something for everyone. Each level includes books aimed at younger readers, as well as books more suited to older, more mature readers. Not every book will be appropriate for every student, but everyone will find something he or she will enjoy!</p></div>
-        <h2 style="color:#7c3aed;font-size:1.5rem;margin:2rem 0 1.5rem;text-align:center;">👨‍👩‍👦 Information for Parents</h2>
+        <h2 style="color:#7c3aed;font-size:1.5rem;margin:2rem 0 1.5rem;text-align:center;">👨‍👦 Information for Parents</h2>
         <p style="margin-bottom:1.5rem;color:var(--text-secondary);">The following information is intended to help parents make the best use of the Recommended Reading List (RRL), and to give ideas on how to help inspire in children a lifelong love of reading.</p>
         <div class="rrl-section"><h3>🏠 Creating a 'Reading-Friendly' Environment at Home</h3><ul><li>Store your child's books within his or her reach. Create a reading corner and put some child-sized bookshelves nearby.</li><li>Visit the local library with your child and borrow books together.</li><li>Take an active interest in what your child is reading.</li><li>Children learn by example. If you and other family members read and talk about books, your child will do the same.</li></ul></div>
         <div class="rrl-section"><h3>📚 Recommending Books</h3><ul><li>Children should read books that match their ability and interests, which may not correspond to their age or school year. This is why the books on the RRL are listed according to difficulty rather than age. It may mean that a preschool child chooses to read longer books, while an older primary-school student is more comfortable reading picture books.</li><li>Use the genre icons and book blurbs to help your child choose books.</li></ul></div>

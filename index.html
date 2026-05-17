@@ -46,15 +46,16 @@
   </div>
 
   <div class="container">
-    <div class="stats">
+    <!-- ✅ FIX: Stats hidden by default in public view -->
+    <div class="stats admin-only">
       <div class="stat-card"><h3>Total Books</h3><div class="number" id="totalBooks">0</div></div>
       <div class="stat-card"><h3>Available</h3><div class="number" id="availableBooks">0</div></div>
-      <div class="stat-card admin-only"><h3>Borrowed</h3><div class="number" id="borrowedBooks">0</div></div>
+      <div class="stat-card"><h3>Borrowed</h3><div class="number" id="borrowedBooks">0</div></div>
     </div>
 
-    <!-- ✅ FIXED: Bilingual intro + button -->
+    <!-- ✅ FIX: Left-aligned, justified intro with button underneath -->
     <div class="public-notice">
-      <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0 0 1rem; line-height: 1.5;">
+      <p>
         📚 What is the Kumon Recommended Reading List?<br>
         The Kumon Recommended Reading List (RRL) is a list of books intended to help Kumon students find books that they will enjoy reading, and to encourage them to read books from a wide range of genres and styles.<br><br>
         📚 什麼是公文式推薦閱讀書單？<br>
@@ -224,7 +225,6 @@
     </div>
   </div>
 
-  <!-- ✅ FIXED: Full RRL info modal content -->
   <div class="modal-overlay" id="rrlInfoModal" onclick="if(event.target===this)closeRRLInfoModal()">
     <div class="modal" style="max-width:700px;">
       <h3>📖 Introduction to the Kumon Recommended Reading List</h3>

@@ -7,6 +7,7 @@
   <title>Kumon Recommended Reading List Online Library</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png">
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
   <link rel="stylesheet" href="styles.css">
@@ -46,14 +47,12 @@
   </div>
 
   <div class="container">
-    <!-- ✅ FIX: Stats hidden by default in public view -->
     <div class="stats admin-only">
       <div class="stat-card"><h3>Total Books</h3><div class="number" id="totalBooks">0</div></div>
       <div class="stat-card"><h3>Available</h3><div class="number" id="availableBooks">0</div></div>
       <div class="stat-card"><h3>Borrowed</h3><div class="number" id="borrowedBooks">0</div></div>
     </div>
 
-    <!-- ✅ FIX: Left-aligned, justified intro with button underneath -->
     <div class="public-notice">
       <p>
         📚 What is the Kumon Recommended Reading List?<br>
@@ -217,7 +216,8 @@
           <div class="detail-actions-full">
             <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()">📚 Borrow Book</button>
             <button class="btn btn-success btn-large" id="detailReturnBtn" onclick="handleDetailReturn()" style="display:none;">✅ Return Book</button>
-            <button class="btn btn-primary btn-large admin-only" onclick="handleDetailRemove()" style="background:#7c3aed">✏️ Edit</button>
+            <!-- ✅ FIX: Edit button now correctly opens edit modal -->
+            <button class="btn btn-primary btn-large admin-only" onclick="openEditModal(selectedBookId)" style="background:#7c3aed">✏️ Edit</button>
             <button class="btn btn-danger btn-large admin-only" onclick="handleDetailRemove()">🗑 Remove</button>
           </div>
         </div>

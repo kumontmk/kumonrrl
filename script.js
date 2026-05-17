@@ -83,7 +83,7 @@ function setAdminMode(active) {
       el.classList.toggle('admin', active);
     }
   });
-  
+
   updateUnsavedIndicator();
   updateDetailModalVisibility();
 }
@@ -239,6 +239,7 @@ function openBorrowModal(bookId, bookTitle) {
   pendingBorrowBookId = bookId;
   document.getElementById('borrowBookTitle').textContent = `"${bookTitle}"`;
   ['borrowerName','borrowerGrade','borrowerLevel','borrowerPhone'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('borrowerPhone').value = '+853 '; // ✅ FIX: Show prefix on open
   document.getElementById('borrowerCenter').value = '';
   document.getElementById('borrowModal').classList.add('show');
   document.getElementById('borrowerName').focus();
@@ -585,9 +586,14 @@ async function confirmBorrow() {
   const name = document.getElementById('borrowerName').value.trim();
   const grade = document.getElementById('borrowerGrade').value.trim();
   const level = document.getElementById('borrowerLevel').value.trim();
-  const phone = document.getElementById('borrowerPhone').value.trim();
+  let phone = document.getElementById('borrowerPhone').value.trim();
   const center = document.getElementById('borrowerCenter').value;
-  if (!name || !grade || !level || !phone) { showToast('Please fill in all borrower fields', 'error'); return; }
+  
+  // ✅ FIX: Handle +853 prefix properly
+  if (phone === '+853' || phone === '+853 ') { showToast('Please enter a valid phone number', 'error'); return; }
+  if (!phone.startsWith('+853')) phone = `+853 ${phone}`;
+  
+  if (!name || !grade || !level) { showToast('Please fill in all borrower fields', 'error'); return; }
   
   const book = books.find(b => b.id === pendingBorrowBookId);
   if (book) {
@@ -595,7 +601,7 @@ async function confirmBorrow() {
     book.borrower = name;
     book.borrowerGrade = grade;
     book.borrowerLevel = level;
-    book.borrowerPhone = `+853 ${phone}`;
+    book.borrowerPhone = phone;
     book.borrowerCenter = center || null;
     book.borrowDate = new Date().toISOString().split('T')[0];
     if (await saveBooksToFirebase()) {

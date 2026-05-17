@@ -239,7 +239,7 @@ function openBorrowModal(bookId, bookTitle) {
   pendingBorrowBookId = bookId;
   document.getElementById('borrowBookTitle').textContent = `"${bookTitle}"`;
   ['borrowerName','borrowerGrade','borrowerLevel'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('borrowerPhone').value = '+853 ';
+  document.getElementById('borrowerPhone').value = '';
   document.getElementById('borrowerCenter').value = '';
   document.getElementById('borrowModal').classList.add('show');
   document.getElementById('borrowerName').focus();
@@ -394,7 +394,6 @@ function handleDetailRemove() {
   }
 }
 
-// ✅ FIX: Handles Edit properly by closing detail modal first to fix z-index/stacking bug
 function handleDetailEdit() {
   if (!selectedBookId) return;
   const bookId = selectedBookId;
@@ -594,13 +593,11 @@ async function confirmBorrow() {
   const name = document.getElementById('borrowerName').value.trim();
   const grade = document.getElementById('borrowerGrade').value.trim();
   const level = document.getElementById('borrowerLevel').value.trim();
-  let phone = document.getElementById('borrowerPhone').value.trim();
+  const phoneInput = document.getElementById('borrowerPhone').value.trim().replace(/\D/g, '');
   const center = document.getElementById('borrowerCenter').value;
   
-  if (phone === '+853' || phone === '+853 ') { showToast('Please enter a valid phone number', 'error'); return; }
-  if (!phone.startsWith('+853')) phone = `+853 ${phone}`;
-  
-  if (!name || !grade || !level) { showToast('Please fill in all borrower fields', 'error'); return; }
+  if (!name || !grade || !level) { showToast('Please fill in all fields', 'error'); return; }
+  if (!phoneInput || phoneInput.length < 6) { showToast('Please enter a valid phone number', 'error'); return; }
   
   const book = books.find(b => b.id === pendingBorrowBookId);
   if (book) {
@@ -608,7 +605,7 @@ async function confirmBorrow() {
     book.borrower = name;
     book.borrowerGrade = grade;
     book.borrowerLevel = level;
-    book.borrowerPhone = phone;
+    book.borrowerPhone = `+853 ${phoneInput}`; // ✅ Fixed prefix applied automatically
     book.borrowerCenter = center || null;
     book.borrowDate = new Date().toISOString().split('T')[0];
     if (await saveBooksToFirebase()) {

@@ -2,77 +2,34 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <base href="/kumonrrl/">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Kumon Recommended Reading List Online Library</title>
+  <title>Kumon RRL Online Library</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  
-  <!-- PWA Meta Tags -->
-  <meta name="theme-color" content="#87CEEB">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Kumon RRL Library">
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
   <!-- ═══════════════════════════════════════════════════════════ HEADER ═══════════════════════════════════════════════════════════ -->
   <header>
     <div class="header-left">
       <img src="logo.png" alt="Kumon Logo" class="header-logo" onerror="this.style.display='none'">
-      <h1>Kumon Recommended Reading List Online Library</h1>
+      <h1>Kumon RRL Online Library</h1>
     </div>
-    
-    <!-- Desktop Header Actions -->
-    <div class="header-actions desktop-actions">
+    <div class="header-actions">
       <span id="modeIndicator" class="mode-indicator">👥 Public View</span>
       <span id="unsavedIndicator" style="display:none;color:#dc2626;font-weight:600;font-size:0.85rem">● Unsaved changes</span>
       <button id="logoutBtn" class="btn btn-logout btn-small admin-only" onclick="logout()">🚪 Logout</button>
       <button class="btn btn-login btn-small public-only" onclick="openLoginModal()">🔐 Admin Login</button>
     </div>
-    
-    <!-- Mobile Menu Button (Right Side) -->
-    <button class="hamburger-btn" onclick="toggleMobileMenu()" aria-label="Toggle menu">☰</button>
-    
-    <!-- Mobile Menu Dropdown -->
-    <div id="mobileMenu" class="mobile-menu">
-      <div class="mobile-menu-content">
-        <span id="mobileModeIndicator" class="mode-indicator">👥 Public View</span>
-        <span id="mobileUnsavedIndicator" style="display:none;color:#dc2626;font-weight:600;font-size:0.9rem;margin:0.5rem 0">● Unsaved changes</span>
-        <button id="mobileLogoutBtn" class="btn btn-logout admin-only" onclick="logout()" style="width:100%;margin:0.5rem 0">🚪 Logout</button>
-        <button class="btn btn-login public-only" onclick="openLoginModal();closeMobileMenu()" style="width:100%;margin:0.5rem 0">🔐 Admin Login</button>
-      </div>
-    </div>
   </header>
 
-  <!-- ══════════════════════════════════════════════════════════ BANNER CAROUSEL ═══════════════════════════════════════════════════════════ -->
-  <section class="banner-carousel">
-    <div class="carousel-track">
-      <!-- Slide 1 -->
-      <div class="carousel-slide active">
-        <img src="banner1.jpg" alt="Banner 1">
-        <div class="carousel-caption">Read • Grow • Learn</div>
-      </div>
-      <!-- Slide 2 -->
-      <div class="carousel-slide">
-        <img src="banner2.jpg" alt="Banner 2">
-        <div class="carousel-caption">Explore our Collection</div>
-      </div>
-      <!-- Slide 3 -->
-      <div class="carousel-slide">
-        <img src="banner3.jpg" alt="Banner 3">
-        <div class="carousel-caption">Start Your Journey</div>
-      </div>
-    </div>
-    
-    <!-- Navigation Buttons -->
-    <button class="carousel-btn prev-btn" onclick="moveSlide(-1)">&#10094;</button>
-    <button class="carousel-btn next-btn" onclick="moveSlide(1)">&#10095;</button>
-    
-    <!-- Dots Indicators -->
-    <div class="carousel-dots"></div>
+  <!-- ══════════════════════════════════════════════════════════ BANNER SECTION ═══════════════════════════════════════════════════════════ -->
+  <section class="banner-section">
+    <img src="banner.jpg" alt="Library Banner" class="banner-image" onerror="this.style.display='none'">
   </section>
 
   <!-- ═══════════════════════════════════════════════════════════ MAIN APP ══════════════════════════════════════════════════════════ -->
@@ -85,20 +42,6 @@
       <div class="stat-card"><h3>Borrowed</h3><div class="number" id="borrowedBooks">0</div></div>
     </div>
 
-    <!-- Introduction Section -->
-    <div class="intro-section" style="background:var(--bg-card);padding:1.25rem 1.5rem;border-radius:var(--radius-md);margin-bottom:1rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);">
-      <h3 style="margin:0 0 0.5rem 0;font-size:1.1rem;color:var(--text-primary);font-weight:600">📚What is the Kumon Recommended Reading List?</h3>
-      <p style="margin:0 0 0.75rem 0;color:var(--text-secondary);line-height:1.5;font-size:0.95rem">The Kumon Recommended Reading List (RRL) is a list of books intended to help Kumon students find books that they will enjoy reading, and to encourage them to read books from a wide range of genres and styles.</p>
-      
-      <h3 style="margin:1rem 0 0.5rem 0;font-size:1.1rem;color:var(--text-primary);font-weight:600">📚什麼是公文式推薦閱讀書單？</h3>
-      <p style="margin:0;color:var(--text-secondary);line-height:1.5;font-size:0.95rem">公文式推薦閱讀書單（RRL）是一份書籍清單，旨在幫助公文式學生找到他們感興趣的書籍，並鼓勵他們發掘不同體裁和風格的作品。</p>
-    </div>
-
-    <!-- Know More Button -->
-    <div style="text-align:center;margin-bottom:1.5rem;">
-      <button class="btn btn-primary" onclick="openRRLInfoModal()" style="padding:0.75rem 1.5rem;font-size:0.95rem;">📖 Know More about the RRL</button>
-    </div>
-
     <!-- Controls -->
     <div class="controls">
       <input type="text" id="searchInput" placeholder="🔍 Search title, author, location...">
@@ -107,24 +50,6 @@
         <option value="available">Available Only</option>
         <option value="borrowed">Borrowed Only</option>
       </select>
-      
-      <!-- RRL Level Filter Dropdown -->
-      <select id="filterRRL">
-        <option value="">All RRL Levels</option>
-        <option value="Read Together">Read Together</option>
-        <option value="2A">2A</option>
-        <option value="A">A</option>
-        <option value="B">B</option>
-        <option value="C">C</option>
-        <option value="D">D</option>
-        <option value="E">E</option>
-        <option value="F">F</option>
-        <option value="G">G</option>
-        <option value="H">H</option>
-        <option value="I">I</option>
-        <option value="Further Reading">Further Reading</option>
-      </select>
-
       <select id="sortBy">
         <option value="title">Sort by Title</option>
         <option value="author">Sort by Author</option>
@@ -132,7 +57,7 @@
         <option value="rrl">Sort by RRL Level</option>
       </select>
       <button class="btn btn-primary admin-only" onclick="openAddBookModal()">➕ Add Book</button>
-      <button class="btn btn-primary admin-only" onclick="testConnection()">🔗 Test Firebase</button>
+      <button class="btn btn-primary admin-only" onclick="testConnection()">🔗 Test Connection</button>
       <button class="btn btn-success admin-only" onclick="exportBackup()">💾 Export Backup</button>
     </div>
 
@@ -153,7 +78,7 @@
     <!-- Loading State -->
     <div id="loadingState" class="loading" style="display:none">
       <div class="spinner"></div>
-      <p>Loading books from Firebase...</p>
+      <p>Loading books from server...</p>
     </div>
   </div>
 
@@ -185,22 +110,6 @@
         <input type="text" id="borrowerName" placeholder="Student Name *" maxlength="50">
         <input type="text" id="borrowerGrade" placeholder="Grade/Class *" maxlength="20">
         <input type="text" id="borrowerLevel" placeholder="Kumon Level *" maxlength="10">
-        
-        <!-- Phone Number with Fixed +853 -->
-        <div style="display:flex;align-items:center;border:1px solid var(--border-light);border-radius:var(--radius-sm);overflow:hidden;background:var(--bg-input);">
-          <span style="padding:0.75rem 1rem;background:#f1f5f9;color:var(--text-muted);font-weight:600;border-right:1px solid var(--border-light);white-space:nowrap;">+853</span>
-          <input type="tel" id="borrowerPhone" placeholder="Phone Number *" maxlength="15" style="flex:1;border:none;padding:0.75rem 1rem;font-size:0.95rem;background:transparent;color:var(--text-primary);font-family:var(--font-family);outline:none;">
-        </div>
-        
-        <!-- Borrower Center Dropdown -->
-        <select id="borrowerCenter" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
-          <option value="">No Center</option>
-          <option value="Kumon Taipa Mei Keng">Kumon Taipa Mei Keng</option>
-          <option value="Kumon Taipa Pac Tat">Kumon Taipa Pac Tat</option>
-          <option value="Kumon Champs">Kumon Champs</option>
-          <option value="Kumon Tap Siac">Kumon Tap Siac</option>
-        </select>
-        
       </div>
       <div class="modal-actions">
         <button class="btn btn-success" onclick="confirmBorrow()">Confirm Borrow</button>
@@ -239,24 +148,7 @@
         <input type="text" id="newBookAuthor" placeholder="Author Name *" maxlength="60">
         <input type="text" id="newBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="newBookLocation" placeholder="Location/Shelf *" maxlength="30">
-        
-        <!-- RRL Dropdown for Adding -->
-        <select id="newBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
-          <option value="">Select RRL Level</option>
-          <option value="Read Together">Read Together</option>
-          <option value="2A">2A</option>
-          <option value="A">A</option>
-          <option value="B">B</option>
-          <option value="C">C</option>
-          <option value="D">D</option>
-          <option value="E">E</option>
-          <option value="F">F</option>
-          <option value="G">G</option>
-          <option value="H">H</option>
-          <option value="I">I</option>
-          <option value="Further Reading">Further Reading</option>
-        </select>
-        
+        <input type="text" id="newBookRRL" placeholder="RRL Level (e.g., A, B, C)" maxlength="10">
         <input type="file" id="newBookCover" accept="image/*">
         <small class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</small>
         <div id="imageSizeWarning" class="image-warning"></div>
@@ -278,23 +170,7 @@
         <input type="text" id="editBookAuthor" placeholder="Author Name *" maxlength="60">
         <input type="text" id="editBookGenre" placeholder="Genre (optional)" maxlength="40">
         <input type="text" id="editBookLocation" placeholder="Location/Shelf *" maxlength="30">
-        
-        <!-- RRL Dropdown for Editing -->
-        <select id="editBookRRL" style="padding:0.75rem 1rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:0.95rem;background:var(--bg-input);color:var(--text-primary);font-family:var(--font-family);">
-          <option value="Read Together">Read Together</option>
-          <option value="2A">2A</option>
-          <option value="A">A</option>
-          <option value="B">B</option>
-          <option value="C">C</option>
-          <option value="D">D</option>
-          <option value="E">E</option>
-          <option value="F">F</option>
-          <option value="G">G</option>
-          <option value="H">H</option>
-          <option value="I">I</option>
-          <option value="Further Reading">Further Reading</option>
-        </select>
-        
+        <input type="text" id="editBookRRL" placeholder="RRL Level (e.g., A, B, C)" maxlength="10">
         <input type="file" id="editBookCover" accept="image/*">
         <small class="camera-hint">Leave empty to keep current cover image.<br>📱 On mobile: tap to choose file OR take photo with camera</small>
         <div id="editImageSizeWarning" class="image-warning"></div>
@@ -316,73 +192,27 @@
           <span class="detail-status available" id="detailStatus">✓ Available</span>
           <h2 class="detail-title" id="detailTitle">Book Title</h2>
           <p class="detail-author" id="detailAuthor">by Author Name</p>
-          
           <div class="detail-meta-grid">
             <div class="detail-meta-item"><span class="meta-label">Genre</span><span class="meta-value" id="detailGenre">Fiction</span></div>
             <div class="detail-meta-item"><span class="meta-label">Location</span><span class="meta-value" id="detailLocation">Shelf A3</span></div>
             <div class="detail-meta-item"><span class="meta-label">RRL Level</span><span class="meta-value" id="detailRRL">A</span></div>
             <div class="detail-meta-item"><span class="meta-label">Book ID</span><span class="meta-value" id="detailID">#1</span></div>
           </div>
-
-          <!-- Rating Section -->
-          <div class="rating-section">
-            <h4>Rate this Book</h4>
-            <div class="stars-container" id="detailStars">
-              <span class="star-btn" onclick="selectRating(1)">★</span>
-              <span class="star-btn" onclick="selectRating(2)">★</span>
-              <span class="star-btn" onclick="selectRating(3)">★</span>
-              <span class="star-btn" onclick="selectRating(4)">★</span>
-              <span class="star-btn" onclick="selectRating(5)">★</span>
-            </div>
-            <button class="btn btn-primary btn-small" onclick="submitRating()">Submit Rating</button>
-            <div id="detailRatingSummary" style="margin-top:0.5rem; color:var(--text-secondary); font-size:0.9rem;"></div>
-          </div>
-
           <div class="borrower-section" id="detailBorrowerSection" style="display:none">
             <h4>📤 Borrower Information</h4>
             <div class="borrower-details">
               <div class="borrower-row"><span class="borrower-label">Name</span><span class="borrower-value" id="detailBorrowerName">-</span></div>
               <div class="borrower-row"><span class="borrower-label">Grade</span><span class="borrower-value" id="detailBorrowerGrade">-</span></div>
               <div class="borrower-row"><span class="borrower-label">Level</span><span class="borrower-value" id="detailBorrowerLevel">-</span></div>
-              <div class="borrower-row"><span class="borrower-label">Phone</span><span class="borrower-value" id="detailBorrowerPhone">-</span></div>
-              <div class="borrower-row"><span class="borrower-label">Center</span><span class="borrower-value" id="detailBorrowerCenter">-</span></div>
               <div class="borrower-row"><span class="borrower-label">Borrowed</span><span class="borrower-value" id="detailBorrowDate">-</span></div>
             </div>
           </div>
-          
           <div class="detail-actions-full">
             <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()" style="display:none">📚 Borrow Book</button>
             <button class="btn btn-success btn-large admin-only" id="detailReturnBtn" onclick="handleDetailReturn()" style="display:none">✅ Return Book</button>
             <button class="btn btn-primary btn-small admin-only" id="detailEditBtn" onclick="openEditModal(selectedBookId)">✏️ Edit</button>
             <button class="btn btn-danger btn-small admin-only" onclick="handleDetailRemove()">🗑 Remove</button>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- RRL Information Modal -->
-  <div id="rrlInfoModal" class="detail-modal-overlay">
-    <div class="detail-modal" style="max-width:900px;">
-      <button class="close-detail-btn" onclick="closeRRLInfoModal()">✕</button>
-      <div class="rrl-info-content" style="padding:2rem;max-height:85vh;overflow-y:auto;">
-        <h2 style="color:#7c3aed;font-size:1.5rem;margin-bottom:1.5rem;text-align:center;">📖 Introduction to the Kumon Recommended Reading List</h2>
-        <div class="rrl-section"><h3>📚 What is the Kumon Recommended Reading List?</h3><p>The Kumon Recommended Reading List (RRL) is a list of 380 books intended to help Kumon students find books that they will enjoy reading, and to encourage them to read books from a wide range of genres and styles.</p></div>
-        <div class="rrl-section"><h3>📋 How are the Books Chosen?</h3><p>The books on the RRL have been selected because they are popular, award winning, or recognised literary classics. They were all available from major online bookshops (Amazon.com, Amazon.co.uk, Dymocks.com.au, Kalahari.com, Opentrolley.com.sg and Waterstones.com) at the time of writing.</p></div>
-        <div class="rrl-section"><h3>📂 How are the Books Arranged?</h3><p>The books are divided into twelve sections, broadly corresponding to the levels of the Kumon English Programme. Like the Kumon worksheets, the RRL is designed so that each student can start reading books at a comfortable level and progress, step by step, to those that are more difficult. Each title includes a short blurb to help students choose books, and students can colour in stars (☆☆☆☆☆) to rate the books they have read or listened to.</p></div>
-        <div class="rrl-section"><h3>👶 Read Together</h3><p>This section was created for children who haven't started reading independently yet. The fifty books were selected because they are particularly suited to being read aloud to children, with the simplest at number one.</p></div>
-        <div class="rrl-section"><h3>📖 Level 2A to Level I</h3><p>The thirty books in each level from Level 2A to Level I are listed in order of difficulty, with the easiest at number one. For Level D and above, genre icons are included to help readers navigate the list. Please refer to the genre definitions (opposite) for details.</p></div>
-        <div class="rrl-section"><h3>🌟 Further Reading</h3><p>These thirty books are recommended for more confident, mature readers. They include classics and seminal works from a range of genres and periods, and are listed in order of difficulty.</p></div>
-        <div class="rrl-section"><h3>📚 A Wide Range of Books for a Wide Range of Readers!</h3><p>The RRL contains something for everyone. Each level includes books aimed at younger readers, as well as books more suited to older, more mature readers. Not every book will be appropriate for every student, but everyone will find something he or she will enjoy!</p></div>
-        <h2 style="color:#7c3aed;font-size:1.5rem;margin:2rem 0 1.5rem;text-align:center;">👨‍ Information for Parents</h2>
-        <p style="margin-bottom:1.5rem;color:var(--text-secondary);">The following information is intended to help parents make the best use of the Recommended Reading List (RRL), and to give ideas on how to help inspire in children a lifelong love of reading.</p>
-        <div class="rrl-section"><h3>🏠 Creating a 'Reading-Friendly' Environment at Home</h3><ul><li>Store your child's books within his or her reach. Create a reading corner and put some child-sized bookshelves nearby.</li><li>Visit the local library with your child and borrow books together.</li><li>Take an active interest in what your child is reading.</li><li>Children learn by example. If you and other family members read and talk about books, your child will do the same.</li></ul></div>
-        <div class="rrl-section"><h3>📚 Recommending Books</h3><ul><li>Children should read books that match their ability and interests, which may not correspond to their age or school year. This is why the books on the RRL are listed according to difficulty rather than age. It may mean that a preschool child chooses to read longer books, while an older primary-school student is more comfortable reading picture books.</li><li>Use the genre icons and book blurbs to help your child choose books.</li></ul></div>
-        <div class="rrl-section"><h3>️ Reading Aloud to Your Child</h3><p>The stories you read aloud to your child are his or her first introduction to the world of books. Reading aloud is important, not only because it shows how much fun reading can be, but also for its many other benefits. These include getting a feel for the sounds and rhythms of language, helping to develop imagination and creativity, and widening a child's experience of the world.</p><ul><li>Let your child choose the books he or she wants you to read. Young children enjoy having picture books read to them, particularly books that include repetition, rhythm, or rhyme, and will often want you to reread the same book many times.</li><li>Read at a pace that allows your child to follow the story, and talk about the story and the pictures as you read.</li></ul></div>
-        <div class="rrl-section"><h3>🚀 Encouraging Your Child to Become an Independent Reader</h3><p>Children who are just beginning to read feel an enormous sense of achievement when they can read a whole book by themselves.</p><ul><li>Listen to your child read, give encouragement and help out with difficult words. Read books together, taking turns to read a sentence or a page each.</li><li>Start with short, simple books with large print and few words on each page. The books on the RRL in Level 2A have been specifically selected to suit children taking their first steps in reading.</li><li>As your child gains confidence, he or she will be ready to try the stories in Levels A and B, most of which are still picture books.</li><li>In Level B the RRL introduces longer books, in which the story is told mainly through text rather than pictures and is spread over a number of chapters.</li></ul></div>
-        <div class="rrl-section"><h3>⭐ More Confident Readers</h3><p>Even after your child becomes an independent reader, continue to talk about and recommend books.</p><ul><li>Many of the books on the RRL are part of a series or written by well-known authors of children's books. Encourage your child to read more books in the same series or other titles by the same author.</li><li>Use the genre icons to help your child find more books from genres he or she likes, or to encourage him or her to try a different genre.</li><li>Don't force your child to read, and try not to be judgmental about his or her reading choices.</li><li>Encourage your child to read more of what he or she enjoys; above all, reading should be satisfying and fun.</li></ul></div>
-        <div style="text-align:center;margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border-light);">
-          <p style="color:var(--text-muted);font-size:0.9rem;">📖 The Kumon Recommended Reading List helps students discover the joy of reading!</p>
         </div>
       </div>
     </div>
@@ -398,20 +228,7 @@
     </div>
   </footer>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <!-- Main Script -->
   <script src="script.js"></script>
-
-  <!-- PWA Service Worker Registration -->
-  <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/kumonrrl/sw.js', { scope: '/kumonrrl/' })
-        .then(reg => console.log('Service Worker registered with scope:', reg.scope))
-        .catch(err => console.log('Service Worker registration failed:', err));
-    });
-  }
-  </script>
 </body>
 </html>

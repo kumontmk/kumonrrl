@@ -238,8 +238,8 @@ function openBorrowModal(bookId, bookTitle) {
   if (!isAdmin) { openVisitorBorrowModal(bookId, bookTitle); return; }
   pendingBorrowBookId = bookId;
   document.getElementById('borrowBookTitle').textContent = `"${bookTitle}"`;
-  ['borrowerName','borrowerGrade','borrowerLevel','borrowerPhone'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('borrowerPhone').value = '+853 '; // ✅ FIX: Show prefix on open
+  ['borrowerName','borrowerGrade','borrowerLevel'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('borrowerPhone').value = '+853 ';
   document.getElementById('borrowerCenter').value = '';
   document.getElementById('borrowModal').classList.add('show');
   document.getElementById('borrowerName').focus();
@@ -392,6 +392,14 @@ function handleDetailRemove() {
     const book = books.find(b => b.id === selectedBookId);
     if (book && confirm(`Remove "${book.title}"?`)) { removeBook(selectedBookId); closeDetailModal(); }
   }
+}
+
+// ✅ FIX: Handles Edit properly by closing detail modal first to fix z-index/stacking bug
+function handleDetailEdit() {
+  if (!selectedBookId) return;
+  const bookId = selectedBookId;
+  closeDetailModal();
+  openEditModal(bookId);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -589,7 +597,6 @@ async function confirmBorrow() {
   let phone = document.getElementById('borrowerPhone').value.trim();
   const center = document.getElementById('borrowerCenter').value;
   
-  // ✅ FIX: Handle +853 prefix properly
   if (phone === '+853' || phone === '+853 ') { showToast('Please enter a valid phone number', 'error'); return; }
   if (!phone.startsWith('+853')) phone = `+853 ${phone}`;
   

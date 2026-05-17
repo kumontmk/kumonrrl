@@ -88,9 +88,12 @@ function updateDetailModalVisibility() {
   if (selectedBookId) openBookDetail(selectedBookId);
 }
 
+// ✅ FIX: Logout now refreshes UI to hide private info
 function logout() {
   clearSession();
   setAdminMode(false);
+  renderBooks(); // Re-render grid to hide borrower details
+  updateDetailModalVisibility(); // Refresh detail modal if open
   showToast('Logged out - now in Public View', 'info');
 }
 
@@ -226,7 +229,7 @@ function openBookDetail(bookId) {
   statusEl.className = `detail-status ${isBorrowed ? 'borrowed' : 'available'}`;
 
   const borrowerSection = document.getElementById('detailBorrowerSection');
-  // ✅ ONLY SHOW BORROWER INFO TO ADMINS
+  // ✅ PRIVACY FIX: Only show borrower info to admins
   if (isBorrowed && book.borrower && isAdmin) {
     borrowerSection.style.display = 'block';
     document.getElementById('detailBorrowerName').textContent = book.borrower;

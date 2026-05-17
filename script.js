@@ -286,6 +286,7 @@ function login() {
   if (password === '1111') {
     saveSession();
     setAdminMode(true);
+    renderBooks(); // ✅ FIX: Refresh grid to show admin info immediately
     closeLoginModal();
     document.getElementById('passwordInput').value = '';
     if (pendingBorrowBookId) { 

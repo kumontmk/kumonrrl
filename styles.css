@@ -1,3 +1,6 @@
+/* ═══════════════════════════════════════════════
+Kumon RRL Online Library - Modern Design System
+═══════════════════════════════════════════════ */
 :root {
   --primary: #2563eb;
   --primary-dark: #1d4ed8;
@@ -39,6 +42,7 @@ html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-fo
 body { font-family: var(--font-family); background: var(--bg-main); color: var(--text-primary); line-height: 1.6; min-height: 100vh; }
 h1, h2, h3, h4, h5, h6 { font-weight: 600; line-height: 1.3; color: var(--text-primary); }
 
+/* ── Header ── */
 header {
   background: #87CEEB;
   color: var(--text-primary);
@@ -76,6 +80,9 @@ header h1 {
 .mobile-menu-content { display: flex; flex-direction: column; gap: 0.5rem; }
 @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ═══════════════════════════════════════════════
+BANNER CAROUSEL STYLES
+═══════════════════════════════════════════════ */
 .banner-carousel { width: 100%; position: relative; overflow: hidden; aspect-ratio: 2.63 / 1; background: var(--bg-header); }
 @media (max-width: 768px) { .banner-carousel { aspect-ratio: 1.77 / 1; } }
 .carousel-track { display: flex; height: 100%; transition: transform 0.5s ease-in-out; }
@@ -96,6 +103,9 @@ header h1 {
 .dot { width: 10px; height: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 50%; cursor: pointer; transition: var(--transition); }
 .dot.active { background: var(--text-white); transform: scale(1.2); }
 
+/* ═══════════════════════════════════════════════
+RATING STYLES
+═══════════════════════════════════════════════ */
 .book-rating { display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; margin-top: 0.5rem; font-weight: 500; color: var(--text-primary); }
 .rating-count { font-weight: 400; color: var(--text-muted); font-size: 0.8rem; }
 .rating-section { background: var(--bg-input); padding: 1rem; border-radius: var(--radius-md); margin-top: 1rem; border: 1px solid var(--border-light); }
@@ -104,6 +114,9 @@ header h1 {
 .star-btn { color: var(--border-medium); cursor: pointer; transition: var(--transition); user-select: none; line-height: 1; }
 .star-btn:hover, .star-btn.active { color: #f59e0b; transform: scale(1.15); }
 
+/* ═══════════════════════════════════════════════
+CONTAINER & MODALS
+═══════════════════════════════════════════════ */
 .container { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; width: 100%; }
 .login-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
 .login-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
@@ -120,6 +133,11 @@ header h1 {
 }
 .mode-indicator.admin { background: rgba(255, 255, 255, 0.45); border-color: rgba(255, 255, 255, 0.6); color: #065f46; }
 
+/* ✅ FIX: Unsaved Indicator Visibility */
+.unsaved-indicator { display: none; font-size: 0.8rem; font-weight: 600; color: var(--danger); margin-left: 0.5rem; }
+.unsaved-indicator.show { display: inline-flex !important; }
+
+/* ── Stats Cards ── */
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
 .stat-card { background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius-md); text-align: center; box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); transition: var(--transition); position: relative; overflow: hidden; }
 .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--primary); opacity: 0; transition: var(--transition); }
@@ -127,7 +145,10 @@ header h1 {
 .stat-card:hover::before { opacity: 1; }
 .stat-card h3 { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; font-weight: 600; }
 .stat-card .number { font-size: 2.25rem; font-weight: 700; color: var(--text-primary); line-height: 1; letter-spacing: -0.02em; }
+/* ✅ FIX: Borrowed Stats Grid Alignment */
+body.admin-mode .stat-card.admin-only { display: flex !important; flex-direction: column; align-items: center; }
 
+/* ── Controls ── */
 .controls { background: var(--bg-card); padding: 1rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); }
 .controls input[type="text"], .controls select { padding: 0.625rem 1rem; border: 1px solid var(--border-light); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--bg-input); color: var(--text-primary); transition: var(--transition); flex: 1; min-width: 160px; }
 .controls input:focus, .controls select:focus { outline: none; border-color: var(--primary); background: var(--bg-card); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08); }
@@ -155,6 +176,7 @@ header h1 {
 .book-actions { display: flex; gap: 0.375rem; padding: 0.75rem 0.875rem; margin-top: auto; border-top: 1px solid var(--border-light); flex-wrap: wrap; }
 .book-actions .btn { flex: 1; min-width: 0; padding: 0.4rem 0.5rem; font-size: 0.75rem; }
 
+/* ── Buttons ── */
 .btn { padding: 0.625rem 1.25rem; border: none; border-radius: var(--radius-sm); font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: var(--transition); text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; line-height: 1.4; font-family: var(--font-family); }
 .btn:active { transform: scale(0.98); }
 .btn-primary { background: var(--primary); color: var(--text-white); }
@@ -190,6 +212,27 @@ header h1 {
 .modal-form input { padding: 0.75rem 1rem; border: 1px solid var(--border-light); border-radius: var(--radius-sm); font-size: 0.95rem; background: var(--bg-input); color: var(--text-primary); transition: var(--transition); font-family: var(--font-family); }
 .modal-form input::placeholder { color: var(--text-muted); }
 .modal-form input:focus { outline: none; border-color: var(--primary); background: var(--bg-card); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08); }
+
+/* ✅ FIX: Modal Dropdown Styling */
+.modal-form select {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  transition: var(--transition);
+  font-family: var(--font-family);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
+  cursor: pointer;
+  width: 100%;
+}
+.modal-form select:focus { outline: none; border-color: var(--primary); background: var(--bg-card); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08); }
+
 .modal-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
 .modal-actions .btn { flex: 1; }
 
@@ -260,7 +303,6 @@ input[type="file"]::file-selector-button:hover { background: var(--primary-dark)
 .public-only { display: block; }
 body.admin-mode .admin-only { display: inline-flex !important; }
 body.admin-mode .public-only { display: none !important; }
-body.admin-mode .stats.admin-only { display: grid !important; }
 body.admin-mode .btn-fab.admin-only { display: flex !important; }
 
 .loading { text-align: center; padding: 3rem 2rem; color: var(--text-muted); }

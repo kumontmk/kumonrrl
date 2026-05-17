@@ -54,10 +54,10 @@
     </div>
 
     <div class="public-notice">
-      <p>
-        📚 What is the Kumon Recommended Reading List?<br>
+      <p style="text-align: left; text-align: justify; font-size: 0.9rem; color: var(--text-secondary); margin: 0 0 1rem; line-height: 1.6;">
+        <strong>📚 What is the Kumon Recommended Reading List?</strong><br>
         The Kumon Recommended Reading List (RRL) is a list of books intended to help Kumon students find books that they will enjoy reading, and to encourage them to read books from a wide range of genres and styles.<br><br>
-        📚 什麼是公文式推薦閱讀書單？<br>
+        <strong>📚 什麼是公文式推薦閱讀書單？</strong><br>
         公文式推薦閱讀書單（RRL）是一份書籍清單，旨在幫助公文式學生找到他們感興趣的書籍，並鼓勵他們發掘不同體裁和風格的作品。
       </p>
       <button class="btn btn-primary btn-small" onclick="openRRLInfoModal()">📖 Know more about the RRL</button>
@@ -100,7 +100,10 @@
         <input type="text" id="borrowerName" placeholder="Student Name">
         <input type="text" id="borrowerGrade" placeholder="Grade (e.g. P3)">
         <input type="text" id="borrowerLevel" placeholder="Kumon Level (e.g. D)">
-        <input type="tel" id="borrowerPhone" placeholder="Phone Number">
+        <div class="phone-input-group">
+          <span class="phone-prefix">+853</span>
+          <input type="tel" id="borrowerPhone" placeholder="6123 4567">
+        </div>
         <select id="borrowerCenter">
           <option value="">No Center</option>
           <option value="Kumon Taipa Mei Keng">Kumon Taipa Mei Keng</option>
@@ -226,7 +229,7 @@
 
   <div class="modal-overlay" id="rrlInfoModal" onclick="if(event.target===this)closeRRLInfoModal()">
     <div class="modal" style="max-width:700px;">
-      <h3>📖 Introduction to the Kumon Recommended Reading List</h3>
+      <h3 style="text-align: center;">📖 Introduction to the Kumon Recommended Reading List</h3>
       <div class="rrl-info-content">
         <div class="rrl-section">
           <h3>📚 What is the Kumon Recommended Reading List?</h3>

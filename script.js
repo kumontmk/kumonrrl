@@ -92,8 +92,8 @@ function updateDetailModalVisibility() {
 function logout() {
   clearSession();
   setAdminMode(false);
-  renderBooks(); // Re-render grid to hide borrower details
-  updateDetailModalVisibility(); // Refresh detail modal if open
+  renderBooks();
+  updateDetailModalVisibility();
   showToast('Logged out - now in Public View', 'info');
 }
 
@@ -113,6 +113,73 @@ window.addEventListener('beforeunload', (e) => {
     return '';
   }
 });
+
+// ═══════════════════════════════════════════════════════════
+// CAROUSEL LOGIC (New)
+// ═══════════════════════════════════════════════════════════
+let currentSlide = 0;
+let carouselInterval;
+
+function initCarousel() {
+  const slides = document.querySelectorAll('.carousel-slide');
+  const dotsContainer = document.querySelector('.carousel-dots');
+  
+  // Create dots
+  slides.forEach((_, index) => {
+    const dot = document.createElement('div');
+    dot.classList.add('dot');
+    if (index === 0) dot.classList.add('active');
+    dot.onclick = () => goToSlide(index);
+    dotsContainer.appendChild(dot);
+  });
+
+  startCarouselAutoPlay();
+}
+
+function updateCarousel() {
+  const track = document.querySelector('.carousel-track');
+  const slides = document.querySelectorAll('.carousel-slide');
+  const dots = document.querySelectorAll('.dot');
+  
+  track.style.transform = `translateX(-${currentSlide * 100}%)`;
+  
+  dots.forEach((dot, index) => {
+    dot.classList.toggle('active', index === currentSlide);
+  });
+}
+
+function moveSlide(direction) {
+  const slides = document.querySelectorAll('.carousel-slide');
+  currentSlide = (currentSlide + direction + slides.length) % slides.length;
+  updateCarousel();
+  resetCarouselAutoPlay();
+}
+
+function goToSlide(index) {
+  currentSlide = index;
+  updateCarousel();
+  resetCarouselAutoPlay();
+}
+
+function startCarouselAutoPlay() {
+  carouselInterval = setInterval(() => {
+    moveSlide(1);
+  }, 5000); // Change slide every 5 seconds
+}
+
+function resetCarouselAutoPlay() {
+  clearInterval(carouselInterval);
+  startCarouselAutoPlay();
+}
+
+// Pause carousel on hover
+document.querySelector('.banner-carousel')?.addEventListener('mouseenter', () => {
+  clearInterval(carouselInterval);
+});
+document.querySelector('.banner-carousel')?.addEventListener('mouseleave', () => {
+  startCarouselAutoPlay();
+});
+
 
 // ═══════════════════════════════════════════════════════════
 // MODAL FUNCTIONS
@@ -641,6 +708,7 @@ function initApp() {
     setAdminMode(false);
   }
   startRealtimeSync();
+  initCarousel(); // ✅ Initialize Carousel
 
   // ── BACK BUTTON CONFIRM DIALOG ──
   window.history.pushState(null, null, window.location.href);

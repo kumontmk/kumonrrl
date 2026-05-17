@@ -100,7 +100,7 @@
         <input type="text" id="borrowerName" placeholder="Student Name">
         <input type="text" id="borrowerGrade" placeholder="Grade (e.g. P3)">
         <input type="text" id="borrowerLevel" placeholder="Kumon Level (e.g. D)">
-        <input type="tel" id="borrowerPhone" placeholder="Phone Number (without +853)">
+        <input type="tel" id="borrowerPhone" placeholder="Phone Number">
         <select id="borrowerCenter">
           <option value="">No Center</option>
           <option value="Kumon Taipa Mei Keng">Kumon Taipa Mei Keng</option>
@@ -216,8 +216,8 @@
           <div class="detail-actions-full">
             <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()">📚 Borrow Book</button>
             <button class="btn btn-success btn-large" id="detailReturnBtn" onclick="handleDetailReturn()" style="display:none;">✅ Return Book</button>
-            <!-- ✅ FIX: Edit button now correctly opens edit modal -->
-            <button class="btn btn-primary btn-large admin-only" onclick="openEditModal(selectedBookId)" style="background:#7c3aed">✏️ Edit</button>
+            <!-- ✅ FIX: Edit button now calls handleDetailEdit() to properly close modal first -->
+            <button class="btn btn-primary btn-large admin-only" onclick="handleDetailEdit()" style="background:#7c3aed">✏️ Edit</button>
             <button class="btn btn-danger btn-large admin-only" onclick="handleDetailRemove()">🗑 Remove</button>
           </div>
         </div>

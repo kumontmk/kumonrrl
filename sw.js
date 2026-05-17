@@ -1,41 +1,54 @@
-// Service Worker for Kumon RRL Library PWA
-const CACHE_NAME = 'kumon-rrl-library-v1';
-const BASE_PATH = '/kumonrrl/';
+// sw.js - Service Worker for Kumon RRL Library
+
+// ️ CHANGE THIS VERSION NUMBER EVERY TIME YOU UPDATE THE SITE ⬇️
+const CACHE_VERSION = '2'; 
+const CACHE_NAME = `kumon-rrl-library-v${CACHE_VERSION}`;
 
 const urlsToCache = [
-  BASE_PATH,
-  BASE_PATH + 'index.html',
-  BASE_PATH + 'styles.css',
-  BASE_PATH + 'script.js',
-  BASE_PATH + 'manifest.json',
-  BASE_PATH + 'icon-192.png',
-  BASE_PATH + 'icon-512.png'
+  '/kumonrrl/',
+  '/kumonrrl/index.html',
+  '/kumonrrl/styles.css',
+  '/kumonrrl/script.js',
+  '/kumonrrl/manifest.json',
+  // Add your banner images here if they change often
+  '/kumonrrl/banner1.jpg',
+  '/kumonrrl/banner2.jpg',
+  '/kumonrrl/banner3.jpg'
 ];
 
 // Install Service Worker
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+      .then(cache => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
+      })
+      .then(() => self.skipWaiting()) // Activate immediately
   );
-  self.skipWaiting();
 });
 
-// Fetch cached content when offline
+// Fetch cached content
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
-      .then(response => response || fetch(event.request))
+      .then(response => {
+        if (response) {
+          return response;
+        }
+        return fetch(event.request);
+      })
   );
 });
 
-// Activate Service Worker
+// Activate Service Worker (Clean up old caches)
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
+          // If the cache name is not in the whitelist, delete it
           if (cacheWhitelist.indexOf(cacheName) === -1) {
             return caches.delete(cacheName);
           }
@@ -43,5 +56,6 @@ self.addEventListener('activate', event => {
       );
     })
   );
+  // Take control of all pages immediately
   self.clients.claim();
 });

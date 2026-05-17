@@ -86,20 +86,117 @@ letter-spacing: -0.02em;
 white-space: nowrap;
 }
 .header-actions { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
-/* ── Banner Section ── */
-.banner-section {
-width: 100%;
-overflow: hidden;
-background: var(--bg-main);
-border-bottom: 1px solid var(--border-light);
+
+/* ═══════════════════════════════════════════════
+NEW BANNER CAROUSEL STYLES
+═══════════════════════════════════════════════ */
+.banner-carousel {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  /* Facebook Desktop Cover Ratio: 820x312 (approx 2.63:1) */
+  aspect-ratio: 2.63 / 1;
+  background: var(--bg-header);
 }
-.banner-image {
-width: 100%;
-height: auto;
-max-height: 150px;
-object-fit: cover;
-display: block;
+
+/* Facebook Mobile Cover Ratio: 640x360 (approx 1.77:1) */
+@media (max-width: 768px) {
+  .banner-carousel {
+    aspect-ratio: 1.77 / 1;
+  }
 }
+
+.carousel-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.5s ease-in-out;
+}
+
+.carousel-slide {
+  min-width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.carousel-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensures image covers area without distortion */
+  object-position: center;
+  display: block;
+}
+
+.carousel-caption {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 1rem;
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(4px);
+}
+
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.7);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  transition: var(--transition);
+  z-index: 10;
+  box-shadow: var(--shadow-sm);
+}
+
+.carousel-btn:hover {
+  background: var(--text-white);
+  box-shadow: var(--shadow-md);
+  color: var(--primary);
+}
+
+.prev-btn { left: 1rem; }
+.next-btn { right: 1rem; }
+
+.carousel-dots {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 10;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.dot.active {
+  background: var(--text-white);
+  transform: scale(1.2);
+}
+
+/* ═══════════════════════════════════════════════
+END CAROUSEL STYLES
+═══════════════════════════════════════════════ */
+
 /* ── Container ── */
 .container { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; width: 100%; }
 /* ── Login Overlay ── */
@@ -239,7 +336,7 @@ transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2000; box-shadow: va
 .contact-info p { color: var(--text-secondary); margin: 0.5rem 0; font-size: 0.9rem; line-height: 1.5; }
 .contact-info a { color: var(--primary); text-decoration: none; font-weight: 600; }
 .contact-info a:hover { text-decoration: underline; }
-/* ─ File Input ─ */
+/* ─ File Input  */
 input[type="file"] { padding: 0.75rem; background: var(--bg-input); color: var(--text-secondary); border: 2px dashed var(--border-medium); border-radius: var(--radius-sm); cursor: pointer; font-size: 0.875rem; width: 100%; transition: var(--transition); }
 input[type="file"]:hover { border-color: var(--primary); background: #eff6ff; }
 input[type="file"]::file-selector-button { background: var(--primary); color: var(--text-white); padding: 0.5rem 1rem; border: none; border-radius: 6px; margin-right: 0.75rem; cursor: pointer; font-weight: 600; font-size: 0.8rem; transition: var(--transition); font-family: var(--font-family); }

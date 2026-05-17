@@ -203,7 +203,7 @@
         <h4>📞 Visit or Call Us</h4>
         <p><strong>Kumon Taipa Mei Keng</strong></p>
         <p>📞 <a href="tel:+85328831773">+853 2883 1773</a></p>
-        <p>🏠 澳門氹仔柯維納馬路美景花園美德閣地下AU座<br>
+        <p>🏠 澳門仔柯維納馬路美景花園美德閣地下AU座<br>
            NA TAIPA, ESTRADA GOVERNADOR ALBANO DE OLIVEIRA N° 24,<br>
            MEI KENG FA UN RÉS-DO-CHÃO AU</p>
       </div>
@@ -301,12 +301,28 @@
           <span class="detail-status available" id="detailStatus">✓ Available</span>
           <h2 class="detail-title" id="detailTitle">Book Title</h2>
           <p class="detail-author" id="detailAuthor">by Author Name</p>
+          
           <div class="detail-meta-grid">
             <div class="detail-meta-item"><span class="meta-label">Genre</span><span class="meta-value" id="detailGenre">Fiction</span></div>
             <div class="detail-meta-item"><span class="meta-label">Location</span><span class="meta-value" id="detailLocation">Shelf A3</span></div>
             <div class="detail-meta-item"><span class="meta-label">RRL Level</span><span class="meta-value" id="detailRRL">A</span></div>
             <div class="detail-meta-item"><span class="meta-label">Book ID</span><span class="meta-value" id="detailID">#1</span></div>
           </div>
+
+          <!-- NEW: Rating Section -->
+          <div class="rating-section">
+            <h4>Rate this Book</h4>
+            <div class="stars-container" id="detailStars">
+              <span class="star-btn" onclick="selectRating(1)">★</span>
+              <span class="star-btn" onclick="selectRating(2)">★</span>
+              <span class="star-btn" onclick="selectRating(3)">★</span>
+              <span class="star-btn" onclick="selectRating(4)">★</span>
+              <span class="star-btn" onclick="selectRating(5)">★</span>
+            </div>
+            <button class="btn btn-primary btn-small" onclick="submitRating()">Submit Rating</button>
+            <div id="detailRatingSummary" style="margin-top:0.5rem; color:var(--text-secondary); font-size:0.9rem;"></div>
+          </div>
+
           <div class="borrower-section" id="detailBorrowerSection" style="display:none">
             <h4>📤 Borrower Information</h4>
             <div class="borrower-details">
@@ -318,6 +334,7 @@
               <div class="borrower-row"><span class="borrower-label">Borrowed</span><span class="borrower-value" id="detailBorrowDate">-</span></div>
             </div>
           </div>
+          
           <div class="detail-actions-full">
             <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()" style="display:none">📚 Borrow Book</button>
             <button class="btn btn-success btn-large admin-only" id="detailReturnBtn" onclick="handleDetailReturn()" style="display:none">✅ Return Book</button>
@@ -342,7 +359,7 @@
         <div class="rrl-section"><h3>📖 Level 2A to Level I</h3><p>The thirty books in each level from Level 2A to Level I are listed in order of difficulty, with the easiest at number one. For Level D and above, genre icons are included to help readers navigate the list. Please refer to the genre definitions (opposite) for details.</p></div>
         <div class="rrl-section"><h3>🌟 Further Reading</h3><p>These thirty books are recommended for more confident, mature readers. They include classics and seminal works from a range of genres and periods, and are listed in order of difficulty.</p></div>
         <div class="rrl-section"><h3>📚 A Wide Range of Books for a Wide Range of Readers!</h3><p>The RRL contains something for everyone. Each level includes books aimed at younger readers, as well as books more suited to older, more mature readers. Not every book will be appropriate for every student, but everyone will find something he or she will enjoy!</p></div>
-        <h2 style="color:#7c3aed;font-size:1.5rem;margin:2rem 0 1.5rem;text-align:center;">👨‍ Information for Parents</h2>
+        <h2 style="color:#7c3aed;font-size:1.5rem;margin:2rem 0 1.5rem;text-align:center;">👨 Information for Parents</h2>
         <p style="margin-bottom:1.5rem;color:var(--text-secondary);">The following information is intended to help parents make the best use of the Recommended Reading List (RRL), and to give ideas on how to help inspire in children a lifelong love of reading.</p>
         <div class="rrl-section"><h3>🏠 Creating a 'Reading-Friendly' Environment at Home</h3><ul><li>Store your child's books within his or her reach. Create a reading corner and put some child-sized bookshelves nearby.</li><li>Visit the local library with your child and borrow books together.</li><li>Take an active interest in what your child is reading.</li><li>Children learn by example. If you and other family members read and talk about books, your child will do the same.</li></ul></div>
         <div class="rrl-section"><h3>📚 Recommending Books</h3><ul><li>Children should read books that match their ability and interests, which may not correspond to their age or school year. This is why the books on the RRL are listed according to difficulty rather than age. It may mean that a preschool child chooses to read longer books, while an older primary-school student is more comfortable reading picture books.</li><li>Use the genre icons and book blurbs to help your child choose books.</li></ul></div>

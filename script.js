@@ -29,7 +29,7 @@ let pendingBorrowBookId = null;
 let pendingReturnBookId = null;
 let selectedBookId = null;
 let hasUnsavedChanges = false;
-let selectedRating = 0;
+let selectedRating = 0; // For the rating picker in modal
 
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
@@ -73,6 +73,7 @@ function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
 function setAdminMode(active) {
   isAdmin = active;
+  
   // Update both desktop and mobile indicators
   const indicators = ['modeIndicator', 'mobileModeIndicator'];
   indicators.forEach(id => {
@@ -82,11 +83,13 @@ function setAdminMode(active) {
       el.classList.toggle('admin', active);
     }
   });
+
   // Update unsaved indicators
   ['unsavedIndicator', 'mobileUnsavedIndicator'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = hasUnsavedChanges ? 'inline' : 'none';
   });
+
   updateDetailModalVisibility();
 }
 
@@ -135,15 +138,64 @@ document.addEventListener('click', (e) => {
 });
 
 // ═══════════════════════════════════════════════════════════
-// PAGE EXIT & BACK BUTTON CONFIRMATION
+// CAROUSEL LOGIC
 // ═══════════════════════════════════════════════════════════
-window.addEventListener('beforeunload', (e) => {
-  if (hasUnsavedChanges) {
-    e.preventDefault();
-    e.returnValue = '';
-    return '';
-  }
-});
+let currentSlide = 0;
+let carouselInterval;
+
+function initCarousel() {
+  const slides = document.querySelectorAll('.carousel-slide');
+  const dotsContainer = document.querySelector('.carousel-dots');
+  
+  // Create dots
+  slides.forEach((_, index) => {
+    const dot = document.createElement('div');
+    dot.classList.add('dot');
+    if (index === 0) dot.classList.add('active');
+    dot.onclick = () => goToSlide(index);
+    dotsContainer.appendChild(dot);
+  });
+
+  startCarouselAutoPlay();
+}
+
+function updateCarousel() {
+  const track = document.querySelector('.carousel-track');
+  const dots = document.querySelectorAll('.dot');
+  
+  track.style.transform = `translateX(-${currentSlide * 100}%)`;
+  
+  dots.forEach((dot, index) => {
+    dot.classList.toggle('active', index === currentSlide);
+  });
+}
+
+function moveSlide(direction) {
+  const slides = document.querySelectorAll('.carousel-slide');
+  currentSlide = (currentSlide + direction + slides.length) % slides.length;
+  updateCarousel();
+  resetCarouselAutoPlay();
+}
+
+function goToSlide(index) {
+  currentSlide = index;
+  updateCarousel();
+  resetCarouselAutoPlay();
+}
+
+function startCarouselAutoPlay() {
+  carouselInterval = setInterval(() => moveSlide(1), 5000); // 5 seconds
+}
+
+function resetCarouselAutoPlay() {
+  clearInterval(carouselInterval);
+  startCarouselAutoPlay();
+}
+
+// Pause carousel on hover
+document.querySelector('.banner-carousel')?.addEventListener('mouseenter', () => clearInterval(carouselInterval));
+document.querySelector('.banner-carousel')?.addEventListener('mouseleave', () => startCarouselAutoPlay());
+
 
 // ═══════════════════════════════════════════════════════════
 // RATING SYSTEM
@@ -175,65 +227,22 @@ async function submitRating() {
     
     if (await saveBooksToFirebase()) {
       showToast('Rating submitted!', 'success');
-      openBookDetail(selectedBookId);
-      renderBooks();
+      openBookDetail(selectedBookId); // Refresh modal
+      renderBooks(); // Refresh grid
     }
   }
 }
 
 // ═══════════════════════════════════════════════════════════
-// CAROUSEL LOGIC
+// PAGE EXIT & BACK BUTTON CONFIRMATION
 // ═══════════════════════════════════════════════════════════
-let currentSlide = 0;
-let carouselInterval;
-
-function initCarousel() {
-  const slides = document.querySelectorAll('.carousel-slide');
-  const dotsContainer = document.querySelector('.carousel-dots');
-  
-  slides.forEach((_, index) => {
-    const dot = document.createElement('div');
-    dot.classList.add('dot');
-    if (index === 0) dot.classList.add('active');
-    dot.onclick = () => goToSlide(index);
-    dotsContainer.appendChild(dot);
-  });
-
-  startCarouselAutoPlay();
-}
-
-function updateCarousel() {
-  const track = document.querySelector('.carousel-track');
-  const dots = document.querySelectorAll('.dot');
-  track.style.transform = `translateX(-${currentSlide * 100}%)`;
-  dots.forEach((dot, index) => dot.classList.toggle('active', index === currentSlide));
-}
-
-function moveSlide(direction) {
-  const slides = document.querySelectorAll('.carousel-slide');
-  currentSlide = (currentSlide + direction + slides.length) % slides.length;
-  updateCarousel();
-  resetCarouselAutoPlay();
-}
-
-function goToSlide(index) {
-  currentSlide = index;
-  updateCarousel();
-  resetCarouselAutoPlay();
-}
-
-function startCarouselAutoPlay() {
-  carouselInterval = setInterval(() => moveSlide(1), 5000);
-}
-
-function resetCarouselAutoPlay() {
-  clearInterval(carouselInterval);
-  startCarouselAutoPlay();
-}
-
-document.querySelector('.banner-carousel')?.addEventListener('mouseenter', () => clearInterval(carouselInterval));
-document.querySelector('.banner-carousel')?.addEventListener('mouseleave', () => startCarouselAutoPlay());
-
+window.addEventListener('beforeunload', (e) => {
+  if (hasUnsavedChanges) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+});
 
 // ═══════════════════════════════════════════════════════════
 // MODAL FUNCTIONS
@@ -349,6 +358,7 @@ function openBookDetail(bookId) {
   statusEl.textContent = isBorrowed ? '📤 Borrowed' : '✓ Available';
   statusEl.className = `detail-status ${isBorrowed ? 'borrowed' : 'available'}`;
 
+  // ✅ PRIVACY: Only show borrower info to admins
   const borrowerSection = document.getElementById('detailBorrowerSection');
   if (isBorrowed && book.borrower && isAdmin) {
     borrowerSection.style.display = 'block';
@@ -413,7 +423,7 @@ function login() {
   if (password === '1111') {
     saveSession();
     setAdminMode(true);
-    renderBooks();
+    renderBooks(); // ✅ FIX: Refresh grid to show admin info immediately
     closeLoginModal();
     closeMobileMenu();
     document.getElementById('passwordInput').value = '';
@@ -434,11 +444,12 @@ function login() {
 // FIREBASE REALTIME OPERATIONS
 // ═══════════════════════════════════════════════════════════
 function startRealtimeSync() {
+  // .on('value') listens for changes and pushes updates to ALL devices instantly
   BOOKS_REF.on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
       books = Object.values(data).map(b => {
-        b.ratings = b.ratings || [];
+        b.ratings = b.ratings || []; // ✅ Ensure ratings array exists
         return b;
       });
       books.sort((a, b) => b.id - a.id);
@@ -552,7 +563,7 @@ async function addBookToSystem(title, author, genre, location, rrlLevel, coverIm
     genre: genre || 'Uncategorized', location,
     rrlLevel: rrlLevel || 'N/A', coverImage,
     status: 'available',
-    ratings: [],
+    ratings: [], // ✅ Initialize ratings
     borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null, borrowerPhone: null, borrowerCenter: null
   };
   books.unshift(newBook);

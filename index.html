@@ -20,14 +20,14 @@
     <button class="hamburger-btn" onclick="toggleMobileMenu()" aria-label="Menu">☰</button>
     <div class="header-actions desktop-actions">
       <span class="mode-indicator" id="modeIndicator">👥 Public View</span>
-      <span class="unsaved-indicator admin-only" id="unsavedIndicator" style="display:none;">● Unsaved changes</span>
+      <span class="unsaved-indicator" id="unsavedIndicator">● Unsaved changes</span>
       <button class="btn btn-logout admin-only" onclick="logout()">🚪 Logout</button>
       <button class="btn btn-login public-only" onclick="openLoginModal()">🔐 Admin Login</button>
     </div>
     <div class="mobile-menu" id="mobileMenu">
       <div class="mobile-menu-content">
         <span class="mode-indicator" id="mobileModeIndicator">👥 Public View</span>
-        <span class="unsaved-indicator admin-only" id="mobileUnsavedIndicator" style="display:none;">● Unsaved changes</span>
+        <span class="unsaved-indicator" id="mobileUnsavedIndicator">● Unsaved changes</span>
         <button class="btn btn-logout admin-only" onclick="logout()">🚪 Logout</button>
         <button class="btn btn-login public-only" onclick="openLoginModal()">🔐 Admin Login</button>
       </div>

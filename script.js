@@ -73,10 +73,8 @@ function clearSession() { localStorage.removeItem(SESSION_KEY); }
 function setAdminMode(active) {
   isAdmin = active;
   document.body.classList.toggle('admin-mode', active);
-  
-  // Reset unsaved changes on login to prevent immediate badge display
   if (active) hasUnsavedChanges = false;
-
+  
   const indicators = ['modeIndicator', 'mobileModeIndicator'];
   indicators.forEach(id => {
     const el = document.getElementById(id);
@@ -85,7 +83,7 @@ function setAdminMode(active) {
       el.classList.toggle('admin', active);
     }
   });
-
+  
   updateUnsavedIndicator();
   updateDetailModalVisibility();
 }
@@ -120,8 +118,7 @@ function logout() {
 // MOBILE MENU FUNCTIONS
 // ═══════════════════════════════════════════════════════════
 function toggleMobileMenu() {
-  const menu = document.getElementById('mobileMenu');
-  menu?.classList.toggle('show');
+  document.getElementById('mobileMenu')?.classList.toggle('show');
 }
 
 function closeMobileMenu() {

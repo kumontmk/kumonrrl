@@ -8,6 +8,8 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="favicon.png">
+  <!-- Barcode Scanner Library -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
   <link rel="stylesheet" href="styles.css">
@@ -130,16 +132,25 @@
     <div class="modal">
       <h3>➕ Add New Book</h3>
       
-      <!-- ✅ Google Books Search Section Added -->
+      <!-- Barcode Scanner Section -->
       <div style="margin-bottom:1rem;padding:1rem;background:var(--bg-input);border-radius:var(--radius-md);">
         <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
-          <input type="text" id="googleBookSearch" placeholder="Search by ISBN or Title..." style="flex:1;padding:0.5rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);">
+          <button class="btn btn-primary" onclick="startBarcodeScanner()" style="flex:1;">📷 Scan ISBN Barcode</button>
+          <button class="btn" onclick="stopBarcodeScanner()" id="stopScanBtn" style="display:none;background:var(--danger);color:white;">⏹ Stop</button>
+        </div>
+        <div id="barcode-reader" style="display:none;"></div>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin:0.5rem 0 0;">Or search by title below:</p>
+      </div>
+
+      <!-- Google Books Search Section -->
+      <div style="margin-bottom:1rem;padding:1rem;background:var(--bg-input);border-radius:var(--radius-md);">
+        <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
+          <input type="text" id="googleBookSearch" placeholder="Search by book title..." style="flex:1;padding:0.5rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);">
           <button class="btn btn-primary" onclick="searchGoogleBooks()">🔍 Search</button>
         </div>
         <div id="googleSearchResults" style="max-height:200px;overflow-y:auto;display:none;"></div>
         <p style="font-size:0.8rem;color:var(--text-muted);margin:0.5rem 0 0;">Or fill in manually below:</p>
       </div>
-      <!-- End Google Books Search Section -->
 
       <div class="modal-form">
         <input type="text" id="newBookTitle" placeholder="Book Title">
@@ -279,7 +290,7 @@
           <p>The RRL contains something for everyone. Each level includes books aimed at younger readers, as well as books more suited to older, more mature readers. Not every book will be appropriate for every student, but everyone will find something he or she will enjoy!</p>
         </div>
         <div class="rrl-section">
-          <h3>👨‍👩‍👧 Information for Parents</h3>
+          <h3>👨‍👩‍ Information for Parents</h3>
           <p>The following information is intended to help parents make the best use of the Recommended Reading List (RRL), and to give ideas on how to help inspire in children a lifelong love of reading.</p>
         </div>
         <div class="rrl-section">

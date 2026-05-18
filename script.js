@@ -1,7 +1,6 @@
 // ═══════════════════════════════════════════════════════════
 // Kumon RRL Online Library - Firebase Realtime Version
 // ═══════════════════════════════════════════════════════════
-// Firebase Configuration (✅ Fixed: removed trailing spaces)
 const firebaseConfig = {
   apiKey: "AIzaSyBo0DXOWKztyMXUXfPhNyoFo9P_Fu-MEn4",
   authDomain: "kumon-library.firebaseapp.com",
@@ -13,12 +12,10 @@ const firebaseConfig = {
   measurementId: "G-V4BJ8FP9QR"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 const BOOKS_REF = database.ref('books');
 
-// App State
 const SESSION_KEY = 'kumonLibrarySession';
 let books = [];
 let nextId = 1;
@@ -29,10 +26,6 @@ let pendingReturnBookId = null;
 let selectedBookId = null;
 let hasUnsavedChanges = false;
 let selectedRating = 0;
-
-// Barcode Scanner Instance
-let html5QrCode = null;
-let isScanning = false;
 
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
@@ -119,162 +112,63 @@ function logout() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// BARCODE SCANNER FUNCTIONS (✅ RESTORED)
+// ONLINE COVER SEARCH
 // ═══════════════════════════════════════════════════════════
-async function startBarcodeScanner() {
-  const readerDiv = document.getElementById('barcode-reader');
-  const stopBtn = document.getElementById('stopScanBtn');
-  const startBtn = document.getElementById('startScanBtn');
-  
-  if (isScanning) return;
-  
-  readerDiv.style.display = 'block';
-  stopBtn.style.display = 'inline-block';
-  startBtn.style.display = 'none';
-  
-  try {
-    html5QrCode = new Html5Qrcode("barcode-reader");
-    await html5QrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 250, height: 150 } },
-      onScanSuccess,
-      onScanFailure
-    );
-    isScanning = true;
-    showToast('📷 Camera started. Point at ISBN barcode.', 'info');
-  } catch (err) {
-    console.error("Failed to start scanner", err);
-    showToast('❌ Failed to start camera. Check permissions.', 'error');
-    stopBarcodeScanner();
-  }
-}
-
-function stopBarcodeScanner() {
-  if (html5QrCode && isScanning) {
-    html5QrCode.stop().then(() => {
-      html5QrCode.clear();
-      html5QrCode = null;
-      isScanning = false;
-      document.getElementById('barcode-reader').style.display = 'none';
-      document.getElementById('stopScanBtn').style.display = 'none';
-      document.getElementById('startScanBtn').style.display = 'inline-block';
-    }).catch(err => console.error("Failed to stop scanner", err));
-  }
-}
-
-function onScanSuccess(decodedText, decodedResult) {
-  const match = decodedText.match(/\d{10,13}/);
-  const isbn = match ? match[0] : decodedText.replace(/[-\s]/g, '');
-  
-  if (isbn.match(/^\d{10,13}$/)) {
-    stopBarcodeScanner();
-    showToast(`✅ Scanned ISBN: ${isbn}`, 'success');
-    fetchBookByISBN(isbn);
-  } else {
-    showToast('⚠️ Not a valid ISBN barcode', 'error');
-  }
-}
-
-function onScanFailure(error) {
-  // Ignore continuous scan failures
-}
-
-async function fetchBookByISBN(isbn) {
-  showToast('🔍 Fetching book details...', 'info');
-  try {
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
-    const data = await response.json();
-    
-    if (data.totalItems > 0) {
-      const book = data.items[0].volumeInfo;
-      document.getElementById('newBookTitle').value = book.title || '';
-      document.getElementById('newBookAuthor').value = book.authors ? book.authors.join(', ') : '';
-      
-      let genre = '';
-      if (book.categories && book.categories.length > 0) {
-        const cat = book.categories[0];
-        genre = typeof cat === 'string' ? cat : (cat.name || cat.title || String(cat));
-      }
-      document.getElementById('newBookGenre').value = genre;
-
-      if (book.imageLinks?.thumbnail) {
-        fetchAndSetCover(book.imageLinks.thumbnail.replace('http:', 'https:'));
-      }
-      showToast('✅ Book details found!', 'success');
-    } else {
-      showToast('📖 Book not found. Please fill in details manually.', 'info');
-    }
-  } catch (error) {
-    console.error('Fetch error:', error);
-    showToast('⚠️ Network error. Please fill in details manually.', 'error');
-  }
-}
-
-async function fetchAndSetCover(url) {
-  try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(file);
-    document.getElementById('newBookCover').files = dataTransfer.files;
-  } catch (error) { console.warn('Cover fetch failed', error); }
-}
-
-// ═══════════════════════════════════════════════════════════
-// BOOK COVER SEARCH FUNCTIONS (✅ ADDED AS REQUESTED)
-// ═══════════════════════════════════════════════════════════
-async function searchBookCover() {
+async function searchBookCovers() {
   const title = document.getElementById('newBookTitle').value.trim();
   const author = document.getElementById('newBookAuthor').value.trim();
-  const statusEl = document.getElementById('coverSearchStatus');
   
   if (!title) {
     showToast('Please enter a book title first', 'error');
     return;
   }
-  
-  statusEl.style.display = 'block';
-  statusEl.textContent = '🔍 Searching for book cover...';
-  statusEl.style.color = 'var(--text-muted)';
-  
+
+  const resultsDiv = document.getElementById('coverSearchResults');
+  resultsDiv.style.display = 'block';
+  resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">Searching covers...</p>';
+
   try {
-    let query = encodeURIComponent(`intitle:${title}`);
-    if (author) query += `+inauthor:${encodeURIComponent(author)}`;
-    
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=1`);
-    const data = await response.json();
-    
-    if (data.totalItems > 0 && data.items[0].volumeInfo.imageLinks) {
-      const coverUrl = data.items[0].volumeInfo.imageLinks.thumbnail?.replace('http:', 'https:') ||
-                       data.items[0].volumeInfo.imageLinks.smallThumbnail?.replace('http:', 'https:');
-      
-      if (coverUrl) {
-        await fetchAndSetCover(coverUrl);
-        statusEl.textContent = '✅ Cover found and loaded!';
-        statusEl.style.color = 'var(--success)';
-        showToast('✅ Book cover loaded successfully!', 'success');
-      }
-    } else {
-      statusEl.textContent = '❌ No cover found. Please upload manually.';
-      statusEl.style.color = 'var(--danger)';
-      showToast('No cover found. Please upload manually.', 'info');
+    const query = `intitle:${encodeURIComponent(title)}${author ? `+inauthor:${encodeURIComponent(author)}` : ''}`;
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=12&fields=items/volumeInfo/imageLinks`);
+    const data = await res.json();
+
+    if (!data.items || data.items.length === 0) {
+      resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">No covers found. Upload manually.</p>';
+      return;
     }
-  } catch (error) {
-    statusEl.textContent = '⚠️ Search failed. Try manual upload.';
-    statusEl.style.color = 'var(--warning)';
-    showToast('Search failed. Please upload manually.', 'error');
+
+    let html = '<div class="cover-search-grid">';
+    data.items.forEach((book, idx) => {
+      const thumb = book.volumeInfo?.imageLinks?.thumbnail?.replace('http:', 'https:');
+      if (thumb) {
+        html += `<div class="cover-search-item" onclick="selectCoverFromSearch('${thumb}')" title="Select this cover">
+                   <img src="${thumb}" alt="Cover ${idx+1}" loading="lazy">
+                 </div>`;
+      }
+    });
+    html += '</div>';
+    resultsDiv.innerHTML = html;
+  } catch (err) {
+    resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--danger);">Search failed. Try manual upload.</p>';
   }
-  
-  setTimeout(() => { statusEl.style.display = 'none'; }, 5000);
 }
 
-function clearBookCover() {
-  document.getElementById('newBookCover').value = '';
-  const statusEl = document.getElementById('coverSearchStatus');
-  statusEl.style.display = 'none';
-  document.getElementById('imageSizeWarning').classList.remove('show');
-  showToast('Cover cleared', 'info');
+async function selectCoverFromSearch(url) {
+  showToast('⬇️ Downloading cover...', 'info');
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
+    
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('newBookCover').files = dt.files;
+    
+    document.getElementById('coverSearchResults').style.display = 'none';
+    showToast('✅ Cover selected!', 'success');
+  } catch (e) {
+    showToast('❌ Failed to load cover. Try manual upload.', 'error');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -377,6 +271,9 @@ async function submitRating() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// PAGE EXIT & BACK BUTTON CONFIRMATION
+// ═══════════════════════════════════════════════════════════
 window.addEventListener('beforeunload', (e) => {
   if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; return ''; }
 });
@@ -433,18 +330,15 @@ function openAddBookModal() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('imageSizeWarning').classList.remove('show');
-  document.getElementById('coverSearchStatus').style.display = 'none';
-  document.getElementById('barcode-reader').style.display = 'none';
-  stopBarcodeScanner();
+  document.getElementById('coverSearchResults').style.display = 'none';
   document.getElementById('addBookModal').classList.add('show');
   document.getElementById('newBookTitle').focus();
   setUnsavedChanges(true);
 }
 
 function closeAddBookModal() {
-  stopBarcodeScanner();
   document.getElementById('addBookModal').classList.remove('show');
-  document.getElementById('coverSearchStatus').style.display = 'none';
+  document.getElementById('coverSearchResults').style.display = 'none';
   setUnsavedChanges(false);
 }
 
@@ -850,7 +744,6 @@ function renderBooks() {
   }
   
   emptyState.style.display = 'none';
-  // ✅ FIX: Corrected arrow function & cleaned template literals
   grid.innerHTML = filteredBooks.map(book => {
     const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
     const avg = getAverageRating(book.ratings);
@@ -896,6 +789,9 @@ function renderBooks() {
   }).join('');
 }
 
+// ═══════════════════════════════════════════════════════════
+// INITIALIZATION & EVENT LISTENERS
+// ═══════════════════════════════════════════════════════════
 function initApp() {
   if (checkSession()) {
     setAdminMode(true);

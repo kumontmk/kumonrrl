@@ -28,6 +28,7 @@ let hasUnsavedChanges = false;
 let selectedRating = 0;
 
 let html5QrCode = null;
+let scanTimeout = null;
 
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
@@ -114,7 +115,7 @@ function logout() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// ISBN SCANNER & API FUNCTIONS
+// ISBN SCANNER & DUAL-API FUNCTIONS
 // ═══════════════════════════════════════════════════════════
 async function toggleScanner() {
   const container = document.getElementById('isbn-scanner-container');
@@ -125,21 +126,21 @@ async function toggleScanner() {
   if (container.style.display === 'none' || container.style.display === '') {
     container.style.display = 'block';
     status.style.display = 'block';
-    status.textContent = 'Initializing back camera...';
+    status.textContent = '📷 Initializing back camera...';
     startBtn.style.display = 'none';
     stopBtn.style.display = 'inline-flex';
 
     try {
       if (!html5QrCode) html5QrCode = new Html5Qrcode("isbn-scanner-container");
       
-      const config = { fps: 10, qrbox: { width: 250, height: 150 } };
-      // 👇 Forces Back Camera on Mobile
+      // Optimized config for mobile focus & speed
+      const config = { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 };
       await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure);
-      status.textContent = 'Point camera at ISBN barcode';
+      status.textContent = '📷 Point at ISBN barcode (tap screen to focus on iOS)';
     } catch (err) {
       console.error(err);
-      status.textContent = "Camera access error. Please allow permissions or use HTTPS.";
-      setTimeout(stopScanner, 2000);
+      status.textContent = "⚠️ Camera denied or HTTPS required. Use manual input below.";
+      setTimeout(stopScanner, 3000);
     }
   }
 }
@@ -163,9 +164,16 @@ function stopScanner() {
 }
 
 function onScanSuccess(decodedText, decodedResult) {
-  const isbn = decodedText.replace(/-/g, '').trim();
-  if (isbn.match(/^(978|979)\d{10}$/)) {
-    document.getElementById('scan-status').textContent = `ISBN Found: ${isbn}. Fetching details...`;
+  // Debounce to prevent multiple scans
+  if (scanTimeout) return;
+  
+  const raw = decodedText.replace(/[^0-9]/g, '');
+  const isbn = raw.startsWith('978') || raw.startsWith('979') ? raw : raw.padStart(13, '0');
+  
+  if (isbn.length >= 13) {
+    scanTimeout = setTimeout(() => { scanTimeout = null; }, 3000);
+    document.getElementById('manualIsbn').value = isbn;
+    document.getElementById('scan-status').textContent = `✅ Scanned: ${isbn}. Fetching...`;
     stopScanner();
     fetchAndFillBook(isbn);
   }
@@ -175,34 +183,70 @@ function onScanFailure(error) {
   // Ignore continuous scan failures
 }
 
+function manualFetch() {
+  const raw = document.getElementById('manualIsbn').value.replace(/[^0-9]/g, '');
+  if (raw.length < 10) {
+    showToast('Please enter a valid ISBN (10 or 13 digits)', 'error');
+    return;
+  }
+  fetchAndFillBook(raw);
+}
+
 async function fetchAndFillBook(isbn) {
+  const status = document.getElementById('scan-status');
+  if (status.style.display !== 'none') status.textContent = '🔍 Searching Google Books & Open Library...';
+  
   try {
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
-    const data = await response.json();
+    // 1️⃣ Try Google Books API
+    let res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    let data = await res.json();
     
-    if (data.totalItems === 0) {
-      showToast(`No book found for ISBN ${isbn}`, 'error');
+    if (data.totalItems > 0) {
+      fillFromGoogle(data.items[0].volumeInfo);
+      showToast('✅ Book found via Google Books!', 'success');
       return;
     }
 
-    const book = data.items[0].volumeInfo;
-    document.getElementById('newBookTitle').value = book.title || '';
-    document.getElementById('newBookAuthor').value = book.authors ? book.authors.join(', ') : '';
-    document.getElementById('newBookGenre').value = book.categories ? book.categories[0] : '';
+    // 2️⃣ Fallback to Open Library API
+    res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+    data = await res.json();
+    const olKey = `ISBN:${isbn}`;
     
-    if (book.imageLinks?.thumbnail) {
-      const imgBlob = await fetch(book.imageLinks.thumbnail).then(r => r.blob());
-      const file = new File([imgBlob], "cover.jpg", { type: "image/jpeg" });
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      document.getElementById('newBookCover').files = dt.files;
+    if (data[olKey]) {
+      fillFromOpenLibrary(data[olKey]);
+      showToast('✅ Book found via Open Library!', 'success');
+      return;
     }
-    
-    showToast('Book details found! Fill in Location & RRL Level.', 'success');
+
+    showToast('❌ Book not found in major databases. Try manual entry.', 'error');
   } catch (error) {
-    console.error(error);
-    showToast('Failed to fetch book details', 'error');
+    console.error("API Fetch Error:", error);
+    showToast('⚠️ Network error. Check connection & try manual input.', 'error');
   }
+}
+
+function fillFromGoogle(info) {
+  document.getElementById('newBookTitle').value = info.title || '';
+  document.getElementById('newBookAuthor').value = info.authors ? info.authors.join(', ') : '';
+  document.getElementById('newBookGenre').value = info.categories ? info.categories[0] : '';
+  if (info.imageLinks?.thumbnail) fetchAndSetCover(info.imageLinks.thumbnail.replace('http:', 'https:'));
+}
+
+function fillFromOpenLibrary(info) {
+  document.getElementById('newBookTitle').value = info.title || '';
+  document.getElementById('newBookAuthor').value = info.authors ? info.authors.map(a => a.name).join(', ') : '';
+  document.getElementById('newBookGenre').value = info.subjects ? info.subjects[0] : '';
+  if (info.cover?.large) fetchAndSetCover(info.cover.large);
+}
+
+async function fetchAndSetCover(url) {
+  try {
+    const imgBlob = await fetch(url).then(r => r.blob());
+    const file = new File([imgBlob], "cover.jpg", { type: "image/jpeg" });
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('newBookCover').files = dt.files;
+  } catch (e) { console.warn("Cover fetch failed", e); }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -290,7 +334,7 @@ function openLoginModalFromVisitor() {
 
 function openAddBookModal() {
   if (!isAdmin) { openLoginModal(); return; }
-  ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover'].forEach(id => {
+  ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover','manualIsbn'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('imageSizeWarning').classList.remove('show');

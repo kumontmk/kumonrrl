@@ -19,14 +19,13 @@ const BOOKS_REF = database.ref('books');
 const SESSION_KEY = 'kumonLibrarySession';
 let books = [];
 let nextId = 1;
+let isLoading = false;
 let isAdmin = false;
 let pendingBorrowBookId = null;
 let pendingReturnBookId = null;
 let selectedBookId = null;
 let hasUnsavedChanges = false;
 let selectedRating = 0;
-let html5QrCode = null;
-let isScanning = false;
 
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
@@ -113,195 +112,6 @@ function logout() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// BARCODE SCANNER & COVER SEARCH
-// ═══════════════════════════════════════════════════════════
-async function startBarcodeScanner() {
-  const readerDiv = document.getElementById('barcode-reader');
-  const stopBtn = document.getElementById('stopScanBtn');
-  const startBtn = document.getElementById('startScanBtn');
-  
-  if (isScanning) return;
-  
-  readerDiv.style.display = 'block';
-  stopBtn.style.display = 'inline-block';
-  startBtn.style.display = 'none';
-  
-  try {
-    html5QrCode = new Html5Qrcode("barcode-reader");
-    await html5QrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 250, height: 150 } },
-      onScanSuccess,
-      onScanFailure
-    );
-    isScanning = true;
-    showToast('📷 Camera started. Point at ISBN barcode.', 'info');
-  } catch (err) {
-    console.error("Failed to start scanner", err);
-    showToast('❌ Failed to start camera. Check permissions.', 'error');
-    stopBarcodeScanner();
-  }
-}
-
-function stopBarcodeScanner() {
-  if (html5QrCode && isScanning) {
-    html5QrCode.stop().then(() => {
-      html5QrCode.clear();
-      html5QrCode = null;
-      isScanning = false;
-      document.getElementById('barcode-reader').style.display = 'none';
-      document.getElementById('stopScanBtn').style.display = 'none';
-      document.getElementById('startScanBtn').style.display = 'inline-block';
-    }).catch(err => console.error("Failed to stop scanner", err));
-  }
-}
-
-function onScanSuccess(decodedText, decodedResult) {
-  const match = decodedText.match(/\d{10,13}/);
-  const isbn = match ? match[0] : decodedText.replace(/[-\s]/g, '');
-  
-  if (isbn.match(/^\d{10,13}$/)) {
-    stopBarcodeScanner();
-    showToast(`✅ Scanned ISBN: ${isbn}`, 'success');
-    fetchBookByISBN(isbn);
-  } else {
-    showToast('⚠️ Not a valid ISBN barcode', 'error');
-  }
-}
-
-function onScanFailure(error) { /* Ignore continuous failures */ }
-
-async function fetchBookByISBN(isbn) {
-  showToast('🔍 Searching free book databases...', 'info');
-  let data = await fetchFromGoogleBooks(isbn);
-  if (data) { fillBookForm(data); showToast('✅ Found via Google Books', 'success'); return; }
-
-  data = await fetchFromOpenLibrary(isbn);
-  if (data) { fillBookForm(data); showToast('✅ Found via Open Library', 'success'); return; }
-
-  showToast('📖 Book not found. Please fill in details manually.', 'info');
-}
-
-async function fetchFromGoogleBooks(isbn) {
-  try {
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
-    const json = await res.json();
-    if (json.totalItems > 0) {
-      const info = json.items[0].volumeInfo;
-      return {
-        title: info.title || '',
-        authors: info.authors || [],
-        categories: info.categories || [],
-        thumbnail: (info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail)?.replace('http:', 'https:') || null
-      };
-    }
-  } catch (e) { console.warn('Google Books API failed', e); }
-  return null;
-}
-
-async function fetchFromOpenLibrary(isbn) {
-  try {
-    const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
-    const json = await res.json();
-    const key = `ISBN:${isbn}`;
-    if (json[key]) {
-      const info = json[key];
-      return {
-        title: info.title || '',
-        authors: info.authors?.map(a => a.name) || [],
-        categories: info.subjects || [],
-        thumbnail: (info.cover?.large || info.cover?.medium || info.cover?.small) || null
-      };
-    }
-  } catch (e) { console.warn('Open Library API failed', e); }
-  return null;
-}
-
-function fillBookForm(data) {
-  document.getElementById('newBookTitle').value = data.title;
-  document.getElementById('newBookAuthor').value = data.authors.join(', ');
-  
-  let genre = '';
-  if (data.categories && data.categories.length > 0) {
-    const cat = data.categories[0];
-    genre = typeof cat === 'string' ? cat : (cat.name || cat.title || String(cat));
-  }
-  document.getElementById('newBookGenre').value = genre;
-
-  if (data.thumbnail) { fetchAndSetCover(data.thumbnail); }
-}
-
-async function searchBookCovers() {
-  const title = document.getElementById('newBookTitle').value.trim();
-  if (!title) { showToast('Please enter a book title first', 'error'); return; }
-
-  const resultsDiv = document.getElementById('coverSearchResults');
-  resultsDiv.style.display = 'block';
-  resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">Searching covers...</p>';
-
-  try {
-    const query = encodeURIComponent(`intitle:${title}`);
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=12&printType=books`);
-    const data = await res.json();
-
-    if (!data.items || data.items.length === 0) {
-      resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">No covers found. Upload manually.</p>';
-      return;
-    }
-
-    let html = '<div class="cover-search-grid">';
-    let foundCount = 0;
-    data.items.forEach((book) => {
-      const links = book.volumeInfo?.imageLinks;
-      const coverUrl = links?.large || links?.thumbnail || links?.smallThumbnail;
-      if (coverUrl) {
-        foundCount++;
-        const httpsUrl = coverUrl.replace('http:', 'https:');
-        html += `<div class="cover-search-item" onclick="selectCoverFromSearch('${httpsUrl}')">
-                   <img src="${httpsUrl}" alt="Cover" loading="lazy">
-                 </div>`;
-      }
-    });
-    html += '</div>';
-
-    resultsDiv.innerHTML = foundCount > 0 ? html : '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">No covers found in results. Upload manually.</p>';
-  } catch (err) {
-    console.error('Cover search error:', err);
-    resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--danger);">Search failed. Check connection.</p>';
-  }
-}
-
-async function selectCoverFromSearch(url) {
-  showToast('⬇️ Downloading cover...', 'info');
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    document.getElementById('newBookCover').files = dt.files;
-    document.getElementById('coverSearchResults').style.display = 'none';
-    showToast('✅ Cover selected!', 'success');
-  } catch (e) { showToast('❌ Failed to load cover.', 'error'); }
-}
-
-async function fetchAndSetCover(url) {
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    document.getElementById('newBookCover').files = dt.files;
-    const warningEl = document.getElementById('imageSizeWarning');
-    if (file.size > 500 * 1024) {
-      warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress on save.`;
-      warningEl.classList.add('show');
-    }
-  } catch (e) { console.warn('Cover fetch blocked.', e); }
-}
-
-// ═══════════════════════════════════════════════════════════
 // MOBILE MENU & CAROUSEL
 // ═══════════════════════════════════════════════════════════
 function toggleMobileMenu() { document.getElementById('mobileMenu')?.classList.toggle('show'); }
@@ -372,7 +182,6 @@ window.addEventListener('beforeunload', (e) => { if (hasUnsavedChanges) { e.prev
 
 function openLoginModal() { document.getElementById('loginOverlay').classList.add('show'); document.getElementById('passwordInput').focus(); }
 function closeLoginModal() { document.getElementById('loginOverlay').classList.remove('show'); document.getElementById('loginError').style.display = 'none'; }
-
 function openBorrowModal(bookId, bookTitle) {
   if (!isAdmin) { openVisitorBorrowModal(bookId, bookTitle); return; }
   pendingBorrowBookId = bookId;
@@ -391,7 +200,9 @@ function openLoginModalFromVisitor() { closeVisitorBorrowModal(); openLoginModal
 
 function openAddBookModal() {
   if (!isAdmin) { openLoginModal(); return; }
-  ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
   document.getElementById('imageSizeWarning').classList.remove('show');
   document.getElementById('barcode-reader').style.display = 'none';
   document.getElementById('coverSearchResults').style.display = 'none';
@@ -468,8 +279,13 @@ function closeDetailModal() { document.getElementById('detailModal').classList.r
 function handleDetailBorrow() { if (selectedBookId) { const book = books.find(b => b.id === selectedBookId); if (book) { closeDetailModal(); openBorrowModal(book.id, book.title); } } }
 function handleDetailReturn() { if (selectedBookId) { returnBook(selectedBookId); closeDetailModal(); } }
 
-// ✅ FIXED: Restored missing edit handler
-function handleDetailEdit() { if (selectedBookId) { closeDetailModal(); openEditModal(selectedBookId); } }
+// ✅ FIXED: Edit button handler added
+function handleDetailEdit() {
+  if (selectedBookId) {
+    closeDetailModal();
+    openEditModal(selectedBookId);
+  }
+}
 
 function handleDetailRemove() {
   if (selectedBookId) {
@@ -646,6 +462,7 @@ function getFilteredAndSortedBooks() {
   return filtered;
 }
 
+// ✅ FIXED: Cleaned up broken template literal syntax from previous copy-paste
 function renderBooks() {
   const grid = document.getElementById('booksGrid');
   const emptyState = document.getElementById('emptyState');

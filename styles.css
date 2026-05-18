@@ -162,9 +162,11 @@ body.admin-mode .stats { display: grid !important; }
 .phone-input-group input { border: none; background: transparent; padding: 0.75rem 1rem; font-size: 0.95rem; flex: 1; color: var(--text-primary); outline: none; font-family: var(--font-family); }
 .phone-input-group input::placeholder { color: var(--text-muted); }
 
-/* Scanner Container Styling */
-#isbn-scanner-container { width: 100%; max-width: 100%; border-radius: var(--radius-md); overflow: hidden; background: #000; }
-#isbn-scanner-container video { width: 100%; height: auto; display: block; }
+/* ✅ NEW: Cover Search Grid Styles */
+.cover-search-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 0.5rem; padding: 0.5rem; }
+.cover-search-item { cursor: pointer; border-radius: 6px; overflow: hidden; border: 2px solid transparent; transition: var(--transition); background: var(--bg-card); }
+.cover-search-item:hover { border-color: var(--primary); transform: scale(1.05); }
+.cover-search-item img { width: 100%; height: auto; display: block; }
 
 .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1rem; }
 .book-card { background: var(--bg-card); border-radius: var(--radius-md); padding: 0; border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); transition: var(--transition); position: relative; display: flex; flex-direction: column; overflow: hidden; }

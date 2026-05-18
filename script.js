@@ -231,7 +231,6 @@ function fillBookForm(data) {
   if (data.thumbnail) { fetchAndSetCover(data.thumbnail); }
 }
 
-// Online Cover Search
 async function searchBookCovers() {
   const title = document.getElementById('newBookTitle').value.trim();
   if (!title) { showToast('Please enter a book title first', 'error'); return; }
@@ -469,7 +468,7 @@ function closeDetailModal() { document.getElementById('detailModal').classList.r
 function handleDetailBorrow() { if (selectedBookId) { const book = books.find(b => b.id === selectedBookId); if (book) { closeDetailModal(); openBorrowModal(book.id, book.title); } } }
 function handleDetailReturn() { if (selectedBookId) { returnBook(selectedBookId); closeDetailModal(); } }
 
-// ✅ FIX: Restored missing edit handler
+// ✅ FIXED: Restored missing edit handler
 function handleDetailEdit() { if (selectedBookId) { closeDetailModal(); openEditModal(selectedBookId); } }
 
 function handleDetailRemove() {

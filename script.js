@@ -200,43 +200,151 @@ genre = typeof cat === 'string' ? cat : (cat.name || cat.title || String(cat));
 document.getElementById('newBookGenre').value = genre;
 if (data.thumbnail) { fetchAndSetCover(data.thumbnail); }
 }
-// ✅ FIXED: Robust Cover Search
+// ✅ ENHANCED: Multi-API Cover Search with Better Fallbacks
 async function searchBookCovers() {
-const title = document.getElementById('newBookTitle').value.trim();
-if (!title) { showToast('Please enter a book title first', 'error'); return; }
-const resultsDiv = document.getElementById('coverSearchResults');
-resultsDiv.style.display = 'block';
-resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">Searching covers...</p>';
-try {
-const query = encodeURIComponent(`intitle:${title}`);
-const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=12&printType=books`);
-const data = await res.json();
-if (!data.items || data.items.length === 0) {
-  resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">No covers found. Upload manually.</p>';
-  return;
+    const title = document.getElementById('newBookTitle').value.trim();
+    if (!title) { 
+        showToast('Please enter a book title first', 'error'); 
+        return; 
+    }
+    
+    const resultsDiv = document.getElementById('coverSearchResults');
+    resultsDiv.style.display = 'block';
+    resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">🔍 Searching multiple sources...</p>';
+    
+    const allCovers = new Map(); // Use Map to avoid duplicates
+    
+    try {
+        // Try multiple APIs in parallel for faster results
+        const apiPromises = [
+            searchGoogleBooks(title),
+            searchOpenLibrary(title),
+            searchiTunesBooks(title)
+        ];
+        
+        const results = await Promise.allSettled(apiPromises);
+        
+        // Collect all unique covers from all sources
+        results.forEach((result, index) => {
+            if (result.status === 'fulfilled' && result.value) {
+                const apiName = ['Google Books', 'Open Library', 'iTunes'][index];
+                result.value.forEach(cover => {
+                    if (!allCovers.has(cover.url)) {
+                        allCovers.set(cover.url, { ...cover, source: apiName });
+                    }
+                });
+            }
+        });
+        
+        if (allCovers.size === 0) {
+            resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">No covers found. Try a different title or upload manually.</p>';
+            return;
+        }
+
+        let html = '<div class="cover-search-grid">';
+        Array.from(allCovers.values()).forEach((cover) => {
+            html += `<div class="cover-search-item" onclick="selectCoverFromSearch('${cover.url}')" title="Source: ${cover.source}">
+                <img src="${cover.url}" alt="${cover.title}" loading="lazy">
+                <div style="font-size:0.65rem;text-align:center;padding:0.2rem;background:rgba(0,0,0,0.6);color:#fff;">${cover.source}</div>
+            </div>`;
+        });
+        html += '</div>';
+
+        resultsDiv.innerHTML = html;
+        showToast(`✅ Found ${allCovers.size} cover(s)`, 'success');
+        
+    } catch (err) {
+        console.error('Cover search error:', err);
+        resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--danger);">Search failed. Check your internet connection.</p>';
+    }
 }
 
-let html = '<div class="cover-search-grid">';
-let foundCount = 0;
-data.items.forEach((book) => {
-  const links = book.volumeInfo?.imageLinks;
-  const coverUrl = links?.large || links?.thumbnail || links?.smallThumbnail;
-  if (coverUrl) {
-    foundCount++;
-    const httpsUrl = coverUrl.replace('http:', 'https:');
-    html += `<div class="cover-search-item" onclick="selectCoverFromSearch('${httpsUrl}')">
-                <img src="${httpsUrl}" alt="Cover" loading="lazy">
-              </div>`;
-  }
-});
-html += '</div>';
+// Google Books API - Enhanced with API key and better query
+async function searchGoogleBooks(title) {
+    try {
+        const query = encodeURIComponent(`intitle:"${title}"`);
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=8&printType=books&key=AIzaSyBo0DXOWKztyMXUXfPhNyoFo9P_Fu-MEn4`);
+        if (!res.ok) throw new Error('Google Books API error');
+        const data = await res.json();
+        
+        if (!data.items) return [];
+        
+        return data.items
+            .map(book => {
+                const links = book.volumeInfo?.imageLinks;
+                const url = links?.large || links?.thumbnail || links?.smallThumbnail;
+                return url ? {
+                    url: url.replace('http:', 'https:'),
+                    title: book.volumeInfo?.title || 'Unknown',
+                    source: 'Google Books'
+                } : null;
+            })
+            .filter(Boolean);
+    } catch (e) {
+        console.warn('Google Books search failed:', e);
+        return [];
+    }
+}
 
-resultsDiv.innerHTML = foundCount > 0 ? html : '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">No covers found in results. Upload manually.</p>';
-} catch (err) {
-console.error('Cover search error:', err);
-resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--danger);">Search failed. Check connection.</p>';
+// Open Library API - NEW fallback source
+async function searchOpenLibrary(title) {
+    try {
+        const query = encodeURIComponent(`title:"${title}"`);
+        const res = await fetch(`https://openlibrary.org/search.json?q=${query}&limit=8`);
+        if (!res.ok) throw new Error('Open Library API error');
+        const data = await res.json();
+        
+        if (!data.docs) return [];
+        
+        return data.docs
+            .map(book => {
+                if (book.cover_i) {
+                    return {
+                        url: `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`,
+                        title: book.title || 'Unknown',
+                        source: 'Open Library'
+                    };
+                }
+                return null;
+            })
+            .filter(Boolean);
+    } catch (e) {
+        console.warn('Open Library search failed:', e);
+        return [];
+    }
 }
+
+// iTunes Books API - NEW fallback source
+async function searchiTunesBooks(title) {
+    try {
+        const query = encodeURIComponent(`${title} ebook`);
+        const res = await fetch(`https://itunes.apple.com/search?term=${query}&media=ebook&limit=8`);
+        if (!res.ok) throw new Error('iTunes API error');
+        const data = await res.json();
+        
+        if (!data.results) return [];
+        
+        return data.results
+            .map(book => {
+                let url = book.artworkUrl100;
+                if (url) {
+                    // Replace 100x100 with 600x600 for better quality
+                    url = url.replace('100x100bb', '600x600bb');
+                    return {
+                        url: url,
+                        title: book.trackName || 'Unknown',
+                        source: 'iTunes Books'
+                    };
+                }
+                return null;
+            })
+            .filter(Boolean);
+    } catch (e) {
+        console.warn('iTunes Books search failed:', e);
+        return [];
+    }
 }
+
 async function selectCoverFromSearch(url) {
 showToast('⬇️ Downloading cover...', 'info');
 try {

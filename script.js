@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════
 // Kumon RRL Online Library - Firebase Realtime Version
 // ═══════════════════════════════════════════════════════════
-// ✅ FIX: Removed trailing spaces in config keys that could cause connection errors
+// Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBo0DXOWKztyMXUXfPhNyoFo9P_Fu-MEn4",
   authDomain: "kumon-library.firebaseapp.com",
@@ -168,19 +168,20 @@ function stopBarcodeScanner() {
 }
 
 function onScanSuccess(decodedText, decodedResult) {
-  // Clean ISBN (remove dashes and spaces)
-  const isbn = decodedText.replace(/[-\s]/g, '');
+  // Extract only the ISBN digits (10 or 13 digits)
+  const match = decodedText.match(/\d{10,13}/);
+  const isbn = match ? match[0] : decodedText.replace(/[-\s]/g, '');
   
-  // Validate ISBN-13 or ISBN-10
+  // Validate ISBN format
   if (isbn.match(/^\d{10,13}$/)) {
     stopBarcodeScanner();
     document.getElementById('newBookTitle').value = `ISBN: ${isbn}`;
     showToast(`✅ Scanned ISBN: ${isbn}`, 'success');
+    
     // Auto-fetch book info using ISBN
     fetchBookByISBN(isbn);
   } else {
-    // Ignore non-ISBN barcodes
-    return;
+    showToast('⚠️ Not a valid ISBN barcode', 'error');
   }
 }
 
@@ -189,6 +190,7 @@ function onScanFailure(error) {
 }
 
 async function fetchBookByISBN(isbn) {
+  showToast('🔍 Fetching book details...', 'info');
   try {
     const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
     const data = await response.json();
@@ -198,7 +200,7 @@ async function fetchBookByISBN(isbn) {
       document.getElementById('newBookTitle').value = book.title || `ISBN: ${isbn}`;
       document.getElementById('newBookAuthor').value = book.authors ? book.authors.join(', ') : '';
       
-      // Fix genre extraction
+      // Fix genre extraction to prevent [object Object]
       let genre = '';
       if (book.categories && book.categories.length > 0) {
         const cat = book.categories[0];
@@ -209,10 +211,14 @@ async function fetchBookByISBN(isbn) {
       if (book.imageLinks?.thumbnail) {
         fetchAndSetCover(book.imageLinks.thumbnail.replace('http:', 'https:'));
       }
+      
+      showToast('✅ Book details auto-filled!', 'success');
+    } else {
+      showToast('📖 Book not found in Google Books. Please fill manually.', 'info');
     }
   } catch (error) {
     console.error('Fetch error:', error);
-    // Do not show error, just let user type manually
+    showToast('⚠️ Network error. Please fill in details manually.', 'error');
   }
 }
 
@@ -233,6 +239,7 @@ async function fetchAndSetCover(url) {
     }
   } catch (error) {
     console.error('Cover fetch error:', error);
+    showToast('⚠️ Cover image blocked. Upload manually if needed.', 'info');
   }
 }
 
@@ -810,7 +817,6 @@ function renderBooks() {
   }
   
   emptyState.style.display = 'none';
-  // ✅ FIX: Fixed syntax error in map function from previous code
   grid.innerHTML = filteredBooks.map(book => {
     const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
     const avg = getAverageRating(book.ratings);

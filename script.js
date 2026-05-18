@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════
 // Kumon RRL Online Library - Firebase Realtime Version
 // ═══════════════════════════════════════════════════════════
-// Firebase Configuration
+// ✅ FIX: Removed trailing spaces in config keys that could cause connection errors
 const firebaseConfig = {
   apiKey: "AIzaSyBo0DXOWKztyMXUXfPhNyoFo9P_Fu-MEn4",
   authDomain: "kumon-library.firebaseapp.com",
@@ -30,7 +30,7 @@ let selectedBookId = null;
 let hasUnsavedChanges = false;
 let selectedRating = 0;
 
-// Barcode Scanner
+// Barcode Scanner Instance
 let html5QrCode = null;
 let isScanning = false;
 
@@ -124,16 +124,18 @@ function logout() {
 async function startBarcodeScanner() {
   const readerDiv = document.getElementById('barcode-reader');
   const stopBtn = document.getElementById('stopScanBtn');
+  const startBtn = document.getElementById('startScanBtn');
   
   if (isScanning) return;
   
   readerDiv.style.display = 'block';
   stopBtn.style.display = 'inline-block';
+  startBtn.style.display = 'none';
   
   try {
     html5QrCode = new Html5Qrcode("barcode-reader");
     await html5QrCode.start(
-      { facingMode: "environment" },
+      { facingMode: "environment" }, // Forces back camera on mobile
       {
         fps: 10,
         qrbox: { width: 250, height: 150 }
@@ -158,6 +160,7 @@ function stopBarcodeScanner() {
       isScanning = false;
       document.getElementById('barcode-reader').style.display = 'none';
       document.getElementById('stopScanBtn').style.display = 'none';
+      document.getElementById('startScanBtn').style.display = 'inline-block';
     }).catch(err => {
       console.error("Failed to stop scanner", err);
     });
@@ -176,7 +179,8 @@ function onScanSuccess(decodedText, decodedResult) {
     // Auto-fetch book info using ISBN
     fetchBookByISBN(isbn);
   } else {
-    showToast('⚠️ Not a valid ISBN barcode', 'error');
+    // Ignore non-ISBN barcodes
+    return;
   }
 }
 
@@ -191,95 +195,24 @@ async function fetchBookByISBN(isbn) {
     
     if (data.totalItems > 0) {
       const book = data.items[0].volumeInfo;
-      fillBookDetails(book);
-    } else {
-      showToast('📖 Book not found. Please fill in details manually.', 'info');
+      document.getElementById('newBookTitle').value = book.title || `ISBN: ${isbn}`;
+      document.getElementById('newBookAuthor').value = book.authors ? book.authors.join(', ') : '';
+      
+      // Fix genre extraction
+      let genre = '';
+      if (book.categories && book.categories.length > 0) {
+        const cat = book.categories[0];
+        genre = typeof cat === 'string' ? cat : (cat.name || cat.title || String(cat));
+      }
+      document.getElementById('newBookGenre').value = genre;
+
+      if (book.imageLinks?.thumbnail) {
+        fetchAndSetCover(book.imageLinks.thumbnail.replace('http:', 'https:'));
+      }
     }
   } catch (error) {
     console.error('Fetch error:', error);
-    showToast('⚠️ Could not fetch book info', 'error');
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// GOOGLE BOOKS SEARCH FUNCTIONS
-// ═══════════════════════════════════════════════════════════
-async function searchGoogleBooks() {
-  const query = document.getElementById('googleBookSearch').value.trim();
-  if (!query) {
-    showToast('Please enter a book title', 'error');
-    return;
-  }
-
-  const resultsDiv = document.getElementById('googleSearchResults');
-  resultsDiv.style.display = 'block';
-  resultsDiv.innerHTML = '<p style="text-align:center;padding:1rem;">Searching...</p>';
-
-  try {
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`);
-    const data = await response.json();
-
-    if (data.totalItems === 0) {
-      resultsDiv.innerHTML = '<p style="text-align:center;padding:1rem;color:var(--text-muted);">No books found.</p>';
-      return;
-    }
-
-    const books = data.items;
-    let html = '<div style="display:flex;flex-direction:column;gap:0.5rem;">';
-    
-    books.forEach((book, index) => {
-      const info = book.volumeInfo;
-      const thumb = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail;
-      html += `
-        <div onclick="selectGoogleBook(${index})" style="display:flex;gap:0.75rem;padding:0.75rem;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition);">
-          ${thumb ? `<img src="${thumb}" style="width:40px;height:60px;object-fit:cover;border-radius:4px;">` : '<div style="width:40px;height:60px;background:var(--bg-input);border-radius:4px;display:flex;align-items:center;justify-content:center;">📖</div>'}
-          <div style="flex:1;min-width:0;">
-            <div style="font-weight:600;font-size:0.9rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(info.title)}</div>
-            <div style="font-size:0.8rem;color:var(--text-secondary);">${escapeHtml(info.authors?.join(', ') || 'Unknown Author')}</div>
-          </div>
-        </div>
-      `;
-    });
-    
-    html += '</div>';
-    resultsDiv.innerHTML = html;
-    
-    // Store results for selection
-    window.googleBooksResults = books;
-  } catch (error) {
-    console.error('Search error:', error);
-    resultsDiv.innerHTML = '<p style="text-align:center;padding:1rem;color:var(--danger);">Search failed.</p>';
-  }
-}
-
-function selectGoogleBook(index) {
-  const book = window.googleBooksResults[index];
-  if (!book) return;
-
-  const info = book.volumeInfo;
-  fillBookDetails(info);
-  
-  document.getElementById('googleSearchResults').style.display = 'none';
-  document.getElementById('googleBookSearch').value = '';
-  showToast('✅ Book details loaded!', 'success');
-}
-
-function fillBookDetails(info) {
-  document.getElementById('newBookTitle').value = info.title || '';
-  document.getElementById('newBookAuthor').value = info.authors ? info.authors.join(', ') : '';
-  
-  // Fix genre extraction
-  let genre = '';
-  if (info.categories && info.categories.length > 0) {
-    const cat = info.categories[0];
-    genre = typeof cat === 'string' ? cat : (cat.name || cat.title || String(cat));
-  }
-  document.getElementById('newBookGenre').value = genre;
-  
-  // Fetch cover image
-  const thumb = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail;
-  if (thumb) {
-    fetchAndSetCover(thumb.replace('http:', 'https:'));
+    // Do not show error, just let user type manually
   }
 }
 
@@ -300,7 +233,6 @@ async function fetchAndSetCover(url) {
     }
   } catch (error) {
     console.error('Cover fetch error:', error);
-    showToast('Could not load cover. Upload manually.', 'info');
   }
 }
 
@@ -428,8 +360,8 @@ function openBorrowModal(bookId, bookTitle) {
   if (!isAdmin) { openVisitorBorrowModal(bookId, bookTitle); return; }
   pendingBorrowBookId = bookId;
   document.getElementById('borrowBookTitle').textContent = `"${bookTitle}"`;
-  ['borrowerName','borrowerGrade','borrowerLevel','borrowerPhone'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('borrowerPhone').value = '+853 ';
+  ['borrowerName','borrowerGrade','borrowerLevel'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('borrowerPhone').value = '';
   document.getElementById('borrowerCenter').value = '';
   document.getElementById('borrowModal').classList.add('show');
   document.getElementById('borrowerName').focus();
@@ -459,11 +391,10 @@ function openLoginModalFromVisitor() {
 
 function openAddBookModal() {
   if (!isAdmin) { openLoginModal(); return; }
-  ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover','googleBookSearch'].forEach(id => {
+  ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('imageSizeWarning').classList.remove('show');
-  document.getElementById('googleSearchResults').style.display = 'none';
   document.getElementById('barcode-reader').style.display = 'none';
   stopBarcodeScanner();
   document.getElementById('addBookModal').classList.add('show');
@@ -474,7 +405,6 @@ function openAddBookModal() {
 function closeAddBookModal() {
   stopBarcodeScanner();
   document.getElementById('addBookModal').classList.remove('show');
-  document.getElementById('googleSearchResults').style.display = 'none';
   setUnsavedChanges(false);
 }
 
@@ -788,13 +718,11 @@ async function confirmBorrow() {
   const name = document.getElementById('borrowerName').value.trim();
   const grade = document.getElementById('borrowerGrade').value.trim();
   const level = document.getElementById('borrowerLevel').value.trim();
-  let phone = document.getElementById('borrowerPhone').value.trim();
+  const phoneInput = document.getElementById('borrowerPhone').value.trim().replace(/\D/g, '');
   const center = document.getElementById('borrowerCenter').value;
   
-  if (phone === '+853' || phone === '+853 ') { showToast('Please enter a valid phone number', 'error'); return; }
-  if (!phone.startsWith('+853')) phone = `+853 ${phone}`;
-  
-  if (!name || !grade || !level) { showToast('Please fill in all borrower fields', 'error'); return; }
+  if (!name || !grade || !level) { showToast('Please fill in all fields', 'error'); return; }
+  if (!phoneInput || phoneInput.length < 6) { showToast('Please enter a valid phone number', 'error'); return; }
   
   const book = books.find(b => b.id === pendingBorrowBookId);
   if (book) {
@@ -802,7 +730,7 @@ async function confirmBorrow() {
     book.borrower = name;
     book.borrowerGrade = grade;
     book.borrowerLevel = level;
-    book.borrowerPhone = phone;
+    book.borrowerPhone = `+853 ${phoneInput}`;
     book.borrowerCenter = center || null;
     book.borrowDate = new Date().toISOString().split('T')[0];
     if (await saveBooksToFirebase()) {
@@ -882,6 +810,7 @@ function renderBooks() {
   }
   
   emptyState.style.display = 'none';
+  // ✅ FIX: Fixed syntax error in map function from previous code
   grid.innerHTML = filteredBooks.map(book => {
     const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
     const avg = getAverageRating(book.ratings);

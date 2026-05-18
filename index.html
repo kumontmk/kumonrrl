@@ -138,6 +138,8 @@
   <div class="modal-overlay" id="addBookModal" onclick="if(event.target===this)closeAddBookModal()">
     <div class="modal">
       <h3>➕ Add New Book</h3>
+      
+      <!-- Barcode Scanner Section -->
       <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem; flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="startBarcodeScanner()" id="startScanBtn">📷 Scan ISBN Barcode</button>
         <button class="btn" onclick="stopBarcodeScanner()" id="stopScanBtn" style="display:none;background:var(--danger);color:white;">⏹ Stop</button>

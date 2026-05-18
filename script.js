@@ -133,7 +133,6 @@ async function toggleScanner() {
     try {
       if (!html5QrCode) html5QrCode = new Html5Qrcode("isbn-scanner-container");
       
-      // Optimized config for mobile focus & speed
       const config = { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 };
       await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure);
       status.textContent = '📷 Point at ISBN barcode (tap screen to focus on iOS)';
@@ -164,7 +163,6 @@ function stopScanner() {
 }
 
 function onScanSuccess(decodedText, decodedResult) {
-  // Debounce to prevent multiple scans
   if (scanTimeout) return;
   
   const raw = decodedText.replace(/[^0-9]/g, '');
@@ -197,7 +195,6 @@ async function fetchAndFillBook(isbn) {
   if (status.style.display !== 'none') status.textContent = '🔍 Searching Google Books & Open Library...';
   
   try {
-    // 1️⃣ Try Google Books API
     let res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
     let data = await res.json();
     
@@ -207,7 +204,6 @@ async function fetchAndFillBook(isbn) {
       return;
     }
 
-    // 2️⃣ Fallback to Open Library API
     res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
     data = await res.json();
     const olKey = `ISBN:${isbn}`;
@@ -225,17 +221,20 @@ async function fetchAndFillBook(isbn) {
   }
 }
 
+// ✅ FIX: Genre extraction now safely handles arrays/objects and forces string output
 function fillFromGoogle(info) {
   document.getElementById('newBookTitle').value = info.title || '';
   document.getElementById('newBookAuthor').value = info.authors ? info.authors.join(', ') : '';
-  document.getElementById('newBookGenre').value = info.categories ? info.categories[0] : '';
+  const rawGenre = info.categories ? info.categories[0] : '';
+  document.getElementById('newBookGenre').value = typeof rawGenre === 'string' ? rawGenre : String(rawGenre);
   if (info.imageLinks?.thumbnail) fetchAndSetCover(info.imageLinks.thumbnail.replace('http:', 'https:'));
 }
 
 function fillFromOpenLibrary(info) {
   document.getElementById('newBookTitle').value = info.title || '';
   document.getElementById('newBookAuthor').value = info.authors ? info.authors.map(a => a.name).join(', ') : '';
-  document.getElementById('newBookGenre').value = info.subjects ? info.subjects[0] : '';
+  const rawGenre = info.subjects ? info.subjects[0] : '';
+  document.getElementById('newBookGenre').value = typeof rawGenre === 'string' ? rawGenre : String(rawGenre);
   if (info.cover?.large) fetchAndSetCover(info.cover.large);
 }
 

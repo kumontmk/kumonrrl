@@ -231,7 +231,7 @@ function fillBookForm(data) {
   if (data.thumbnail) { fetchAndSetCover(data.thumbnail); }
 }
 
-// ✅ FIXED: Robust Cover Search
+// Online Cover Search
 async function searchBookCovers() {
   const title = document.getElementById('newBookTitle').value.trim();
   if (!title) { showToast('Please enter a book title first', 'error'); return; }
@@ -469,7 +469,7 @@ function closeDetailModal() { document.getElementById('detailModal').classList.r
 function handleDetailBorrow() { if (selectedBookId) { const book = books.find(b => b.id === selectedBookId); if (book) { closeDetailModal(); openBorrowModal(book.id, book.title); } } }
 function handleDetailReturn() { if (selectedBookId) { returnBook(selectedBookId); closeDetailModal(); } }
 
-// ✅ FIXED: Edit button handler restored
+// ✅ FIX: Restored missing edit handler
 function handleDetailEdit() { if (selectedBookId) { closeDetailModal(); openEditModal(selectedBookId); } }
 
 function handleDetailRemove() {
@@ -647,7 +647,6 @@ function getFilteredAndSortedBooks() {
   return filtered;
 }
 
-// ✅ FIXED: Syntax error in map function corrected
 function renderBooks() {
   const grid = document.getElementById('booksGrid');
   const emptyState = document.getElementById('emptyState');

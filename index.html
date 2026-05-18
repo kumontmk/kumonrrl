@@ -8,6 +8,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="favicon.png">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
   <link rel="stylesheet" href="styles.css">
@@ -137,6 +138,18 @@
   <div class="modal-overlay" id="addBookModal" onclick="if(event.target===this)closeAddBookModal()">
     <div class="modal">
       <h3>➕ Add New Book</h3>
+      
+      <!-- ✅ Barcode Scanner Section -->
+      <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="startBarcodeScanner()" id="startScanBtn">📷 Scan ISBN Barcode</button>
+        <button class="btn" onclick="stopBarcodeScanner()" id="stopScanBtn" style="display:none;background:var(--danger);color:white;">⏹ Stop</button>
+      </div>
+      <div id="barcode-reader" style="display:none; margin-bottom:0.75rem; background:var(--bg-card); border-radius:var(--radius-sm);"></div>
+
+      <!-- ✅ Online Cover Search Section -->
+      <button type="button" class="btn btn-small" onclick="searchBookCovers()" style="width:100%; margin-bottom:0.75rem; background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border-light);">🔍 Search Cover Online</button>
+      <div id="coverSearchResults" style="display:none; margin-bottom:0.75rem; background:var(--bg-input); border-radius:var(--radius-sm); max-height:200px; overflow-y:auto;"></div>
+
       <div class="modal-form">
         <input type="text" id="newBookTitle" placeholder="Book Title">
         <input type="text" id="newBookAuthor" placeholder="Author">
@@ -158,10 +171,7 @@
           <option value="Further Reading">Further Reading</option>
           <option value="N/A">N/A</option>
         </select>
-        
         <input type="file" id="newBookCover" accept="image/*">
-        <button type="button" class="btn btn-small" onclick="searchBookCovers()" style="width:100%;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border-light);">🔍 Search Cover Online</button>
-        <div id="coverSearchResults" style="display:none; margin-top:0.5rem; background:var(--bg-input); border-radius:var(--radius-sm); max-height:200px; overflow-y:auto;"></div>
         <p id="imageSizeWarning" class="image-warning"></p>
         <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
       </div>

@@ -30,6 +30,9 @@ let selectedBookId = null;
 let hasUnsavedChanges = false;
 let selectedRating = 0;
 
+// Scanner Instance
+let html5QrcodeScanner = null;
+
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
 // ═══════════════════════════════════════════════════════════
@@ -185,6 +188,87 @@ document.querySelector('.banner-carousel')?.addEventListener('mouseenter', () =>
 document.querySelector('.banner-carousel')?.addEventListener('mouseleave', () => startCarouselAutoPlay());
 
 // ═══════════════════════════════════════════════════════════
+// ISBN SCANNER & API FUNCTIONS
+// ═══════════════════════════════════════════════════════════
+function toggleScanner() {
+  const container = document.getElementById('isbn-scanner-container');
+  const status = document.getElementById('scan-status');
+  const startBtn = document.getElementById('scannerToggleBtn');
+  const stopBtn = document.getElementById('stopScannerBtn');
+
+  if (container.style.display === 'none' || container.style.display === '') {
+    container.style.display = 'block';
+    status.style.display = 'block';
+    status.textContent = 'Initializing camera...';
+    startBtn.style.display = 'none';
+    stopBtn.style.display = 'inline-flex';
+
+    if (!html5QrcodeScanner) {
+      html5QrcodeScanner = new Html5QrcodeScanner("isbn-scanner-container", { fps: 10, qrbox: { width: 250, height: 150 } }, /* verbose= */ false);
+    }
+    
+    html5QrcodeScanner.render((decodedText, decodedResult) => {
+      const isbn = decodedText.replace(/-/g, '');
+      if (isbn.match(/^(978|979)\d{10}$/)) {
+        status.textContent = `ISBN Found: ${isbn}. Fetching details...`;
+        stopScanner();
+        fetchAndFillBook(isbn);
+      }
+    }, (errorMessage) => {
+      // Ignore scan errors during continuous scanning
+    });
+  }
+}
+
+function stopScanner() {
+  const container = document.getElementById('isbn-scanner-container');
+  const status = document.getElementById('scan-status');
+  const startBtn = document.getElementById('scannerToggleBtn');
+  const stopBtn = document.getElementById('stopScannerBtn');
+
+  if (html5QrcodeScanner) {
+    html5QrcodeScanner.clear();
+    html5QrcodeScanner = null;
+  }
+  
+  container.style.display = 'none';
+  status.style.display = 'none';
+  startBtn.style.display = 'inline-flex';
+  stopBtn.style.display = 'none';
+}
+
+async function fetchAndFillBook(isbn) {
+  try {
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    const data = await response.json();
+    
+    if (data.totalItems === 0) {
+      showToast(`No book found for ISBN ${isbn}`, 'error');
+      return;
+    }
+
+    const book = data.items[0].volumeInfo;
+    document.getElementById('newBookTitle').value = book.title || '';
+    document.getElementById('newBookAuthor').value = book.authors ? book.authors.join(', ') : '';
+    document.getElementById('newBookGenre').value = book.categories ? book.categories[0] : '';
+    
+    // Fetch cover image and set to file input
+    if (book.imageLinks?.thumbnail) {
+      const imgBlob = await fetch(book.imageLinks.thumbnail).then(r => r.blob());
+      const file = new File([imgBlob], "cover.jpg", { type: "image/jpeg" });
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      document.getElementById('newBookCover').files = dt.files;
+    }
+    
+    showToast('Book details found! Fill in Location & RRL Level.', 'success');
+  } catch (error) {
+    console.error(error);
+    showToast('Failed to fetch book details', 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // RATING SYSTEM
 // ═══════════════════════════════════════════════════════════
 function getAverageRating(ratings) {
@@ -276,9 +360,13 @@ function openAddBookModal() {
   document.getElementById('addBookModal').classList.add('show');
   document.getElementById('newBookTitle').focus();
   setUnsavedChanges(true);
+  
+  // Stop scanner if it was running when modal was closed previously
+  stopScanner();
 }
 
 function closeAddBookModal() {
+  stopScanner();
   document.getElementById('addBookModal').classList.remove('show');
   setUnsavedChanges(false);
 }
@@ -605,7 +693,7 @@ async function confirmBorrow() {
     book.borrower = name;
     book.borrowerGrade = grade;
     book.borrowerLevel = level;
-    book.borrowerPhone = `+853 ${phoneInput}`; // ✅ Fixed prefix applied automatically
+    book.borrowerPhone = `+853 ${phoneInput}`;
     book.borrowerCenter = center || null;
     book.borrowDate = new Date().toISOString().split('T')[0];
     if (await saveBooksToFirebase()) {

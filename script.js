@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════
 // Kumon RRL Online Library - Firebase Realtime Version
 // ═══════════════════════════════════════════════════════════
+// Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBo0DXOWKztyMXUXfPhNyoFo9P_Fu-MEn4",
   authDomain: "kumon-library.firebaseapp.com",
@@ -12,10 +13,12 @@ const firebaseConfig = {
   measurementId: "G-V4BJ8FP9QR"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 const BOOKS_REF = database.ref('books');
 
+// App State
 const SESSION_KEY = 'kumonLibrarySession';
 let books = [];
 let nextId = 1;
@@ -26,9 +29,6 @@ let pendingReturnBookId = null;
 let selectedBookId = null;
 let hasUnsavedChanges = false;
 let selectedRating = 0;
-
-let html5QrCode = null;
-let scanTimeout = null;
 
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
@@ -115,138 +115,187 @@ function logout() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// ISBN SCANNER & DUAL-API FUNCTIONS
+// GOOGLE BOOKS SEARCH
 // ═══════════════════════════════════════════════════════════
-async function toggleScanner() {
-  const container = document.getElementById('isbn-scanner-container');
-  const status = document.getElementById('scan-status');
-  const startBtn = document.getElementById('scannerToggleBtn');
-  const stopBtn = document.getElementById('stopScannerBtn');
-
-  if (container.style.display === 'none' || container.style.display === '') {
-    container.style.display = 'block';
-    status.style.display = 'block';
-    status.textContent = '📷 Initializing back camera...';
-    startBtn.style.display = 'none';
-    stopBtn.style.display = 'inline-flex';
-
-    try {
-      if (!html5QrCode) html5QrCode = new Html5Qrcode("isbn-scanner-container");
-      
-      const config = { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 };
-      await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure);
-      status.textContent = '📷 Point at ISBN barcode (tap screen to focus on iOS)';
-    } catch (err) {
-      console.error(err);
-      status.textContent = "⚠️ Camera denied or HTTPS required. Use manual input below.";
-      setTimeout(stopScanner, 3000);
-    }
-  }
-}
-
-function stopScanner() {
-  const container = document.getElementById('isbn-scanner-container');
-  const status = document.getElementById('scan-status');
-  const startBtn = document.getElementById('scannerToggleBtn');
-  const stopBtn = document.getElementById('stopScannerBtn');
-
-  if (html5QrCode && html5QrCode.isScanning) {
-    html5QrCode.stop().then(() => {
-      html5QrCode.clear();
-      html5QrCode = null;
-      container.style.display = 'none';
-      status.style.display = 'none';
-      startBtn.style.display = 'inline-flex';
-      stopBtn.style.display = 'none';
-    }).catch(err => console.error("Stop error", err));
-  }
-}
-
-function onScanSuccess(decodedText, decodedResult) {
-  if (scanTimeout) return;
-  
-  const raw = decodedText.replace(/[^0-9]/g, '');
-  const isbn = raw.startsWith('978') || raw.startsWith('979') ? raw : raw.padStart(13, '0');
-  
-  if (isbn.length >= 13) {
-    scanTimeout = setTimeout(() => { scanTimeout = null; }, 3000);
-    document.getElementById('manualIsbn').value = isbn;
-    document.getElementById('scan-status').textContent = `✅ Scanned: ${isbn}. Fetching...`;
-    stopScanner();
-    fetchAndFillBook(isbn);
-  }
-}
-
-function onScanFailure(error) {
-  // Ignore continuous scan failures
-}
-
-function manualFetch() {
-  const raw = document.getElementById('manualIsbn').value.replace(/[^0-9]/g, '');
-  if (raw.length < 10) {
-    showToast('Please enter a valid ISBN (10 or 13 digits)', 'error');
+async function searchGoogleBooks() {
+  const query = document.getElementById('googleBookSearch').value.trim();
+  if (!query) {
+    showToast('Please enter ISBN or book title', 'error');
     return;
   }
-  fetchAndFillBook(raw);
-}
 
-async function fetchAndFillBook(isbn) {
-  const status = document.getElementById('scan-status');
-  if (status.style.display !== 'none') status.textContent = '🔍 Searching Google Books & Open Library...';
-  
+  const resultsDiv = document.getElementById('googleSearchResults');
+  resultsDiv.style.display = 'block';
+  resultsDiv.innerHTML = '<p style="text-align:center;padding:1rem;">Searching...</p>';
+
   try {
-    let res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
-    let data = await res.json();
-    
-    if (data.totalItems > 0) {
-      fillFromGoogle(data.items[0].volumeInfo);
-      showToast('✅ Book found via Google Books!', 'success');
+    // Try ISBN search first, then title search
+    const searchUrl = query.match(/^\d{10,13}$/) 
+      ? `https://www.googleapis.com/books/v1/volumes?q=isbn:${query}`
+      : `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`;
+
+    const response = await fetch(searchUrl);
+    const data = await response.json();
+
+    if (data.totalItems === 0) {
+      resultsDiv.innerHTML = '<p style="text-align:center;padding:1rem;color:var(--text-muted);">No books found. Try manual entry.</p>';
       return;
     }
 
-    res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
-    data = await res.json();
-    const olKey = `ISBN:${isbn}`;
+    const books = data.items;
+    let html = '<div style="display:flex;flex-direction:column;gap:0.5rem;">';
     
-    if (data[olKey]) {
-      fillFromOpenLibrary(data[olKey]);
-      showToast('✅ Book found via Open Library!', 'success');
-      return;
-    }
-
-    showToast('❌ Book not found in major databases. Try manual entry.', 'error');
+    books.forEach((book, index) => {
+      const info = book.volumeInfo;
+      const thumb = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail;
+      html += `
+        <div onclick="selectGoogleBook(${index})" style="display:flex;gap:0.75rem;padding:0.75rem;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition);">
+          ${thumb ? `<img src="${thumb}" style="width:40px;height:60px;object-fit:cover;border-radius:4px;">` : '<div style="width:40px;height:60px;background:var(--bg-input);border-radius:4px;display:flex;align-items:center;justify-content:center;">📖</div>'}
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:0.9rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(info.title)}</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);">${escapeHtml(info.authors?.join(', ') || 'Unknown Author')}</div>
+          </div>
+        </div>
+      `;
+    });
+    
+    html += '</div>';
+    resultsDiv.innerHTML = html;
+    
+    // Store results for selection
+    window.googleBooksResults = books;
   } catch (error) {
-    console.error("API Fetch Error:", error);
-    showToast('⚠️ Network error. Check connection & try manual input.', 'error');
+    console.error('Search error:', error);
+    resultsDiv.innerHTML = '<p style="text-align:center;padding:1rem;color:var(--danger);">Search failed. Try manual entry.</p>';
   }
 }
 
-// ✅ FIX: Genre extraction now safely handles arrays/objects and forces string output
-function fillFromGoogle(info) {
+function selectGoogleBook(index) {
+  const book = window.googleBooksResults[index];
+  if (!book) return;
+
+  const info = book.volumeInfo;
+  
+  // Fill in the form
   document.getElementById('newBookTitle').value = info.title || '';
   document.getElementById('newBookAuthor').value = info.authors ? info.authors.join(', ') : '';
-  const rawGenre = info.categories ? info.categories[0] : '';
-  document.getElementById('newBookGenre').value = typeof rawGenre === 'string' ? rawGenre : String(rawGenre);
-  if (info.imageLinks?.thumbnail) fetchAndSetCover(info.imageLinks.thumbnail.replace('http:', 'https:'));
-}
+  
+  // ✅ FIX: Robust genre extraction to prevent [object Object]
+  let genre = '';
+  if (info.categories && info.categories.length > 0) {
+    const cat = info.categories[0];
+    if (typeof cat === 'string') {
+      genre = cat;
+    } else if (cat && typeof cat === 'object') {
+      genre = cat.name || cat.title || JSON.stringify(cat);
+    } else {
+      genre = String(cat);
+    }
+  }
+  document.getElementById('newBookGenre').value = genre;
+  
+  // Fetch cover image
+  const thumb = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail;
+  if (thumb) {
+    fetchAndSetCover(thumb.replace('http:', 'https:'));
+  }
 
-function fillFromOpenLibrary(info) {
-  document.getElementById('newBookTitle').value = info.title || '';
-  document.getElementById('newBookAuthor').value = info.authors ? info.authors.map(a => a.name).join(', ') : '';
-  const rawGenre = info.subjects ? info.subjects[0] : '';
-  document.getElementById('newBookGenre').value = typeof rawGenre === 'string' ? rawGenre : String(rawGenre);
-  if (info.cover?.large) fetchAndSetCover(info.cover.large);
+  // Hide results and clear search
+  document.getElementById('googleSearchResults').style.display = 'none';
+  document.getElementById('googleBookSearch').value = '';
+  showToast('Book details loaded! Fill in location and RRL level.', 'success');
 }
 
 async function fetchAndSetCover(url) {
   try {
-    const imgBlob = await fetch(url).then(r => r.blob());
-    const file = new File([imgBlob], "cover.jpg", { type: "image/jpeg" });
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    document.getElementById('newBookCover').files = dt.files;
-  } catch (e) { console.warn("Cover fetch failed", e); }
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
+    
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    document.getElementById('newBookCover').files = dataTransfer.files;
+    
+    const warningEl = document.getElementById('imageSizeWarning');
+    if (file.size > 500 * 1024) {
+      warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress on save.`;
+      warningEl.classList.add('show');
+    }
+  } catch (error) {
+    console.error('Cover fetch error:', error);
+    showToast('Could not load cover image. You can upload manually.', 'info');
+  }
 }
+
+// ═══════════════════════════════════════════════════════════
+// MOBILE MENU FUNCTIONS
+// ═══════════════════════════════════════════════════════════
+function toggleMobileMenu() {
+  document.getElementById('mobileMenu')?.classList.toggle('show');
+}
+
+function closeMobileMenu() {
+  document.getElementById('mobileMenu')?.classList.remove('show');
+}
+
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('mobileMenu');
+  const hamburger = document.querySelector('.hamburger-btn');
+  if (menu?.classList.contains('show') && !menu.contains(e.target) && !hamburger?.contains(e.target)) {
+    closeMobileMenu();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// CAROUSEL LOGIC
+// ═══════════════════════════════════════════════════════════
+let currentSlide = 0;
+let carouselInterval;
+
+function initCarousel() {
+  const slides = document.querySelectorAll('.carousel-slide');
+  const dotsContainer = document.querySelector('.carousel-dots');
+  slides.forEach((_, index) => {
+    const dot = document.createElement('div');
+    dot.classList.add('dot');
+    if (index === 0) dot.classList.add('active');
+    dot.onclick = () => goToSlide(index);
+    dotsContainer.appendChild(dot);
+  });
+  startCarouselAutoPlay();
+}
+
+function updateCarousel() {
+  const track = document.querySelector('.carousel-track');
+  const dots = document.querySelectorAll('.dot');
+  track.style.transform = `translateX(-${currentSlide * 100}%)`;
+  dots.forEach((dot, index) => dot.classList.toggle('active', index === currentSlide));
+}
+
+function moveSlide(direction) {
+  const slides = document.querySelectorAll('.carousel-slide');
+  currentSlide = (currentSlide + direction + slides.length) % slides.length;
+  updateCarousel();
+  resetCarouselAutoPlay();
+}
+
+function goToSlide(index) {
+  currentSlide = index;
+  updateCarousel();
+  resetCarouselAutoPlay();
+}
+
+function startCarouselAutoPlay() {
+  carouselInterval = setInterval(() => moveSlide(1), 5000);
+}
+
+function resetCarouselAutoPlay() {
+  clearInterval(carouselInterval);
+  startCarouselAutoPlay();
+}
+
+document.querySelector('.banner-carousel')?.addEventListener('mouseenter', () => clearInterval(carouselInterval));
+document.querySelector('.banner-carousel')?.addEventListener('mouseleave', () => startCarouselAutoPlay());
 
 // ═══════════════════════════════════════════════════════════
 // RATING SYSTEM
@@ -302,8 +351,8 @@ function openBorrowModal(bookId, bookTitle) {
   if (!isAdmin) { openVisitorBorrowModal(bookId, bookTitle); return; }
   pendingBorrowBookId = bookId;
   document.getElementById('borrowBookTitle').textContent = `"${bookTitle}"`;
-  ['borrowerName','borrowerGrade','borrowerLevel'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('borrowerPhone').value = '';
+  ['borrowerName','borrowerGrade','borrowerLevel','borrowerPhone'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('borrowerPhone').value = '+853 ';
   document.getElementById('borrowerCenter').value = '';
   document.getElementById('borrowModal').classList.add('show');
   document.getElementById('borrowerName').focus();
@@ -333,18 +382,18 @@ function openLoginModalFromVisitor() {
 
 function openAddBookModal() {
   if (!isAdmin) { openLoginModal(); return; }
-  ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover','manualIsbn'].forEach(id => {
+  ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover','googleBookSearch'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('imageSizeWarning').classList.remove('show');
+  document.getElementById('googleSearchResults').style.display = 'none';
   document.getElementById('addBookModal').classList.add('show');
   document.getElementById('newBookTitle').focus();
   setUnsavedChanges(true);
-  stopScanner();
 }
 
 function closeAddBookModal() {
-  stopScanner();
+  document.getElementById('googleSearchResults').style.display = 'none';
   document.getElementById('addBookModal').classList.remove('show');
   setUnsavedChanges(false);
 }
@@ -659,11 +708,13 @@ async function confirmBorrow() {
   const name = document.getElementById('borrowerName').value.trim();
   const grade = document.getElementById('borrowerGrade').value.trim();
   const level = document.getElementById('borrowerLevel').value.trim();
-  const phoneInput = document.getElementById('borrowerPhone').value.trim().replace(/\D/g, '');
+  let phone = document.getElementById('borrowerPhone').value.trim();
   const center = document.getElementById('borrowerCenter').value;
   
-  if (!name || !grade || !level) { showToast('Please fill in all fields', 'error'); return; }
-  if (!phoneInput || phoneInput.length < 6) { showToast('Please enter a valid phone number', 'error'); return; }
+  if (phone === '+853' || phone === '+853 ') { showToast('Please enter a valid phone number', 'error'); return; }
+  if (!phone.startsWith('+853')) phone = `+853 ${phone}`;
+  
+  if (!name || !grade || !level) { showToast('Please fill in all borrower fields', 'error'); return; }
   
   const book = books.find(b => b.id === pendingBorrowBookId);
   if (book) {
@@ -671,7 +722,7 @@ async function confirmBorrow() {
     book.borrower = name;
     book.borrowerGrade = grade;
     book.borrowerLevel = level;
-    book.borrowerPhone = `+853 ${phoneInput}`;
+    book.borrowerPhone = phone;
     book.borrowerCenter = center || null;
     book.borrowDate = new Date().toISOString().split('T')[0];
     if (await saveBooksToFirebase()) {
@@ -751,6 +802,7 @@ function renderBooks() {
   }
   
   emptyState.style.display = 'none';
+  // ✅ FIX: Fixed syntax error (book =>) from previous upload
   grid.innerHTML = filteredBooks.map(book => {
     const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
     const avg = getAverageRating(book.ratings);

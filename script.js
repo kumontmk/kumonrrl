@@ -135,11 +135,8 @@ async function startBarcodeScanner() {
   try {
     html5QrCode = new Html5Qrcode("barcode-reader");
     await html5QrCode.start(
-      { facingMode: "environment" }, // Forces back camera on mobile
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 150 }
-      },
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 150 } },
       onScanSuccess,
       onScanFailure
     );
@@ -161,24 +158,18 @@ function stopBarcodeScanner() {
       document.getElementById('barcode-reader').style.display = 'none';
       document.getElementById('stopScanBtn').style.display = 'none';
       document.getElementById('startScanBtn').style.display = 'inline-block';
-    }).catch(err => {
-      console.error("Failed to stop scanner", err);
-    });
+    }).catch(err => console.error("Failed to stop scanner", err));
   }
 }
 
 function onScanSuccess(decodedText, decodedResult) {
-  // Extract only the ISBN digits (10 or 13 digits)
+  // Extract only valid ISBN digits (10 or 13)
   const match = decodedText.match(/\d{10,13}/);
   const isbn = match ? match[0] : decodedText.replace(/[-\s]/g, '');
   
-  // Validate ISBN format
   if (isbn.match(/^\d{10,13}$/)) {
     stopBarcodeScanner();
-    document.getElementById('newBookTitle').value = `ISBN: ${isbn}`;
     showToast(`✅ Scanned ISBN: ${isbn}`, 'success');
-    
-    // Auto-fetch book info using ISBN
     fetchBookByISBN(isbn);
   } else {
     showToast('⚠️ Not a valid ISBN barcode', 'error');
@@ -186,39 +177,88 @@ function onScanSuccess(decodedText, decodedResult) {
 }
 
 function onScanFailure(error) {
-  // Ignore scan failures during continuous scanning
+  // Ignore continuous scan failures
 }
 
+// ═══════════════════════════════════════════════════════════
+// MULTI-API BOOK FETCH SYSTEM
+// ═══════════════════════════════════════════════════════════
 async function fetchBookByISBN(isbn) {
-  showToast('🔍 Fetching book details...', 'info');
-  try {
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
-    const data = await response.json();
-    
-    if (data.totalItems > 0) {
-      const book = data.items[0].volumeInfo;
-      document.getElementById('newBookTitle').value = book.title || `ISBN: ${isbn}`;
-      document.getElementById('newBookAuthor').value = book.authors ? book.authors.join(', ') : '';
-      
-      // Fix genre extraction to prevent [object Object]
-      let genre = '';
-      if (book.categories && book.categories.length > 0) {
-        const cat = book.categories[0];
-        genre = typeof cat === 'string' ? cat : (cat.name || cat.title || String(cat));
-      }
-      document.getElementById('newBookGenre').value = genre;
+  showToast('🔍 Searching free book databases...', 'info');
 
-      if (book.imageLinks?.thumbnail) {
-        fetchAndSetCover(book.imageLinks.thumbnail.replace('http:', 'https:'));
-      }
-      
-      showToast('✅ Book details auto-filled!', 'success');
-    } else {
-      showToast('📖 Book not found in Google Books. Please fill manually.', 'info');
+  // 1️⃣ Try Google Books
+  let data = await fetchFromGoogleBooks(isbn);
+  if (data) {
+    fillBookForm(data);
+    showToast('✅ Found via Google Books', 'success');
+    return;
+  }
+
+  // 2️⃣ Try Open Library (Open Source Fallback)
+  data = await fetchFromOpenLibrary(isbn);
+  if (data) {
+    fillBookForm(data);
+    showToast('✅ Found via Open Library', 'success');
+    return;
+  }
+
+  // 3️⃣ All APIs failed: Clear fields & notify admin
+  document.getElementById('newBookTitle').value = '';
+  document.getElementById('newBookAuthor').value = '';
+  document.getElementById('newBookGenre').value = '';
+  document.getElementById('newBookCover').value = '';
+  showToast('📖 Book not found. Please fill in details manually.', 'info');
+}
+
+async function fetchFromGoogleBooks(isbn) {
+  try {
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    const json = await res.json();
+    if (json.totalItems > 0) {
+      const info = json.items[0].volumeInfo;
+      return {
+        title: info.title || '',
+        authors: info.authors || [],
+        categories: info.categories || [],
+        thumbnail: (info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail)?.replace('http:', 'https:') || null
+      };
     }
-  } catch (error) {
-    console.error('Fetch error:', error);
-    showToast('⚠️ Network error. Please fill in details manually.', 'error');
+  } catch (e) { console.warn('Google Books API failed', e); }
+  return null;
+}
+
+async function fetchFromOpenLibrary(isbn) {
+  try {
+    const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+    const json = await res.json();
+    const key = `ISBN:${isbn}`;
+    if (json[key]) {
+      const info = json[key];
+      return {
+        title: info.title || '',
+        authors: info.authors?.map(a => a.name) || [],
+        categories: info.subjects || [],
+        thumbnail: (info.cover?.large || info.cover?.medium || info.cover?.small) || null
+      };
+    }
+  } catch (e) { console.warn('Open Library API failed', e); }
+  return null;
+}
+
+function fillBookForm(data) {
+  document.getElementById('newBookTitle').value = data.title;
+  document.getElementById('newBookAuthor').value = data.authors.join(', ');
+  
+  // Safe genre extraction to prevent [object Object]
+  let genre = '';
+  if (data.categories && data.categories.length > 0) {
+    const cat = data.categories[0];
+    genre = typeof cat === 'string' ? cat : (cat.name || cat.title || String(cat));
+  }
+  document.getElementById('newBookGenre').value = genre;
+
+  if (data.thumbnail) {
+    fetchAndSetCover(data.thumbnail);
   }
 }
 
@@ -238,8 +278,7 @@ async function fetchAndSetCover(url) {
       warningEl.classList.add('show');
     }
   } catch (error) {
-    console.error('Cover fetch error:', error);
-    showToast('⚠️ Cover image blocked. Upload manually if needed.', 'info');
+    console.warn('Cover fetch blocked by CORS. Admin can upload manually.', error);
   }
 }
 

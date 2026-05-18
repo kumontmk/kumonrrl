@@ -30,6 +30,10 @@ let selectedBookId = null;
 let hasUnsavedChanges = false;
 let selectedRating = 0;
 
+// Barcode Scanner
+let html5QrCode = null;
+let isScanning = false;
+
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
 // ═══════════════════════════════════════════════════════════
@@ -115,12 +119,95 @@ function logout() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// GOOGLE BOOKS SEARCH
+// BARCODE SCANNER FUNCTIONS
+// ═══════════════════════════════════════════════════════════
+async function startBarcodeScanner() {
+  const readerDiv = document.getElementById('barcode-reader');
+  const stopBtn = document.getElementById('stopScanBtn');
+  
+  if (isScanning) return;
+  
+  readerDiv.style.display = 'block';
+  stopBtn.style.display = 'inline-block';
+  
+  try {
+    html5QrCode = new Html5Qrcode("barcode-reader");
+    await html5QrCode.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 150 }
+      },
+      onScanSuccess,
+      onScanFailure
+    );
+    isScanning = true;
+    showToast('📷 Camera started. Point at ISBN barcode.', 'info');
+  } catch (err) {
+    console.error("Failed to start scanner", err);
+    showToast('❌ Failed to start camera. Check permissions.', 'error');
+    stopBarcodeScanner();
+  }
+}
+
+function stopBarcodeScanner() {
+  if (html5QrCode && isScanning) {
+    html5QrCode.stop().then(() => {
+      html5QrCode.clear();
+      html5QrCode = null;
+      isScanning = false;
+      document.getElementById('barcode-reader').style.display = 'none';
+      document.getElementById('stopScanBtn').style.display = 'none';
+    }).catch(err => {
+      console.error("Failed to stop scanner", err);
+    });
+  }
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+  // Clean ISBN (remove dashes and spaces)
+  const isbn = decodedText.replace(/[-\s]/g, '');
+  
+  // Validate ISBN-13 or ISBN-10
+  if (isbn.match(/^\d{10,13}$/)) {
+    stopBarcodeScanner();
+    document.getElementById('newBookTitle').value = `ISBN: ${isbn}`;
+    showToast(`✅ Scanned ISBN: ${isbn}`, 'success');
+    // Auto-fetch book info using ISBN
+    fetchBookByISBN(isbn);
+  } else {
+    showToast('⚠️ Not a valid ISBN barcode', 'error');
+  }
+}
+
+function onScanFailure(error) {
+  // Ignore scan failures during continuous scanning
+}
+
+async function fetchBookByISBN(isbn) {
+  try {
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    const data = await response.json();
+    
+    if (data.totalItems > 0) {
+      const book = data.items[0].volumeInfo;
+      fillBookDetails(book);
+    } else {
+      showToast('📖 Book not found. Please fill in details manually.', 'info');
+    }
+  } catch (error) {
+    console.error('Fetch error:', error);
+    showToast('⚠️ Could not fetch book info', 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// GOOGLE BOOKS SEARCH FUNCTIONS
 // ═══════════════════════════════════════════════════════════
 async function searchGoogleBooks() {
   const query = document.getElementById('googleBookSearch').value.trim();
   if (!query) {
-    showToast('Please enter ISBN or book title', 'error');
+    showToast('Please enter a book title', 'error');
     return;
   }
 
@@ -129,16 +216,11 @@ async function searchGoogleBooks() {
   resultsDiv.innerHTML = '<p style="text-align:center;padding:1rem;">Searching...</p>';
 
   try {
-    // Try ISBN search first, then title search
-    const searchUrl = query.match(/^\d{10,13}$/) 
-      ? `https://www.googleapis.com/books/v1/volumes?q=isbn:${query}`
-      : `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`;
-
-    const response = await fetch(searchUrl);
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`);
     const data = await response.json();
 
     if (data.totalItems === 0) {
-      resultsDiv.innerHTML = '<p style="text-align:center;padding:1rem;color:var(--text-muted);">No books found. Try manual entry.</p>';
+      resultsDiv.innerHTML = '<p style="text-align:center;padding:1rem;color:var(--text-muted);">No books found.</p>';
       return;
     }
 
@@ -166,7 +248,7 @@ async function searchGoogleBooks() {
     window.googleBooksResults = books;
   } catch (error) {
     console.error('Search error:', error);
-    resultsDiv.innerHTML = '<p style="text-align:center;padding:1rem;color:var(--danger);">Search failed. Try manual entry.</p>';
+    resultsDiv.innerHTML = '<p style="text-align:center;padding:1rem;color:var(--danger);">Search failed.</p>';
   }
 }
 
@@ -175,22 +257,22 @@ function selectGoogleBook(index) {
   if (!book) return;
 
   const info = book.volumeInfo;
+  fillBookDetails(info);
   
-  // Fill in the form
+  document.getElementById('googleSearchResults').style.display = 'none';
+  document.getElementById('googleBookSearch').value = '';
+  showToast('✅ Book details loaded!', 'success');
+}
+
+function fillBookDetails(info) {
   document.getElementById('newBookTitle').value = info.title || '';
   document.getElementById('newBookAuthor').value = info.authors ? info.authors.join(', ') : '';
   
-  // ✅ FIX: Robust genre extraction to prevent [object Object]
+  // Fix genre extraction
   let genre = '';
   if (info.categories && info.categories.length > 0) {
     const cat = info.categories[0];
-    if (typeof cat === 'string') {
-      genre = cat;
-    } else if (cat && typeof cat === 'object') {
-      genre = cat.name || cat.title || JSON.stringify(cat);
-    } else {
-      genre = String(cat);
-    }
+    genre = typeof cat === 'string' ? cat : (cat.name || cat.title || String(cat));
   }
   document.getElementById('newBookGenre').value = genre;
   
@@ -199,11 +281,6 @@ function selectGoogleBook(index) {
   if (thumb) {
     fetchAndSetCover(thumb.replace('http:', 'https:'));
   }
-
-  // Hide results and clear search
-  document.getElementById('googleSearchResults').style.display = 'none';
-  document.getElementById('googleBookSearch').value = '';
-  showToast('Book details loaded! Fill in location and RRL level.', 'success');
 }
 
 async function fetchAndSetCover(url) {
@@ -223,7 +300,7 @@ async function fetchAndSetCover(url) {
     }
   } catch (error) {
     console.error('Cover fetch error:', error);
-    showToast('Could not load cover image. You can upload manually.', 'info');
+    showToast('Could not load cover. Upload manually.', 'info');
   }
 }
 
@@ -387,14 +464,17 @@ function openAddBookModal() {
   });
   document.getElementById('imageSizeWarning').classList.remove('show');
   document.getElementById('googleSearchResults').style.display = 'none';
+  document.getElementById('barcode-reader').style.display = 'none';
+  stopBarcodeScanner();
   document.getElementById('addBookModal').classList.add('show');
   document.getElementById('newBookTitle').focus();
   setUnsavedChanges(true);
 }
 
 function closeAddBookModal() {
-  document.getElementById('googleSearchResults').style.display = 'none';
+  stopBarcodeScanner();
   document.getElementById('addBookModal').classList.remove('show');
+  document.getElementById('googleSearchResults').style.display = 'none';
   setUnsavedChanges(false);
 }
 
@@ -802,7 +882,6 @@ function renderBooks() {
   }
   
   emptyState.style.display = 'none';
-  // ✅ FIX: Fixed syntax error (book =>) from previous upload
   grid.innerHTML = filteredBooks.map(book => {
     const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
     const avg = getAverageRating(book.ratings);

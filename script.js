@@ -1,7 +1,6 @@
 // ═══════════════════════════════════════════════════════════
 // Kumon RRL Online Library - Firebase Realtime Version
 // ═══════════════════════════════════════════════════════════
-// Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBo0DXOWKztyMXUXfPhNyoFo9P_Fu-MEn4",
   authDomain: "kumon-library.firebaseapp.com",
@@ -13,12 +12,10 @@ const firebaseConfig = {
   measurementId: "G-V4BJ8FP9QR"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 const BOOKS_REF = database.ref('books');
 
-// App State
 const SESSION_KEY = 'kumonLibrarySession';
 let books = [];
 let nextId = 1;
@@ -30,8 +27,7 @@ let selectedBookId = null;
 let hasUnsavedChanges = false;
 let selectedRating = 0;
 
-// Scanner Instance
-let html5QrcodeScanner = null;
+let html5QrCode = null;
 
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
@@ -118,79 +114,9 @@ function logout() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// MOBILE MENU FUNCTIONS
-// ═══════════════════════════════════════════════════════════
-function toggleMobileMenu() {
-  document.getElementById('mobileMenu')?.classList.toggle('show');
-}
-
-function closeMobileMenu() {
-  document.getElementById('mobileMenu')?.classList.remove('show');
-}
-
-document.addEventListener('click', (e) => {
-  const menu = document.getElementById('mobileMenu');
-  const hamburger = document.querySelector('.hamburger-btn');
-  if (menu?.classList.contains('show') && !menu.contains(e.target) && !hamburger?.contains(e.target)) {
-    closeMobileMenu();
-  }
-});
-
-// ═══════════════════════════════════════════════════════════
-// CAROUSEL LOGIC
-// ═══════════════════════════════════════════════════════════
-let currentSlide = 0;
-let carouselInterval;
-
-function initCarousel() {
-  const slides = document.querySelectorAll('.carousel-slide');
-  const dotsContainer = document.querySelector('.carousel-dots');
-  slides.forEach((_, index) => {
-    const dot = document.createElement('div');
-    dot.classList.add('dot');
-    if (index === 0) dot.classList.add('active');
-    dot.onclick = () => goToSlide(index);
-    dotsContainer.appendChild(dot);
-  });
-  startCarouselAutoPlay();
-}
-
-function updateCarousel() {
-  const track = document.querySelector('.carousel-track');
-  const dots = document.querySelectorAll('.dot');
-  track.style.transform = `translateX(-${currentSlide * 100}%)`;
-  dots.forEach((dot, index) => dot.classList.toggle('active', index === currentSlide));
-}
-
-function moveSlide(direction) {
-  const slides = document.querySelectorAll('.carousel-slide');
-  currentSlide = (currentSlide + direction + slides.length) % slides.length;
-  updateCarousel();
-  resetCarouselAutoPlay();
-}
-
-function goToSlide(index) {
-  currentSlide = index;
-  updateCarousel();
-  resetCarouselAutoPlay();
-}
-
-function startCarouselAutoPlay() {
-  carouselInterval = setInterval(() => moveSlide(1), 5000);
-}
-
-function resetCarouselAutoPlay() {
-  clearInterval(carouselInterval);
-  startCarouselAutoPlay();
-}
-
-document.querySelector('.banner-carousel')?.addEventListener('mouseenter', () => clearInterval(carouselInterval));
-document.querySelector('.banner-carousel')?.addEventListener('mouseleave', () => startCarouselAutoPlay());
-
-// ═══════════════════════════════════════════════════════════
 // ISBN SCANNER & API FUNCTIONS
 // ═══════════════════════════════════════════════════════════
-function toggleScanner() {
+async function toggleScanner() {
   const container = document.getElementById('isbn-scanner-container');
   const status = document.getElementById('scan-status');
   const startBtn = document.getElementById('scannerToggleBtn');
@@ -199,24 +125,22 @@ function toggleScanner() {
   if (container.style.display === 'none' || container.style.display === '') {
     container.style.display = 'block';
     status.style.display = 'block';
-    status.textContent = 'Initializing camera...';
+    status.textContent = 'Initializing back camera...';
     startBtn.style.display = 'none';
     stopBtn.style.display = 'inline-flex';
 
-    if (!html5QrcodeScanner) {
-      html5QrcodeScanner = new Html5QrcodeScanner("isbn-scanner-container", { fps: 10, qrbox: { width: 250, height: 150 } }, /* verbose= */ false);
+    try {
+      if (!html5QrCode) html5QrCode = new Html5Qrcode("isbn-scanner-container");
+      
+      const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+      // 👇 Forces Back Camera on Mobile
+      await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure);
+      status.textContent = 'Point camera at ISBN barcode';
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Camera access error. Please allow permissions or use HTTPS.";
+      setTimeout(stopScanner, 2000);
     }
-    
-    html5QrcodeScanner.render((decodedText, decodedResult) => {
-      const isbn = decodedText.replace(/-/g, '');
-      if (isbn.match(/^(978|979)\d{10}$/)) {
-        status.textContent = `ISBN Found: ${isbn}. Fetching details...`;
-        stopScanner();
-        fetchAndFillBook(isbn);
-      }
-    }, (errorMessage) => {
-      // Ignore scan errors during continuous scanning
-    });
   }
 }
 
@@ -226,15 +150,29 @@ function stopScanner() {
   const startBtn = document.getElementById('scannerToggleBtn');
   const stopBtn = document.getElementById('stopScannerBtn');
 
-  if (html5QrcodeScanner) {
-    html5QrcodeScanner.clear();
-    html5QrcodeScanner = null;
+  if (html5QrCode && html5QrCode.isScanning) {
+    html5QrCode.stop().then(() => {
+      html5QrCode.clear();
+      html5QrCode = null;
+      container.style.display = 'none';
+      status.style.display = 'none';
+      startBtn.style.display = 'inline-flex';
+      stopBtn.style.display = 'none';
+    }).catch(err => console.error("Stop error", err));
   }
-  
-  container.style.display = 'none';
-  status.style.display = 'none';
-  startBtn.style.display = 'inline-flex';
-  stopBtn.style.display = 'none';
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+  const isbn = decodedText.replace(/-/g, '').trim();
+  if (isbn.match(/^(978|979)\d{10}$/)) {
+    document.getElementById('scan-status').textContent = `ISBN Found: ${isbn}. Fetching details...`;
+    stopScanner();
+    fetchAndFillBook(isbn);
+  }
+}
+
+function onScanFailure(error) {
+  // Ignore continuous scan failures
 }
 
 async function fetchAndFillBook(isbn) {
@@ -252,7 +190,6 @@ async function fetchAndFillBook(isbn) {
     document.getElementById('newBookAuthor').value = book.authors ? book.authors.join(', ') : '';
     document.getElementById('newBookGenre').value = book.categories ? book.categories[0] : '';
     
-    // Fetch cover image and set to file input
     if (book.imageLinks?.thumbnail) {
       const imgBlob = await fetch(book.imageLinks.thumbnail).then(r => r.blob());
       const file = new File([imgBlob], "cover.jpg", { type: "image/jpeg" });
@@ -360,8 +297,6 @@ function openAddBookModal() {
   document.getElementById('addBookModal').classList.add('show');
   document.getElementById('newBookTitle').focus();
   setUnsavedChanges(true);
-  
-  // Stop scanner if it was running when modal was closed previously
   stopScanner();
 }
 

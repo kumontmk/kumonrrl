@@ -1,7 +1,7 @@
 // sw.js - Service Worker for Kumon RRL Library
 
 // ️ CHANGE THIS VERSION NUMBER EVERY TIME YOU UPDATE THE SITE ⬇️
-const CACHE_VERSION = '3.1'; 
+const CACHE_VERSION = '3.2'; 
 const CACHE_NAME = `kumon-rrl-library-v${CACHE_VERSION}`;
 
 const urlsToCache = [

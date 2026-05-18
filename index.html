@@ -8,7 +8,6 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="favicon.png">
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
   <link rel="stylesheet" href="styles.css">
@@ -22,14 +21,14 @@
     <button class="hamburger-btn" onclick="toggleMobileMenu()" aria-label="Menu">☰</button>
     <div class="header-actions desktop-actions">
       <span class="mode-indicator" id="modeIndicator">👥 Public View</span>
-      <span class="unsaved-indicator" id="unsavedIndicator" style="display:none;">● Unsaved changes</span>
+      <span class="unsaved-indicator admin-only" id="unsavedIndicator" style="display:none;">● Unsaved changes</span>
       <button class="btn btn-logout admin-only" onclick="logout()">🚪 Logout</button>
       <button class="btn btn-login public-only" onclick="openLoginModal()">🔐 Admin Login</button>
     </div>
     <div class="mobile-menu" id="mobileMenu">
       <div class="mobile-menu-content">
         <span class="mode-indicator" id="mobileModeIndicator">👥 Public View</span>
-        <span class="unsaved-indicator" id="mobileUnsavedIndicator" style="display:none;">● Unsaved changes</span>
+        <span class="unsaved-indicator admin-only" id="mobileUnsavedIndicator" style="display:none;">● Unsaved changes</span>
         <button class="btn btn-logout admin-only" onclick="logout()">🚪 Logout</button>
         <button class="btn btn-login public-only" onclick="openLoginModal()">🔐 Admin Login</button>
       </div>
@@ -48,20 +47,20 @@
   </div>
 
   <div class="container">
-    <div class="stats admin-only">
+    <div class="stats">
       <div class="stat-card"><h3>Total Books</h3><div class="number" id="totalBooks">0</div></div>
       <div class="stat-card"><h3>Available</h3><div class="number" id="availableBooks">0</div></div>
-      <div class="stat-card"><h3>Borrowed</h3><div class="number" id="borrowedBooks">0</div></div>
+      <div class="stat-card admin-only"><h3>Borrowed</h3><div class="number" id="borrowedBooks">0</div></div>
     </div>
 
     <div class="public-notice">
       <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0 0 1rem; line-height: 1.6;">
-        <strong>📚 What is the Kumon Recommended Reading List?</strong><br>
+        📚 What is the Kumon Recommended Reading List?<br>
         The Kumon Recommended Reading List (RRL) is a list of books intended to help Kumon students find books that they will enjoy reading, and to encourage them to read books from a wide range of genres and styles.<br><br>
-        <strong>📚 什麼是公文式推薦閱讀書單？</strong><br>
+        📚 什麼是公文式推薦閱讀書單？<br>
         公文式推薦閱讀書單（RRL）是一份書籍清單，旨在幫助公文式學生找到他們感興趣的書籍，並鼓勵他們發掘不同體裁和風格的作品。
       </p>
-      <button class="btn btn-primary btn-small" onclick="openRRLInfoModal()">📖 Know more about the RRL</button>
+      <button class="btn btn-primary btn-small" onclick="openRRLInfoModal()">📖 Know More about the RRL</button>
     </div>
 
     <div class="controls">
@@ -101,10 +100,7 @@
         <input type="text" id="borrowerName" placeholder="Student Name">
         <input type="text" id="borrowerGrade" placeholder="Grade (e.g. P3)">
         <input type="text" id="borrowerLevel" placeholder="Kumon Level (e.g. D)">
-        <div class="phone-input-group">
-          <span class="phone-prefix">+853</span>
-          <input type="tel" id="borrowerPhone" placeholder="6123 4567">
-        </div>
+        <input type="tel" id="borrowerPhone" placeholder="Phone Number (without +853)">
         <select id="borrowerCenter">
           <option value="">No Center</option>
           <option value="Kumon Taipa Mei Keng">Kumon Taipa Mei Keng</option>
@@ -138,12 +134,6 @@
   <div class="modal-overlay" id="addBookModal" onclick="if(event.target===this)closeAddBookModal()">
     <div class="modal">
       <h3>➕ Add New Book</h3>
-      <div style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="startBarcodeScanner()" id="startScanBtn">📷 Scan ISBN Barcode</button>
-        <button class="btn" onclick="stopBarcodeScanner()" id="stopScanBtn" style="display:none;background:var(--danger);color:white;">⏹ Stop</button>
-      </div>
-      <div id="barcode-reader" style="display:none; margin-bottom:1rem; background:var(--bg-card); border-radius:var(--radius-sm);"></div>
-      
       <div class="modal-form">
         <input type="text" id="newBookTitle" placeholder="Book Title">
         <input type="text" id="newBookAuthor" placeholder="Author">
@@ -165,7 +155,14 @@
           <option value="Further Reading">Further Reading</option>
           <option value="N/A">N/A</option>
         </select>
-        <input type="file" id="newBookCover" accept="image/*">
+        <div style="margin-top:0.5rem;">
+          <input type="file" id="newBookCover" accept="image/*">
+          <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+            <button type="button" class="btn btn-small" onclick="searchBookCover()" style="flex:1;">🔍 Search Cover</button>
+            <button type="button" class="btn btn-small" onclick="clearBookCover()" style="flex:0.5; background:var(--danger); color:white;">Clear</button>
+          </div>
+          <p id="coverSearchStatus" style="font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem; display:none;"></p>
+        </div>
         <p id="imageSizeWarning" class="image-warning"></p>
         <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
       </div>

@@ -8,6 +8,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="favicon.png">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
   <link rel="stylesheet" href="styles.css">
@@ -138,6 +139,13 @@
     <div class="modal">
       <h3>➕ Add New Book</h3>
       
+      <!-- Barcode Scanner Section -->
+      <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="startBarcodeScanner()" id="startScanBtn">📷 Scan ISBN Barcode</button>
+        <button class="btn" onclick="stopBarcodeScanner()" id="stopScanBtn" style="display:none;background:var(--danger);color:white;">⏹ Stop</button>
+      </div>
+      <div id="barcode-reader" style="display:none; margin-bottom:0.75rem; background:var(--bg-card); border-radius:var(--radius-sm);"></div>
+
       <div class="modal-form">
         <input type="text" id="newBookTitle" placeholder="Book Title">
         <input type="text" id="newBookAuthor" placeholder="Author">
@@ -161,7 +169,7 @@
         </select>
         <input type="file" id="newBookCover" accept="image/*">
         <button type="button" class="btn btn-small" onclick="searchBookCovers()" style="width:100%; background:var(--bg-input); color:var(--text-secondary); border:1px solid var(--border-light);">🔍 Search Cover Online</button>
-        <div id="coverSearchResults" style="display:none; margin-top:0.5rem; background:var(--bg-input); border-radius:var(--radius-sm); max-height:200px; overflow-y:auto;"></div>
+        <div id="coverSearchResults" style="display:none; margin-bottom:0.75rem; background:var(--bg-input); border-radius:var(--radius-sm); max-height:200px; overflow-y:auto;"></div>
         <p id="imageSizeWarning" class="image-warning"></p>
         <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
       </div>
@@ -249,79 +257,22 @@
     <div class="modal" style="max-width:700px;">
       <h3 style="text-align: center;">📖 Introduction to the Kumon Recommended Reading List</h3>
       <div class="rrl-info-content">
-        <div class="rrl-section">
-          <h3>📚 What is the Kumon Recommended Reading List?</h3>
-          <p>The Kumon Recommended Reading List (RRL) is a list of 380 books intended to help Kumon students find books that they will enjoy reading, and to encourage them to read books from a wide range of genres and styles.</p>
-        </div>
-        <div class="rrl-section">
-          <h3>📋 How are the Books Chosen?</h3>
-          <p>The books on the RRL have been selected because they are popular, award winning, or recognised literary classics. They were all available from major online bookshops (Amazon.com, Amazon.co.uk, Dymocks.com.au, Kalahari.com, Opentrolley.com.sg and Waterstones.com) at the time of writing.</p>
-        </div>
-        <div class="rrl-section">
-          <h3>📂 How are the Books Arranged?</h3>
-          <p>The books are divided into twelve sections, broadly corresponding to the levels of the Kumon English Programme. Like the Kumon worksheets, the RRL is designed so that each student can start reading books at a comfortable level and progress, step by step, to those that are more difficult. Each title includes a short blurb to help students choose books, and students can colour in stars (☆☆☆☆☆) to rate the books they have read or listened to.</p>
-        </div>
-        <div class="rrl-section">
-          <h3>👶 Read Together</h3>
-          <p>This section was created for children who haven't started reading independently yet. The fifty books were selected because they are particularly suited to being read aloud to children, with the simplest at number one.</p>
-        </div>
-        <div class="rrl-section">
-          <h3>📖 Level 2A to Level I</h3>
-          <p>The thirty books in each level from Level 2A to Level I are listed in order of difficulty, with the easiest at number one. For Level D and above, genre icons are included to help readers navigate the list. Please refer to the genre definitions (opposite) for details.</p>
-        </div>
-        <div class="rrl-section">
-          <h3>🌟 Further Reading</h3>
-          <p>These thirty books are recommended for more confident, mature readers. They include classics and seminal works from a range of genres and periods, and are listed in order of difficulty.</p>
-        </div>
-        <div class="rrl-section">
-          <h3>📚 A Wide Range of Books for a Wide Range of Readers!</h3>
-          <p>The RRL contains something for everyone. Each level includes books aimed at younger readers, as well as books more suited to older, more mature readers. Not every book will be appropriate for every student, but everyone will find something he or she will enjoy!</p>
-        </div>
-        <div class="rrl-section">
-          <h3>👨‍👩‍👧 Information for Parents</h3>
-          <p>The following information is intended to help parents make the best use of the Recommended Reading List (RRL), and to give ideas on how to help inspire in children a lifelong love of reading.</p>
-        </div>
-        <div class="rrl-section">
-          <h3>🏠 Creating a 'Reading-Friendly' Environment at Home</h3>
-          <p>Store your child's books within his or her reach. Create a reading corner and put some child-sized bookshelves nearby.<br>
-          Visit the local library with your child and borrow books together.<br>
-          Take an active interest in what your child is reading.<br>
-          Children learn by example. If you and other family members read and talk about books, your child will do the same.</p>
-        </div>
-        <div class="rrl-section">
-          <h3>📚 Recommending Books</h3>
-          <p>Children should read books that match their ability and interests, which may not correspond to their age or school year. This is why the books on the RRL are listed according to difficulty rather than age. It may mean that a preschool child chooses to read longer books, while an older primary-school student is more comfortable reading picture books.<br>
-          Use the genre icons and book blurbs to help your child choose books.</p>
-        </div>
-        <div class="rrl-section">
-          <h3>🗣️ Reading Aloud to Your Child</h3>
-          <p>The stories you read aloud to your child are his or her first introduction to the world of books. Reading aloud is important, not only because it shows how much fun reading can be, but also for its many other benefits. These include getting a feel for the sounds and rhythms of language, helping to develop imagination and creativity, and widening a child's experience of the world.<br><br>
-          Let your child choose the books he or she wants you to read. Young children enjoy having picture books read to them, particularly books that include repetition, rhythm, or rhyme, and will often want you to reread the same book many times.<br>
-          Read at a pace that allows your child to follow the story, and talk about the story and the pictures as you read.</p>
-        </div>
-        <div class="rrl-section">
-          <h3>🚀 Encouraging Your Child to Become an Independent Reader</h3>
-          <p>Children who are just beginning to read feel an enormous sense of achievement when they can read a whole book by themselves.<br><br>
-          Listen to your child read, give encouragement and help out with difficult words. Read books together, taking turns to read a sentence or a page each.<br>
-          Start with short, simple books with large print and few words on each page. The books on the RRL in Level 2A have been specifically selected to suit children taking their first steps in reading.<br>
-          As your child gains confidence, he or she will be ready to try the stories in Levels A and B, most of which are still picture books.<br>
-          In Level B the RRL introduces longer books, in which the story is told mainly through text rather than pictures and is spread over a number of chapters.</p>
-        </div>
-        <div class="rrl-section">
-          <h3>⭐ More Confident Readers</h3>
-          <p>Even after your child becomes an independent reader, continue to talk about and recommend books.<br><br>
-          Many of the books on the RRL are part of a series or written by well-known authors of children's books. Encourage your child to read more books in the same series or other titles by the same author.<br>
-          Use the genre icons to help your child find more books from genres he or she likes, or to encourage him or her to try a different genre.<br>
-          Don't force your child to read, and try not to be judgmental about his or her reading choices.<br>
-          Encourage your child to read more of what he or she enjoys; above all, reading should be satisfying and fun.</p>
-        </div>
-        <div class="rrl-section" style="border-bottom:none;margin-bottom:0;padding-bottom:0;">
-          <p style="font-weight:600;color:var(--primary);">📖 The Kumon Recommended Reading List helps students discover the joy of reading!</p>
-        </div>
+        <div class="rrl-section"><h3>📚 What is the Kumon Recommended Reading List?</h3><p>The Kumon Recommended Reading List (RRL) is a list of 380 books intended to help Kumon students find books that they will enjoy reading, and to encourage them to read books from a wide range of genres and styles.</p></div>
+        <div class="rrl-section"><h3>📋 How are the Books Chosen?</h3><p>The books on the RRL have been selected because they are popular, award winning, or recognised literary classics. They were all available from major online bookshops at the time of writing.</p></div>
+        <div class="rrl-section"><h3>📂 How are the Books Arranged?</h3><p>The books are divided into twelve sections, broadly corresponding to the levels of the Kumon English Programme. Each title includes a short blurb to help students choose books, and students can colour in stars to rate the books.</p></div>
+        <div class="rrl-section"><h3>👶 Read Together</h3><p>This section was created for children who haven't started reading independently yet.</p></div>
+        <div class="rrl-section"><h3>📖 Level 2A to Level I</h3><p>The thirty books in each level from Level 2A to Level I are listed in order of difficulty, with the easiest at number one.</p></div>
+        <div class="rrl-section"><h3>🌟 Further Reading</h3><p>These thirty books are recommended for more confident, mature readers. They include classics and seminal works from a range of genres and periods.</p></div>
+        <div class="rrl-section"><h3>📚 A Wide Range of Books for a Wide Range of Readers!</h3><p>The RRL contains something for everyone. Not every book will be appropriate for every student, but everyone will find something they will enjoy!</p></div>
+        <div class="rrl-section"><h3>👨‍👩‍👧 Information for Parents</h3><p>The following information is intended to help parents make the best use of the Recommended Reading List (RRL), and to give ideas on how to help inspire in children a lifelong love of reading.</p></div>
+        <div class="rrl-section"><h3>🏠 Creating a 'Reading-Friendly' Environment at Home</h3><p>Store your child's books within reach. Create a reading corner. Visit the library together. Take an active interest in what your child is reading.</p></div>
+        <div class="rrl-section"><h3>📚 Recommending Books</h3><p>Children should read books that match their ability and interests, which may not correspond to their age or school year.</p></div>
+        <div class="rrl-section"><h3>🗣️ Reading Aloud to Your Child</h3><p>The stories you read aloud are their first introduction to the world of books. Let your child choose, read at their pace, and talk about the story.</p></div>
+        <div class="rrl-section"><h3>🚀 Encouraging Independent Reading</h3><p>Children feel achievement when reading a whole book. Listen, give encouragement, and start with simple books.</p></div>
+        <div class="rrl-section"><h3>⭐ More Confident Readers</h3><p>Continue to recommend books. Use genre icons to explore. Don't force reading choices; keep it fun and satisfying.</p></div>
+        <div class="rrl-section" style="border-bottom:none;margin-bottom:0;padding-bottom:0;"><p style="font-weight:600;color:var(--primary);">📖 The Kumon Recommended Reading List helps students discover the joy of reading!</p></div>
       </div>
-      <div class="modal-actions">
-        <button class="btn" onclick="closeRRLInfoModal()" style="width:100%;background:var(--bg-input);color:var(--text-secondary)">Close</button>
-      </div>
+      <div class="modal-actions"><button class="btn" onclick="closeRRLInfoModal()" style="width:100%;background:var(--bg-input);color:var(--text-secondary)">Close</button></div>
     </div>
   </div>
 

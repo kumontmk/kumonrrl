@@ -8,8 +8,6 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="favicon.png">
-  <!-- Free ISBN Scanner Library -->
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
   <link rel="stylesheet" href="styles.css">
@@ -56,13 +54,8 @@
     </div>
 
     <div class="public-notice">
-      <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0 0 1rem; line-height: 1.6;">
-        <strong>📚 What is the Kumon Recommended Reading List?</strong><br>
-        The Kumon Recommended Reading List (RRL) is a list of books intended to help Kumon students find books that they will enjoy reading, and to encourage them to read books from a wide range of genres and styles.<br><br>
-        <strong>📚 什麼是公文式推薦閱讀書單？</strong><br>
-        公文式推薦閱讀書單（RRL）是一份書籍清單，旨在幫助公文式學生找到他們感興趣的書籍，並鼓勵他們發掘不同體裁和風格的作品。
-      </p>
-      <button class="btn btn-primary btn-small" onclick="openRRLInfoModal()">📖 Know more about the RRL</button>
+      <p>👋 Welcome! Browse our library below.</p>
+      <button class="btn btn-primary btn-small" onclick="openRRLInfoModal()">📚 What is the Kumon Recommended Reading List?</button>
     </div>
 
     <div class="controls">
@@ -102,10 +95,7 @@
         <input type="text" id="borrowerName" placeholder="Student Name">
         <input type="text" id="borrowerGrade" placeholder="Grade (e.g. P3)">
         <input type="text" id="borrowerLevel" placeholder="Kumon Level (e.g. D)">
-        <div class="phone-input-group">
-          <span class="phone-prefix">+853</span>
-          <input type="tel" id="borrowerPhone" placeholder="6123 4567">
-        </div>
+        <input type="tel" id="borrowerPhone" placeholder="Phone Number">
         <select id="borrowerCenter">
           <option value="">No Center</option>
           <option value="Kumon Taipa Mei Keng">Kumon Taipa Mei Keng</option>
@@ -139,25 +129,39 @@
   <div class="modal-overlay" id="addBookModal" onclick="if(event.target===this)closeAddBookModal()">
     <div class="modal">
       <h3>➕ Add New Book</h3>
-      <div style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
-        <button class="btn btn-small" onclick="toggleScanner()" id="scannerToggleBtn">📷 Scan ISBN</button>
-        <button class="btn btn-small btn-danger" onclick="stopScanner()" id="stopScannerBtn" style="display:none;">⏹️ Stop</button>
-      </div>
-      <div id="isbn-scanner-container" style="display:none; margin-bottom:1rem; border-radius:var(--radius-md); overflow:hidden; background:#000;"></div>
-      <div id="scan-status" style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem; display:none; text-align:center;"></div>
       
-      <!-- Manual ISBN Fallback -->
-      <div style="display:flex; gap:0.5rem; margin-bottom:1rem; align-items:center; flex-wrap:wrap;">
-        <input type="text" id="manualIsbn" placeholder="Or type ISBN here..." style="flex:1; padding:0.6rem; border:1px solid var(--border-light); border-radius:var(--radius-sm); font-size:0.9rem;">
-        <button class="btn btn-small" onclick="manualFetch()" style="white-space:nowrap;">🔍 Fetch</button>
+      <!-- ✅ Google Books Search Section Added -->
+      <div style="margin-bottom:1rem;padding:1rem;background:var(--bg-input);border-radius:var(--radius-md);">
+        <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
+          <input type="text" id="googleBookSearch" placeholder="Search by ISBN or Title..." style="flex:1;padding:0.5rem;border:1px solid var(--border-light);border-radius:var(--radius-sm);">
+          <button class="btn btn-primary" onclick="searchGoogleBooks()">🔍 Search</button>
+        </div>
+        <div id="googleSearchResults" style="max-height:200px;overflow-y:auto;display:none;"></div>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin:0.5rem 0 0;">Or fill in manually below:</p>
       </div>
-      
+      <!-- End Google Books Search Section -->
+
       <div class="modal-form">
         <input type="text" id="newBookTitle" placeholder="Book Title">
         <input type="text" id="newBookAuthor" placeholder="Author">
         <input type="text" id="newBookGenre" placeholder="Genre (e.g. Fiction)">
         <input type="text" id="newBookLocation" placeholder="Location (e.g. Shelf A3)">
-        <select id="newBookRRL"><option value="Read Together">Read Together</option><option value="2A">2A</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option><option value="H">H</option><option value="I">I</option><option value="Further Reading">Further Reading</option><option value="N/A">N/A</option></select>
+        <select id="newBookRRL">
+          <option value="">Select RRL Level</option>
+          <option value="Read Together">Read Together</option>
+          <option value="2A">2A</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+          <option value="D">D</option>
+          <option value="E">E</option>
+          <option value="F">F</option>
+          <option value="G">G</option>
+          <option value="H">H</option>
+          <option value="I">I</option>
+          <option value="Further Reading">Further Reading</option>
+          <option value="N/A">N/A</option>
+        </select>
         <input type="file" id="newBookCover" accept="image/*">
         <p id="imageSizeWarning" class="image-warning"></p>
         <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
@@ -244,7 +248,7 @@
 
   <div class="modal-overlay" id="rrlInfoModal" onclick="if(event.target===this)closeRRLInfoModal()">
     <div class="modal" style="max-width:700px;">
-      <h3 style="text-align: center;">📖 Introduction to the Kumon Recommended Reading List</h3>
+      <h3>📖 Introduction to the Kumon Recommended Reading List</h3>
       <div class="rrl-info-content">
         <div class="rrl-section">
           <h3>📚 What is the Kumon Recommended Reading List?</h3>

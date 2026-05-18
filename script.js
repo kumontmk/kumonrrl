@@ -76,8 +76,8 @@ function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
 function setAdminMode(active) {
   isAdmin = active;
-  // ✅ FIX: Toggle body class so CSS visibility rules apply
   document.body.classList.toggle('admin-mode', active);
+  if (active) hasUnsavedChanges = false;
   
   const indicators = ['modeIndicator', 'mobileModeIndicator'];
   indicators.forEach(id => {
@@ -119,7 +119,7 @@ function logout() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// BARCODE SCANNER FUNCTIONS
+// BARCODE SCANNER FUNCTIONS (✅ RESTORED)
 // ═══════════════════════════════════════════════════════════
 async function startBarcodeScanner() {
   const readerDiv = document.getElementById('barcode-reader');
@@ -187,7 +187,7 @@ async function fetchBookByISBN(isbn) {
     
     if (data.totalItems > 0) {
       const book = data.items[0].volumeInfo;
-      document.getElementById('newBookTitle').value = book.title || `ISBN: ${isbn}`;
+      document.getElementById('newBookTitle').value = book.title || '';
       document.getElementById('newBookAuthor').value = book.authors ? book.authors.join(', ') : '';
       
       let genre = '';
@@ -222,7 +222,7 @@ async function fetchAndSetCover(url) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// BOOK COVER SEARCH FUNCTIONS
+// BOOK COVER SEARCH FUNCTIONS (✅ ADDED AS REQUESTED)
 // ═══════════════════════════════════════════════════════════
 async function searchBookCover() {
   const title = document.getElementById('newBookTitle').value.trim();
@@ -434,12 +434,15 @@ function openAddBookModal() {
   });
   document.getElementById('imageSizeWarning').classList.remove('show');
   document.getElementById('coverSearchStatus').style.display = 'none';
+  document.getElementById('barcode-reader').style.display = 'none';
+  stopBarcodeScanner();
   document.getElementById('addBookModal').classList.add('show');
   document.getElementById('newBookTitle').focus();
   setUnsavedChanges(true);
 }
 
 function closeAddBookModal() {
+  stopBarcodeScanner();
   document.getElementById('addBookModal').classList.remove('show');
   document.getElementById('coverSearchStatus').style.display = 'none';
   setUnsavedChanges(false);

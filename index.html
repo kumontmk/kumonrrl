@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="favicon.png">
-  <!-- Added Html5Qrcode Library for Free ISBN Scanning -->
+  <!-- Free ISBN Scanner Library -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
@@ -23,14 +23,14 @@
     <button class="hamburger-btn" onclick="toggleMobileMenu()" aria-label="Menu">☰</button>
     <div class="header-actions desktop-actions">
       <span class="mode-indicator" id="modeIndicator">👥 Public View</span>
-      <span class="unsaved-indicator" id="unsavedIndicator">● Unsaved changes</span>
+      <span class="unsaved-indicator admin-only" id="unsavedIndicator" style="display:none;">● Unsaved changes</span>
       <button class="btn btn-logout admin-only" onclick="logout()">🚪 Logout</button>
       <button class="btn btn-login public-only" onclick="openLoginModal()">🔐 Admin Login</button>
     </div>
     <div class="mobile-menu" id="mobileMenu">
       <div class="mobile-menu-content">
         <span class="mode-indicator" id="mobileModeIndicator">👥 Public View</span>
-        <span class="unsaved-indicator" id="mobileUnsavedIndicator">● Unsaved changes</span>
+        <span class="unsaved-indicator admin-only" id="mobileUnsavedIndicator" style="display:none;">● Unsaved changes</span>
         <button class="btn btn-logout admin-only" onclick="logout()">🚪 Logout</button>
         <button class="btn btn-login public-only" onclick="openLoginModal()">🔐 Admin Login</button>
       </div>
@@ -141,10 +141,10 @@
       <h3>➕ Add New Book</h3>
       <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
         <button class="btn btn-small" onclick="toggleScanner()" id="scannerToggleBtn">📷 Scan ISBN</button>
-        <button class="btn btn-small btn-danger" onclick="stopScanner()" id="stopScannerBtn" style="display:none;">⏹️ Stop Scanner</button>
+        <button class="btn btn-small btn-danger" onclick="stopScanner()" id="stopScannerBtn" style="display:none;">⏹️ Stop</button>
       </div>
-      <div id="isbn-scanner-container" style="display:none; margin-bottom:1rem; background:#000; border-radius:var(--radius-sm); overflow:hidden;"></div>
-      <div id="scan-status" style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem; display:none;">Ready to scan...</div>
+      <div id="isbn-scanner-container" style="display:none; margin-bottom:1rem;"></div>
+      <div id="scan-status" style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem; display:none; text-align:center;"></div>
       
       <div class="modal-form">
         <input type="text" id="newBookTitle" placeholder="Book Title">

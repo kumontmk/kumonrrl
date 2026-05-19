@@ -1,5 +1,5 @@
 // sw.js
-const CACHE_VERSION = '4.2'; // ⚠️ INCREMENT THIS ON EVERY DEPLOY
+const CACHE_VERSION = '4.2.5'; // ⚠️ INCREMENT THIS ON EVERY DEPLOY
 const CACHE_NAME = `kumon-rrl-v${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [

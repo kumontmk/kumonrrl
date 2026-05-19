@@ -733,3 +733,16 @@ else { warningEl.classList.remove('show'); }
 ['editBookTitle','editBookAuthor','editBookGenre','editBookLocation','editBookRRL'].forEach(id => document.getElementById(id)?.addEventListener('keypress', e => { if (e.key === 'Enter') processEditBook(); }));
 ['loginOverlay','borrowModal','addBookModal','editBookModal','visitorBorrowModal','detailModal','rrlInfoModal'].forEach(id => document.getElementById(id)?.addEventListener('click', e => { if (e.target.id === id) { if(id==='loginOverlay')closeLoginModal(); if(id==='borrowModal')closeBorrowModal(); if(id==='addBookModal')closeAddBookModal(); if(id==='editBookModal')closeEditBookModal(); if(id==='visitorBorrowModal')closeVisitorBorrowModal(); if(id==='detailModal')closeDetailModal(); if(id==='rrlInfoModal')closeRRLInfoModal(); }}));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDetailModal(); closeRRLInfoModal(); closeMobileMenu(); } });
+
+// script.js - Add at the bottom
+document.addEventListener('keydown', (e) => {
+  // Ctrl+B (Windows/Linux) or Cmd+B (Mac)
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+    e.preventDefault(); // Prevent browser default (e.g., bookmarking)
+    // Only trigger if user is not actively typing in a form field
+    const activeTag = document.activeElement?.tagName;
+    if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) {
+      openAddBookModal();
+    }
+  }
+});

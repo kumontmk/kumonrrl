@@ -399,3 +399,10 @@ body.admin-mode .btn-fab.admin-only { display: flex !important; }
 .detail-content.swipe-left-in { transform: translateX(25px); }
 .detail-content.swipe-right-in { transform: translateX(-25px); }
 
+/* Swipe Animation Base */
+.detail-content {
+    transform: translateX(0) !important;
+    opacity: 1 !important;
+    will-change: transform, opacity;
+}
+

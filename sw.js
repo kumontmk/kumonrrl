@@ -59,3 +59,10 @@ self.addEventListener('activate', event => {
   // Take control of all pages immediately
   self.clients.claim();
 });
+
+// sw.js - Add at the very bottom
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});

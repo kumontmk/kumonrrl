@@ -709,12 +709,61 @@ return `
   </div>`;
 }).join('');
 }
+
+// ═══════════════════════════════════════════════════════════
+// SWIPE NAVIGATION FOR DETAIL MODAL
+// ═══════════════════════════════════════════════════════════
+let touchStartX = 0;
+let touchStartY = 0;
+const SWIPE_THRESHOLD = 50;
+
+function initSwipeNavigation() {
+    const modal = document.getElementById('detailModal');
+    if (!modal) return;
+
+    modal.addEventListener('touchstart', (e) => {
+        // Prevent swipe triggering on interactive elements
+        if (e.target.closest('button, input, select, a, .star-btn, .book-actions')) return;
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    modal.addEventListener('touchend', (e) => {
+        if (e.target.closest('button, input, select, a, .star-btn, .book-actions')) return;
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+        const deltaX = touchStartX - touchEndX;
+        const deltaY = touchStartY - touchEndY;
+
+        // Only trigger on clear horizontal swipes
+        if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
+            navigateBookModal(deltaX > 0 ? 1 : -1);
+        }
+    }, { passive: true });
+}
+
+function navigateBookModal(direction) {
+    const filtered = getFilteredAndSortedBooks();
+    const currentIndex = filtered.findIndex(b => b.id === selectedBookId);
+    if (currentIndex === -1) return;
+
+    let newIndex = currentIndex + direction;
+
+    // Stop at boundaries instead of wrapping (cleaner UX for libraries)
+    if (newIndex < 0 || newIndex >= filtered.length) {
+        showToast(direction > 0 ? '📖 Last book in list' : '📖 First book in list', 'info');
+        return;
+    }
+
+    openBookDetail(filtered[newIndex].id);
+}
+
 // ═══════════════════════════════════════════════════════════
 // INITIALIZATION
 // ═══════════════════════════════════════════════════════════
 function initApp() {
 if (checkSession()) { setAdminMode(true); showToast('✅ Admin session restored', 'info'); } else { setAdminMode(false); }
-startRealtimeSync(); initCarousel();
+startRealtimeSync(); initCarousel(); initSwipeNavigation();
 window.history.pushState(null, null, window.location.href);
 window.addEventListener('popstate', function () { if (confirm('Are you sure you want to exit?')) { window.history.back(); } else { window.history.pushState(null, null, window.location.href); } });
 }

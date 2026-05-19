@@ -722,20 +722,24 @@ function initSwipeNavigation() {
     if (!modal) return;
 
     modal.addEventListener('touchstart', (e) => {
-        // Prevent swipe triggering on interactive elements
-        if (e.target.closest('button, input, select, a, .star-btn, .book-actions')) return;
+        if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
         touchStartX = e.changedTouches[0].screenX;
         touchStartY = e.changedTouches[0].screenY;
     }, { passive: true });
 
     modal.addEventListener('touchend', (e) => {
-        if (e.target.closest('button, input, select, a, .star-btn, .book-actions')) return;
+        if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
         const touchEndX = e.changedTouches[0].screenX;
         const touchEndY = e.changedTouches[0].screenY;
         const deltaX = touchStartX - touchEndX;
         const deltaY = touchStartY - touchEndY;
 
-        // Only trigger on clear horizontal swipes
+        if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
+            navigateBookModal(deltaX > 0 ? 1 : -1);
+        }
+    }, { passive: true });
+}
+
 function navigateBookModal(direction) {
     const content = document.querySelector('.detail-content');
     if (!content) return;
@@ -743,31 +747,25 @@ function navigateBookModal(direction) {
     const outDir = direction > 0 ? 'left' : 'right';
     const inDir = direction > 0 ? 'right' : 'left';
 
-    // 1. Animate out (slide + fade)
     content.classList.add(`swipe-${outDir}-out`, 'swiping-out');
 
-    // 2. Update content after slide-out completes
     setTimeout(() => {
         const filtered = getFilteredAndSortedBooks();
         const currentIndex = filtered.findIndex(b => b.id === selectedBookId);
         let newIndex = currentIndex + direction;
 
-        // Boundary check
         if (newIndex < 0 || newIndex >= filtered.length) {
             content.classList.remove(`swipe-${outDir}-out`, 'swiping-out');
             showToast(direction > 0 ? '📖 Last book in list' : '📖 First book in list', 'info');
             return;
         }
 
-        // Update modal content
         openBookDetail(filtered[newIndex].id);
 
-        // 3. Set entrance state (start from opposite side)
         content.classList.remove(`swipe-${outDir}-out`);
         content.classList.add(`swipe-${inDir}-in`);
-        void content.offsetWidth; // Force browser reflow for transition trigger
+        void content.offsetWidth; // Force reflow
 
-        // 4. Animate in to center
         requestAnimationFrame(() => {
             content.classList.remove(`swipe-${inDir}-in`, 'swiping-out');
         });
@@ -778,8 +776,10 @@ function navigateBookModal(direction) {
 // ═══════════════════════════════════════════════════════════
 function initApp() {
 if (checkSession()) { setAdminMode(true); showToast('✅ Admin session restored', 'info'); } else { setAdminMode(false); }
-startRealtimeSync(); initCarousel(); initSwipeNavigation();
-window.history.pushState(null, null, window.location.href);
+    startRealtimeSync(); 
+    initCarousel(); 
+    initSwipeNavigation();
+    window.history.pushState(null, null, window.location.href);
 window.addEventListener('popstate', function () { if (confirm('Are you sure you want to exit?')) { window.history.back(); } else { window.history.pushState(null, null, window.location.href); } });
 }
 document.addEventListener('DOMContentLoaded', initApp);

@@ -1,52 +1,61 @@
-// sw.js
-const CACHE_VERSION = '4.2.6'; // ⚠️ INCREMENT THIS ON EVERY DEPLOY
-const CACHE_NAME = `kumon-rrl-v${CACHE_VERSION}`;
+// sw.js - Service Worker for Kumon RRL Library
 
-const STATIC_ASSETS = [
+// ️ CHANGE THIS VERSION NUMBER EVERY TIME YOU UPDATE THE SITE ⬇️
+const CACHE_VERSION = '4.2.9'; 
+const CACHE_NAME = `kumon-rrl-library-v${CACHE_VERSION}`;
+
+const urlsToCache = [
   '/kumonrrl/',
   '/kumonrrl/index.html',
   '/kumonrrl/styles.css',
   '/kumonrrl/script.js',
   '/kumonrrl/manifest.json',
+  // Add your banner images here if they change often
   '/kumonrrl/banner1.jpg',
   '/kumonrrl/banner2.jpg',
   '/kumonrrl/banner3.jpg'
 ];
 
+// Install Service Worker
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)));
-  self.skipWaiting();
-});
-
-self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
-  
-  // ✅ NETWORK-ONLY for Firebase, APIs, WebSockets, and external requests
-  if (url.origin !== location.origin || 
-      url.pathname.includes('firebase') || 
-      url.pathname.includes('googleapis') || 
-      url.pathname.includes('openlibrary') || 
-      url.pathname.includes('itunes.apple')) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
-  // ✅ CACHE-FIRST for your static assets
-  event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request))
-  );
-});
-
-self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => 
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
+      })
+      .then(() => self.skipWaiting()) // Activate immediately
   );
-  self.clients.claim();
 });
 
-// ✅ CROSS-BROWSER SKIP_WAITING LISTENER
-self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+// Fetch cached content
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        if (response) {
+          return response;
+        }
+        return fetch(event.request);
+      })
+  );
+});
+
+// Activate Service Worker (Clean up old caches)
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          // If the cache name is not in the whitelist, delete it
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  // Take control of all pages immediately
+  self.clients.claim();
 });

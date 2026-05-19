@@ -710,148 +710,82 @@ return `
 }).join('');
 }
 // ═══════════════════════════════════════════════════════════
-// SWIPE NAVIGATION FOR DETAIL MODAL
+// CLEAN SWIPE NAVIGATION FOR DETAIL MODAL
 // ═══════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════
-// TINDER-LIKE SEAMLESS SWIPE NAVIGATION (REFINED)
-// ═══════════════════════════════════════════════════════════
-let touchStartX = 0, touchStartY = 0, currentX = 0, isDragging = false;
-const SWIPE_THRESHOLD = 70;
-const MAX_DRAG = 240;
-let peekCard = null;
+let touchStartX = 0, touchStartY = 0;
+const SWIPE_THRESHOLD = 60;
 
 function initSwipeNavigation() {
     const modal = document.getElementById('detailModal');
     if (!modal) return;
-    modal.addEventListener('touchstart', handleSwipeStart, { passive: true });
-    modal.addEventListener('touchmove', handleSwipeMove, { passive: false });
-    modal.addEventListener('touchend', handleSwipeEnd, { passive: true });
-}
 
-function handleSwipeStart(e) {
-    if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
-    isDragging = true;
-    currentX = 0;
-    const content = document.querySelector('.detail-content');
-    if (content) {
-        content.style.transition = 'none';
-        content.style.transform = 'translateX(0) rotate(0) scale(1)';
-        content.style.opacity = '1';
-    }
-}
+    modal.addEventListener('touchstart', (e) => {
+        if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
 
-function handleSwipeMove(e) {
-    if (!isDragging) return;
-    if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
+    modal.addEventListener('touchend', (e) => {
+        if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
 
-    const touchX = e.changedTouches[0].screenX;
-    const touchY = e.changedTouches[0].screenY;
-    const deltaX = touchX - touchStartX;
-    const deltaY = touchY - touchStartY;
-
-    // Only track clear horizontal movement
-    if (Math.abs(deltaX) > 12 && Math.abs(deltaX) > Math.abs(deltaY)) {
-        e.preventDefault();
-        currentX = deltaX;
-        const direction = deltaX < 0 ? 1 : -1; // Swipe Left=Next, Swipe Right=Prev
-        const progress = Math.min(Math.abs(currentX) / MAX_DRAG, 1);
-        
-        // Physics: rotation, scale, fade
-        const rotation = (currentX / MAX_DRAG) * 18;
-        const scale = 1 - (progress * 0.06);
-        const opacity = 1 - (progress * 0.4);
-
-        const content = document.querySelector('.detail-content');
-        if (content) {
-            content.style.transform = `translateX(${currentX}px) rotate(${rotation}deg) scale(${scale})`;
-            content.style.opacity = opacity;
+        // Only trigger on clear horizontal movement
+        if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
+            // deltaX < 0 = finger moved left → Next book
+            // deltaX > 0 = finger moved right → Previous book
+            navigateBookModal(deltaX < 0 ? 1 : -1);
         }
-
-        // Create peek card when threshold crossed
-        if (!peekCard && Math.abs(currentX) > SWIPE_THRESHOLD) {
-            createPeekCard(direction);
-        }
-    }
+    }, { passive: true });
 }
 
-function handleSwipeEnd(e) {
-    if (!isDragging) return;
-    isDragging = false;
+function navigateBookModal(direction) {
     const content = document.querySelector('.detail-content');
     if (!content) return;
 
-    content.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease';
-    const direction = currentX < 0 ? 1 : -1;
-
-    if (Math.abs(currentX) > SWIPE_THRESHOLD && peekCard) {
-        // Complete swipe
-        const flyOut = direction * (window.innerWidth + 100);
-        content.style.transform = `translateX(${flyOut}px) rotate(${direction * 20}deg) scale(0.85)`;
-        content.style.opacity = '0';
-
-        // Promote peek card to main
-        peekCard.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease';
-        peekCard.style.transform = 'translateX(0) rotate(0) scale(1)';
-        peekCard.style.opacity = '1';
-
-        setTimeout(() => {
-            if (peekCard && peekCard.parentNode) {
-                content.replaceWith(peekCard);
-                peekCard = null;
-                // Clean inline styles for future swipes
-                const newContent = document.querySelector('.detail-content');
-                if (newContent) {
-                    newContent.style.transform = '';
-                    newContent.style.opacity = '';
-                    newContent.style.transition = '';
-                }
-            }
-        }, 250);
-    } else {
-        // Snap back
-        content.style.transform = 'translateX(0) rotate(0) scale(1)';
-        content.style.opacity = '1';
-        removePeekCard();
-    }
-}
-
-function createPeekCard(direction) {
     const filtered = getFilteredAndSortedBooks();
     const currentIndex = filtered.findIndex(b => b.id === selectedBookId);
     let newIndex = currentIndex + direction;
-    if (newIndex < 0 || newIndex >= filtered.length) return; // Boundary check
 
-    // Temporarily open next book to clone its structure
-    openBookDetail(filtered[newIndex].id);
-    const tempContent = document.querySelector('.detail-content');
-    if (!tempContent) return;
-
-    // Clone it for the peek effect
-    peekCard = tempContent.cloneNode(true);
-    peekCard.classList.add('peek-card');
-    peekCard.style.position = 'absolute';
-    peekCard.style.top = '0';
-    peekCard.style.left = '0';
-    peekCard.style.right = '0';
-    peekCard.style.bottom = '0';
-    peekCard.style.background = 'var(--bg-card)';
-    peekCard.style.transform = `translateX(${direction * window.innerWidth}px) scale(0.9)`;
-    peekCard.style.opacity = '0.3';
-    peekCard.style.zIndex = '-1';
-    peekCard.style.pointerEvents = 'none';
-    peekCard.style.transition = 'none';
-    
-    document.querySelector('.detail-modal').appendChild(peekCard);
-}
-
-function removePeekCard() {
-    if (peekCard && peekCard.parentNode) {
-        peekCard.parentNode.removeChild(peekCard);
-        peekCard = null;
+    // Boundary check
+    if (newIndex < 0 || newIndex >= filtered.length) {
+        showToast(direction > 0 ? '📖 Last book in list' : '📖 First book in list', 'info');
+        return;
     }
+
+    // 1. Animate out
+    content.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+    content.style.transform = `translateX(${direction * 100}vw)`;
+    content.style.opacity = '0';
+
+    // 2. Update content & prepare entrance
+    setTimeout(() => {
+        openBookDetail(filtered[newIndex].id);
+
+        // Reset transition, set off-screen start position
+        content.style.transition = 'none';
+        content.style.transform = `translateX(${-direction * 100}vw)`;
+        content.style.opacity = '0';
+        void content.offsetWidth; // Force browser reflow
+
+        // 3. Animate in
+        requestAnimationFrame(() => {
+            content.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease';
+            content.style.transform = 'translateX(0)';
+            content.style.opacity = '1';
+        });
+
+        // 4. Clean inline styles after animation completes
+        content.addEventListener('transitionend', () => {
+            content.style.transform = '';
+            content.style.opacity = '';
+            content.style.transition = '';
+        }, { once: true });
+    }, 250);
 }
+
 // ═══════════════════════════════════════════════════════════
 // INITIALIZATION
 // ═══════════════════════════════════════════════════════════

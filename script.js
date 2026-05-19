@@ -748,32 +748,29 @@ document.addEventListener('keydown', (e) => {
   }
 });
 //update cache
-function registerAndAutoUpdateSW() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/kumonrrl/sw.js')
-      .then(registration => {
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          newWorker.addEventListener('statechange', () => {
-            // Only skip waiting if an old SW is already controlling the page
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              newWorker.postMessage({ type: 'SKIP_WAITING' });
-            }
-          });
-        });
-      })
-      .catch(err => console.warn('SW registration skipped:', err));
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
 
-    // ✅ OFFICIAL SAFER PATTERN: Reload only when the active controller actually changes
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      // Add a small delay to let Firebase/Assets initialize in background if needed
-      if (document.readyState === 'complete') {
-        window.location.reload();
-      } else {
-        window.addEventListener('load', () => window.location.reload(), { once: true });
-      }
-    });
-  }
+  navigator.serviceWorker.register('/kumonrrl/sw.js', { updateViaCache: 'none' })
+    .then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          // If a new version installed while an old one is active, force activation
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+    })
+    .catch(console.warn);
+
+  // ✅ SAFE RELOAD: Only trigger when the active controller actually changes
+  let isFirstLoad = true;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (isFirstLoad) { isFirstLoad = false; return; } // Skip initial registration
+    window.location.reload();
+  });
 }
 
 // script.js - Add at the bottom

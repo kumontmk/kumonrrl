@@ -1,8 +1,8 @@
-// sw.js - Service Worker for Kumon RRL Library
-// ⚠️ CHANGE THIS VERSION NUMBER EVERY TIME YOU UPDATE THE SITE ⬇️
-const CACHE_VERSION = '4.3.2'; // 👈 INCREMENT THIS ON EVERY DEPLOY
-const CACHE_NAME = `kumon-rrl-library-v${CACHE_VERSION}`;
-const urlsToCache = [
+// sw.js
+const CACHE_VERSION = '4.2'; // ⚠️ INCREMENT THIS ON EVERY DEPLOY
+const CACHE_NAME = `kumon-rrl-v${CACHE_VERSION}`;
+
+const STATIC_ASSETS = [
   '/kumonrrl/',
   '/kumonrrl/index.html',
   '/kumonrrl/styles.css',
@@ -13,54 +13,40 @@ const urlsToCache = [
   '/kumonrrl/banner3.jpg'
 ];
 
-// Install Service Worker
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)));
+  self.skipWaiting();
 });
 
-// ✅ FIXED FETCH STRATEGY: Only cache static assets. Never cache Firebase/API calls.
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   
-  // Network-only for external APIs, Firebase, and dynamic requests
-  if (url.origin !== location.origin || url.pathname.includes('/__/')) {
+  // ✅ NETWORK-ONLY for Firebase, APIs, WebSockets, and external requests
+  if (url.origin !== location.origin || 
+      url.pathname.includes('firebase') || 
+      url.pathname.includes('googleapis') || 
+      url.pathname.includes('openlibrary') || 
+      url.pathname.includes('itunes.apple')) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // Cache-first for your own static files
+  // ✅ CACHE-FIRST for your static assets
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
+    caches.match(event.request).then(cached => cached || fetch(event.request))
   );
 });
 
-// Activate Service Worker (Clean up old caches)
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (!cacheWhitelist.includes(cacheName)) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys().then(keys => 
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    )
   );
   self.clients.claim();
 });
 
-// ✅ NEW: Allow client to skip waiting immediately
+// ✅ CROSS-BROWSER SKIP_WAITING LISTENER
 self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
-

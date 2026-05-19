@@ -770,3 +770,19 @@ function registerAndAutoUpdateSW() {
       .catch(err => console.error('SW registration failed:', err));
   }
 }
+// script.js - Add at the bottom
+document.addEventListener('keydown', (e) => {
+  // Ctrl+F (Windows/Linux) or Cmd+F (Mac)
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+    e.preventDefault(); // Prevents browser's default find-in-page bar
+    const activeTag = document.activeElement?.tagName;
+    // Only trigger if user isn't already typing in a form field
+    if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) {
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select(); // Highlights existing text for instant overwriting
+      }
+    }
+  }
+});

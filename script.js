@@ -715,6 +715,7 @@ return `
 function initApp() {
 if (checkSession()) { setAdminMode(true); showToast('✅ Admin session restored', 'info'); } else { setAdminMode(false); }
 startRealtimeSync(); initCarousel();
+registerAndAutoUpdateSW();
 window.history.pushState(null, null, window.location.href);
 window.addEventListener('popstate', function () { if (confirm('Are you sure you want to exit?')) { window.history.back(); } else { window.history.pushState(null, null, window.location.href); } });
 }
@@ -746,3 +747,26 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
+
+// script.js - Add as a new function
+function registerAndAutoUpdateSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/kumonrrl/sw.js')
+      .then(registration => {
+        // Listen for a new service worker version
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            // If a new SW is installed and an old one is controlling the page
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Force immediate activation
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
+              // Reload page to apply new cache/assets
+              setTimeout(() => window.location.reload(), 1000);
+            }
+          });
+        });
+      })
+      .catch(err => console.error('SW registration failed:', err));
+  }
+}

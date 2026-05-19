@@ -709,67 +709,115 @@ return `
   </div>`;
 }).join('');
 }
-
 // ═══════════════════════════════════════════════════════════
 // SWIPE NAVIGATION FOR DETAIL MODAL
 // ═══════════════════════════════════════════════════════════
-let touchStartX = 0;
-let touchStartY = 0;
-const SWIPE_THRESHOLD = 50;
+let touchStartX = 0, touchStartY = 0, currentX = 0, isDragging = false;
+const SWIPE_THRESHOLD = 80;
+const MAX_DRAG = 250;
 
 function initSwipeNavigation() {
     const modal = document.getElementById('detailModal');
     if (!modal) return;
-
-    modal.addEventListener('touchstart', (e) => {
-        if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
-        touchStartX = e.changedTouches[0].screenX;
-        touchStartY = e.changedTouches[0].screenY;
-    }, { passive: true });
-
-    modal.addEventListener('touchend', (e) => {
-        if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
-        const touchEndX = e.changedTouches[0].screenX;
-        const touchEndY = e.changedTouches[0].screenY;
-        const deltaX = touchStartX - touchEndX;
-        const deltaY = touchStartY - touchEndY;
-
-        if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
-            navigateBookModal(deltaX > 0 ? 1 : -1);
-        }
-    }, { passive: true });
+    modal.addEventListener('touchstart', handleSwipeStart, { passive: true });
+    modal.addEventListener('touchmove', handleSwipeMove, { passive: false });
+    modal.addEventListener('touchend', handleSwipeEnd, { passive: true });
 }
 
-function navigateBookModal(direction) {
+function handleSwipeStart(e) {
+    if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+    isDragging = true;
+    currentX = 0;
+    const content = document.querySelector('.detail-content');
+    if (content) content.style.transition = 'none';
+}
+
+function handleSwipeMove(e) {
+    if (!isDragging) return;
+    if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
+
+    const touchX = e.changedTouches[0].screenX;
+    const touchY = e.changedTouches[0].screenY;
+    const deltaX = touchX - touchStartX;
+    const deltaY = touchY - touchStartY;
+
+    // Only track & block scroll on clear horizontal movement
+    if (Math.abs(deltaX) > 10 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        e.preventDefault();
+        currentX = deltaX;
+        const progress = Math.min(Math.abs(deltaX) / MAX_DRAG, 1);
+        const rotation = (deltaX / MAX_DRAG) * 15;
+        const scale = 1 - (progress * 0.05);
+        const opacity = 1 - (progress * 0.3);
+
+        const content = document.querySelector('.detail-content');
+        if (content) {
+            content.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg) scale(${scale})`;
+            content.style.opacity = opacity;
+        }
+    }
+}
+
+function handleSwipeEnd(e) {
+    if (!isDragging) return;
+    isDragging = false;
     const content = document.querySelector('.detail-content');
     if (!content) return;
 
-    const outDir = direction > 0 ? 'left' : 'right';
-    const inDir = direction > 0 ? 'right' : 'left';
+    content.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease, scale 0.35s ease';
 
-    content.classList.add(`swipe-${outDir}-out`, 'swiping-out');
+    if (Math.abs(currentX) > SWIPE_THRESHOLD) {
+        const direction = currentX > 0 ? 1 : -1;
+        completeSwipe(direction, content);
+    } else {
+        // Spring snap back to center
+        content.style.transform = 'translateX(0) rotate(0) scale(1)';
+        content.style.opacity = '1';
+    }
+}
+
+function completeSwipe(direction, content) {
+    const flyOutX = direction * (window.innerWidth + 100);
+    content.style.transform = `translateX(${flyOutX}px) rotate(${direction * 20}deg) scale(0.9)`;
+    content.style.opacity = '0';
 
     setTimeout(() => {
-        const filtered = getFilteredAndSortedBooks();
-        const currentIndex = filtered.findIndex(b => b.id === selectedBookId);
-        let newIndex = currentIndex + direction;
+        navigateBookModal(direction, content);
+    }, 250);
+}
 
-        if (newIndex < 0 || newIndex >= filtered.length) {
-            content.classList.remove(`swipe-${outDir}-out`, 'swiping-out');
-            showToast(direction > 0 ? '📖 Last book in list' : '📖 First book in list', 'info');
-            return;
-        }
+function navigateBookModal(direction, content) {
+    const filtered = getFilteredAndSortedBooks();
+    const currentIndex = filtered.findIndex(b => b.id === selectedBookId);
+    let newIndex = currentIndex + direction;
 
-        openBookDetail(filtered[newIndex].id);
+    if (newIndex < 0 || newIndex >= filtered.length) {
+        content.style.transform = 'translateX(0) rotate(0) scale(1)';
+        content.style.opacity = '1';
+        showToast(direction > 0 ? '📖 Last book in list' : '📖 First book in list', 'info');
+        return;
+    }
 
-        content.classList.remove(`swipe-${outDir}-out`);
-        content.classList.add(`swipe-${inDir}-in`);
-        void content.offsetWidth; // Force reflow
+    openBookDetail(filtered[newIndex].id);
 
-        requestAnimationFrame(() => {
-            content.classList.remove(`swipe-${inDir}-in`, 'swiping-out');
-        });
-    }, 180);
+    // Start off-screen on opposite side
+    const startX = -direction * (window.innerWidth * 0.4);
+    content.style.transform = `translateX(${startX}px) rotate(${direction * -10}deg) scale(0.95)`;
+    content.style.opacity = '0.3';
+    void content.offsetWidth; // Force reflow
+
+    requestAnimationFrame(() => {
+        content.style.transform = 'translateX(0) rotate(0) scale(1)';
+        content.style.opacity = '1';
+    });
+
+    // Clean up inline styles after transition
+    content.addEventListener('transitionend', () => {
+        content.style.transform = '';
+        content.style.opacity = '';
+    }, { once: true });
 }
 // ═══════════════════════════════════════════════════════════
 // INITIALIZATION

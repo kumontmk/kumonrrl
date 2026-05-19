@@ -736,28 +736,43 @@ function initSwipeNavigation() {
         const deltaY = touchStartY - touchEndY;
 
         // Only trigger on clear horizontal swipes
-        if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
-            navigateBookModal(deltaX > 0 ? 1 : -1);
-        }
-    }, { passive: true });
-}
-
 function navigateBookModal(direction) {
-    const filtered = getFilteredAndSortedBooks();
-    const currentIndex = filtered.findIndex(b => b.id === selectedBookId);
-    if (currentIndex === -1) return;
+    const content = document.querySelector('.detail-content');
+    if (!content) return;
 
-    let newIndex = currentIndex + direction;
+    const outDir = direction > 0 ? 'left' : 'right';
+    const inDir = direction > 0 ? 'right' : 'left';
 
-    // Stop at boundaries instead of wrapping (cleaner UX for libraries)
-    if (newIndex < 0 || newIndex >= filtered.length) {
-        showToast(direction > 0 ? '📖 Last book in list' : '📖 First book in list', 'info');
-        return;
-    }
+    // 1. Animate out (slide + fade)
+    content.classList.add(`swipe-${outDir}-out`, 'swiping-out');
 
-    openBookDetail(filtered[newIndex].id);
+    // 2. Update content after slide-out completes
+    setTimeout(() => {
+        const filtered = getFilteredAndSortedBooks();
+        const currentIndex = filtered.findIndex(b => b.id === selectedBookId);
+        let newIndex = currentIndex + direction;
+
+        // Boundary check
+        if (newIndex < 0 || newIndex >= filtered.length) {
+            content.classList.remove(`swipe-${outDir}-out`, 'swiping-out');
+            showToast(direction > 0 ? '📖 Last book in list' : '📖 First book in list', 'info');
+            return;
+        }
+
+        // Update modal content
+        openBookDetail(filtered[newIndex].id);
+
+        // 3. Set entrance state (start from opposite side)
+        content.classList.remove(`swipe-${outDir}-out`);
+        content.classList.add(`swipe-${inDir}-in`);
+        void content.offsetWidth; // Force browser reflow for transition trigger
+
+        // 4. Animate in to center
+        requestAnimationFrame(() => {
+            content.classList.remove(`swipe-${inDir}-in`, 'swiping-out');
+        });
+    }, 180);
 }
-
 // ═══════════════════════════════════════════════════════════
 // INITIALIZATION
 // ═══════════════════════════════════════════════════════════

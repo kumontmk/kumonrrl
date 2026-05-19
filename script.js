@@ -712,9 +712,13 @@ return `
 // ═══════════════════════════════════════════════════════════
 // SWIPE NAVIGATION FOR DETAIL MODAL
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// TINDER-LIKE SEAMLESS SWIPE NAVIGATION (REFINED)
+// ═══════════════════════════════════════════════════════════
 let touchStartX = 0, touchStartY = 0, currentX = 0, isDragging = false;
-const SWIPE_THRESHOLD = 80;
-const MAX_DRAG = 250;
+const SWIPE_THRESHOLD = 70;
+const MAX_DRAG = 240;
+let peekCard = null;
 
 function initSwipeNavigation() {
     const modal = document.getElementById('detailModal');
@@ -731,7 +735,11 @@ function handleSwipeStart(e) {
     isDragging = true;
     currentX = 0;
     const content = document.querySelector('.detail-content');
-    if (content) content.style.transition = 'none';
+    if (content) {
+        content.style.transition = 'none';
+        content.style.transform = 'translateX(0) rotate(0) scale(1)';
+        content.style.opacity = '1';
+    }
 }
 
 function handleSwipeMove(e) {
@@ -743,19 +751,27 @@ function handleSwipeMove(e) {
     const deltaX = touchX - touchStartX;
     const deltaY = touchY - touchStartY;
 
-    // Only track & block scroll on clear horizontal movement
-    if (Math.abs(deltaX) > 10 && Math.abs(deltaX) > Math.abs(deltaY)) {
+    // Only track clear horizontal movement
+    if (Math.abs(deltaX) > 12 && Math.abs(deltaX) > Math.abs(deltaY)) {
         e.preventDefault();
         currentX = deltaX;
-        const progress = Math.min(Math.abs(deltaX) / MAX_DRAG, 1);
-        const rotation = (deltaX / MAX_DRAG) * 15;
-        const scale = 1 - (progress * 0.05);
-        const opacity = 1 - (progress * 0.3);
+        const direction = deltaX < 0 ? 1 : -1; // Swipe Left=Next, Swipe Right=Prev
+        const progress = Math.min(Math.abs(currentX) / MAX_DRAG, 1);
+        
+        // Physics: rotation, scale, fade
+        const rotation = (currentX / MAX_DRAG) * 18;
+        const scale = 1 - (progress * 0.06);
+        const opacity = 1 - (progress * 0.4);
 
         const content = document.querySelector('.detail-content');
         if (content) {
-            content.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg) scale(${scale})`;
+            content.style.transform = `translateX(${currentX}px) rotate(${rotation}deg) scale(${scale})`;
             content.style.opacity = opacity;
+        }
+
+        // Create peek card when threshold crossed
+        if (!peekCard && Math.abs(currentX) > SWIPE_THRESHOLD) {
+            createPeekCard(direction);
         }
     }
 }
@@ -766,58 +782,75 @@ function handleSwipeEnd(e) {
     const content = document.querySelector('.detail-content');
     if (!content) return;
 
-    content.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease, scale 0.35s ease';
+    content.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease';
+    const direction = currentX < 0 ? 1 : -1;
 
-    if (Math.abs(currentX) > SWIPE_THRESHOLD) {
-        const direction = currentX > 0 ? 1 : -1;
-        completeSwipe(direction, content);
+    if (Math.abs(currentX) > SWIPE_THRESHOLD && peekCard) {
+        // Complete swipe
+        const flyOut = direction * (window.innerWidth + 100);
+        content.style.transform = `translateX(${flyOut}px) rotate(${direction * 20}deg) scale(0.85)`;
+        content.style.opacity = '0';
+
+        // Promote peek card to main
+        peekCard.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease';
+        peekCard.style.transform = 'translateX(0) rotate(0) scale(1)';
+        peekCard.style.opacity = '1';
+
+        setTimeout(() => {
+            if (peekCard && peekCard.parentNode) {
+                content.replaceWith(peekCard);
+                peekCard = null;
+                // Clean inline styles for future swipes
+                const newContent = document.querySelector('.detail-content');
+                if (newContent) {
+                    newContent.style.transform = '';
+                    newContent.style.opacity = '';
+                    newContent.style.transition = '';
+                }
+            }
+        }, 250);
     } else {
-        // Spring snap back to center
+        // Snap back
         content.style.transform = 'translateX(0) rotate(0) scale(1)';
         content.style.opacity = '1';
+        removePeekCard();
     }
 }
 
-function completeSwipe(direction, content) {
-    const flyOutX = direction * (window.innerWidth + 100);
-    content.style.transform = `translateX(${flyOutX}px) rotate(${direction * 20}deg) scale(0.9)`;
-    content.style.opacity = '0';
-
-    setTimeout(() => {
-        navigateBookModal(direction, content);
-    }, 250);
-}
-
-function navigateBookModal(direction, content) {
+function createPeekCard(direction) {
     const filtered = getFilteredAndSortedBooks();
     const currentIndex = filtered.findIndex(b => b.id === selectedBookId);
     let newIndex = currentIndex + direction;
+    if (newIndex < 0 || newIndex >= filtered.length) return; // Boundary check
 
-    if (newIndex < 0 || newIndex >= filtered.length) {
-        content.style.transform = 'translateX(0) rotate(0) scale(1)';
-        content.style.opacity = '1';
-        showToast(direction > 0 ? '📖 Last book in list' : '📖 First book in list', 'info');
-        return;
-    }
-
+    // Temporarily open next book to clone its structure
     openBookDetail(filtered[newIndex].id);
+    const tempContent = document.querySelector('.detail-content');
+    if (!tempContent) return;
 
-    // Start off-screen on opposite side
-    const startX = -direction * (window.innerWidth * 0.4);
-    content.style.transform = `translateX(${startX}px) rotate(${direction * -10}deg) scale(0.95)`;
-    content.style.opacity = '0.3';
-    void content.offsetWidth; // Force reflow
+    // Clone it for the peek effect
+    peekCard = tempContent.cloneNode(true);
+    peekCard.classList.add('peek-card');
+    peekCard.style.position = 'absolute';
+    peekCard.style.top = '0';
+    peekCard.style.left = '0';
+    peekCard.style.right = '0';
+    peekCard.style.bottom = '0';
+    peekCard.style.background = 'var(--bg-card)';
+    peekCard.style.transform = `translateX(${direction * window.innerWidth}px) scale(0.9)`;
+    peekCard.style.opacity = '0.3';
+    peekCard.style.zIndex = '-1';
+    peekCard.style.pointerEvents = 'none';
+    peekCard.style.transition = 'none';
+    
+    document.querySelector('.detail-modal').appendChild(peekCard);
+}
 
-    requestAnimationFrame(() => {
-        content.style.transform = 'translateX(0) rotate(0) scale(1)';
-        content.style.opacity = '1';
-    });
-
-    // Clean up inline styles after transition
-    content.addEventListener('transitionend', () => {
-        content.style.transform = '';
-        content.style.opacity = '';
-    }, { once: true });
+function removePeekCard() {
+    if (peekCard && peekCard.parentNode) {
+        peekCard.parentNode.removeChild(peekCard);
+        peekCard = null;
+    }
 }
 // ═══════════════════════════════════════════════════════════
 // INITIALIZATION

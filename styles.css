@@ -392,10 +392,7 @@ body.admin-mode .btn-fab.admin-only { display: flex !important; }
 }
 
 /* Swipe Animation Support */
-.detail-content {
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform, opacity;
-}
+.detail-content { transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), opacity 0.2s cubic-bezier(0.4,0,0.2,1); will-change: transform, opacity; }
 .detail-content.swiping-out { opacity: 0.5; }
 .detail-content.swipe-left-out { transform: translateX(-25px); }
 .detail-content.swipe-right-out { transform: translateX(25px); }

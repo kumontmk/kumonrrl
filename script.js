@@ -181,25 +181,33 @@ return null;
 }
 // ✅ UPDATED: Open Library fetcher now returns description
 async function fetchFromOpenLibrary(isbn) {
-try {
-const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
-const json = await res.json();
-const key = `ISBN:${isbn}`;
-if (json[key]) {
-const info = json[key];
-// Handle description as string or object
-const rawDesc = typeof info.description === 'string' ? info.description : (info.description?.value || '');
-const cleanDesc = rawDesc.replace(/<[^>]*>/g, '').trim();
-return {
-title: info.title || '',
-authors: info.authors?.map(a => a.name) || [],
-categories: info.subjects || [],
-thumbnail: (info.cover?.large || info.cover?.medium || info.cover?.small) || null,
-description: cleanDesc
-};
-}
-} catch (e) { console.warn('Open Library API failed', e); }
-return null;
+  try {
+    const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+    const json = await res.json();
+    const key = `ISBN:${isbn}`;
+    if (json[key]) {
+      const info = json[key];
+      // ✅ Try description first, then fall back to excerpts
+      let rawDesc = '';
+      if (typeof info.description === 'string') {
+        rawDesc = info.description;
+      } else if (info.description?.value) {
+        rawDesc = info.description.value;
+      } else if (info.excerpts?.[0]?.text) {
+        // ✅ FALLBACK: Use first excerpt if no description
+        rawDesc = info.excerpts[0].text;
+      }
+      const cleanDesc = rawDesc.replace(/<[^>]*>/g, '').trim();
+      return {
+        title: info.title || '',
+        authors: info.authors?.map(a => a.name) || [],
+        categories: info.subjects || [],
+        thumbnail: (info.cover?.large || info.cover?.medium || info.cover?.small) || null,
+        description: cleanDesc
+      };
+    }
+  } catch (e) { console.warn('Open Library API failed', e); }
+  return null;
 }
 // ✅ UPDATED: fillBookForm now stores description
 function fillBookForm(data) {

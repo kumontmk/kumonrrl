@@ -747,29 +747,35 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
-
-// script.js - Add as a new function
+//update cache
 function registerAndAutoUpdateSW() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/kumonrrl/sw.js')
       .then(registration => {
-        // Listen for a new service worker version
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           newWorker.addEventListener('statechange', () => {
-            // If a new SW is installed and an old one is controlling the page
+            // Only skip waiting if an old SW is already controlling the page
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // Force immediate activation
               newWorker.postMessage({ type: 'SKIP_WAITING' });
-              // Reload page to apply new cache/assets
-              setTimeout(() => window.location.reload(), 1000);
             }
           });
         });
       })
-      .catch(err => console.error('SW registration failed:', err));
+      .catch(err => console.warn('SW registration skipped:', err));
+
+    // ✅ OFFICIAL SAFER PATTERN: Reload only when the active controller actually changes
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // Add a small delay to let Firebase/Assets initialize in background if needed
+      if (document.readyState === 'complete') {
+        window.location.reload();
+      } else {
+        window.addEventListener('load', () => window.location.reload(), { once: true });
+      }
+    });
   }
 }
+
 // script.js - Add at the bottom
 document.addEventListener('keydown', (e) => {
   // Ctrl+F (Windows/Linux) or Cmd+F (Mac)

@@ -25,6 +25,8 @@ let hasUnsavedChanges = false;
 let selectedRating = 0;
 let html5QrCode = null;
 let isScanning = false;
+let pendingBookDescription = ''; // ✅ NEW: Temp storage for fetched description
+
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
 // ═══════════════════════════════════════════════════════════
@@ -156,22 +158,28 @@ data = await fetchFromOpenLibrary(isbn);
 if (data) { fillBookForm(data); showToast('✅ Found via Open Library', 'success'); return; }
 showToast('📖 Book not found. Please fill in details manually.', 'info');
 }
+// ✅ UPDATED: Google Books fetcher now returns description
 async function fetchFromGoogleBooks(isbn) {
 try {
 const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
 const json = await res.json();
 if (json.totalItems > 0) {
 const info = json.items[0].volumeInfo;
+// Sanitize HTML tags from description
+const rawDesc = info.description || '';
+const cleanDesc = rawDesc.replace(/<[^>]*>/g, '').trim();
 return {
 title: info.title || '',
 authors: info.authors || [],
 categories: info.categories || [],
-thumbnail: (info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail)?.replace('http:', 'https:') || null
+thumbnail: (info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail)?.replace('http:', 'https:') || null,
+description: cleanDesc
 };
 }
 } catch (e) { console.warn('Google Books API failed', e); }
 return null;
 }
+// ✅ UPDATED: Open Library fetcher now returns description
 async function fetchFromOpenLibrary(isbn) {
 try {
 const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
@@ -179,19 +187,25 @@ const json = await res.json();
 const key = `ISBN:${isbn}`;
 if (json[key]) {
 const info = json[key];
+// Handle description as string or object
+const rawDesc = typeof info.description === 'string' ? info.description : (info.description?.value || '');
+const cleanDesc = rawDesc.replace(/<[^>]*>/g, '').trim();
 return {
 title: info.title || '',
 authors: info.authors?.map(a => a.name) || [],
 categories: info.subjects || [],
-thumbnail: (info.cover?.large || info.cover?.medium || info.cover?.small) || null
+thumbnail: (info.cover?.large || info.cover?.medium || info.cover?.small) || null,
+description: cleanDesc
 };
 }
 } catch (e) { console.warn('Open Library API failed', e); }
 return null;
 }
+// ✅ UPDATED: fillBookForm now stores description
 function fillBookForm(data) {
 document.getElementById('newBookTitle').value = data.title;
 document.getElementById('newBookAuthor').value = data.authors.join(', ');
+pendingBookDescription = data.description || ''; // ✅ Store fetched description
 let genre = '';
 if (data.categories && data.categories.length > 0) {
 const cat = data.categories[0];
@@ -482,6 +496,7 @@ setUnsavedChanges(true);
 function closeEditBookModal() { document.getElementById('editBookModal').classList.remove('show'); setUnsavedChanges(false); }
 function openRRLInfoModal() { document.getElementById('rrlInfoModal').classList.add('show'); document.body.style.overflow = 'hidden'; }
 function closeRRLInfoModal() { document.getElementById('rrlInfoModal').classList.remove('show'); document.body.style.overflow = ''; }
+// ✅ UPDATED: openBookDetail now displays description
 function openBookDetail(bookId) {
 const book = books.find(b => b.id === bookId);
 if (!book) return;
@@ -513,6 +528,16 @@ document.querySelectorAll('#detailStars .star-btn').forEach(btn => btn.classList
 const avg = getAverageRating(book.ratings);
 const count = (book.ratings || []).length;
 document.getElementById('detailRatingSummary').textContent = count > 0 ? `Overall: ⭐ ${avg} (${count} ratings)` : 'No ratings yet';
+// ✅ Display description if available
+const descEl = document.getElementById('detailDescription');
+if (descEl) {
+if (book.description && book.description.trim()) {
+descEl.textContent = book.description;
+descEl.style.display = 'block';
+} else {
+descEl.style.display = 'none';
+}
+}
 document.getElementById('detailReturnBtn').style.setProperty('display', isBorrowed ? 'flex' : 'none', 'important');
 document.getElementById('detailBorrowBtn').style.setProperty('display', isBorrowed ? 'none' : 'flex', 'important');
 document.getElementById('detailModal').classList.add('show');
@@ -593,18 +618,27 @@ if (file) {
 if (file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; warningEl.classList.add('show'); }
 coverImage = await compressImage(file, 300, 0.2);
 }
-await addBookToSystem(title, author, genre, location, rrlLevel, coverImage);
+// ✅ Pass pendingBookDescription to addBookToSystem
+await addBookToSystem(title, author, genre, location, rrlLevel, coverImage, pendingBookDescription);
 closeAddBookModal();
 } catch (error) {
 console.error('Image error:', error);
 showToast(`Image error. Adding without image.`, 'error');
-await addBookToSystem(title, author, genre, location, rrlLevel, null);
+// ✅ Also pass description on fallback
+await addBookToSystem(title, author, genre, location, rrlLevel, null, pendingBookDescription);
 closeAddBookModal();
-} finally { btn.disabled = false; btn.textContent = 'Save Book'; warningEl.classList.remove('show'); }
+} finally { 
+btn.disabled = false; 
+btn.textContent = 'Save Book'; 
+warningEl.classList.remove('show');
+pendingBookDescription = ''; // ✅ Clear temp storage
 }
-async function addBookToSystem(title, author, genre, location, rrlLevel, coverImage) {
+}
+// ✅ UPDATED: addBookToSystem accepts description parameter
+async function addBookToSystem(title, author, genre, location, rrlLevel, coverImage, description = '') {
 const newBook = {
-id: nextId++, title, author, genre: genre || 'Uncategorized', location, rrlLevel: rrlLevel || 'N/A', coverImage, status: 'available',
+id: nextId++, title, author, genre: genre || 'Uncategorized', location, rrlLevel: rrlLevel || 'N/A', 
+coverImage, description: description || '', status: 'available',
 ratings: [], borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null, borrowerPhone: null, borrowerCenter: null
 };
 books.unshift(newBook);
@@ -632,6 +666,7 @@ if (file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.s
 coverImage = await compressImage(file, 300, 0.2);
 }
 book.title = title; book.author = author; book.genre = genre || 'Uncategorized'; book.location = location; book.rrlLevel = rrlLevel || 'N/A'; book.coverImage = coverImage;
+// Note: description is not editable via UI (system-generated only)
 if (await saveBooksToFirebase()) { closeEditBookModal(); renderBooks(); openBookDetail(id); showToast(`"${title}" updated successfully`, 'success'); setUnsavedChanges(false); }
 } catch (error) { console.error('Edit error:', error); showToast(`Error updating book: ${error.message}`, 'error'); }
 finally { btn.disabled = false; btn.textContent = 'Update Book'; warningEl.classList.remove('show'); }

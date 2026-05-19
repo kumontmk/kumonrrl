@@ -715,7 +715,6 @@ return `
 function initApp() {
 if (checkSession()) { setAdminMode(true); showToast('✅ Admin session restored', 'info'); } else { setAdminMode(false); }
 startRealtimeSync(); initCarousel();
-registerAndAutoUpdateSW();
 window.history.pushState(null, null, window.location.href);
 window.addEventListener('popstate', function () { if (confirm('Are you sure you want to exit?')) { window.history.back(); } else { window.history.pushState(null, null, window.location.href); } });
 }
@@ -735,7 +734,7 @@ else { warningEl.classList.remove('show'); }
 ['loginOverlay','borrowModal','addBookModal','editBookModal','visitorBorrowModal','detailModal','rrlInfoModal'].forEach(id => document.getElementById(id)?.addEventListener('click', e => { if (e.target.id === id) { if(id==='loginOverlay')closeLoginModal(); if(id==='borrowModal')closeBorrowModal(); if(id==='addBookModal')closeAddBookModal(); if(id==='editBookModal')closeEditBookModal(); if(id==='visitorBorrowModal')closeVisitorBorrowModal(); if(id==='detailModal')closeDetailModal(); if(id==='rrlInfoModal')closeRRLInfoModal(); }}));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDetailModal(); closeRRLInfoModal(); closeMobileMenu(); } });
 
-// script.js - Add at the bottom
+// script.js - ctrl + b 
 document.addEventListener('keydown', (e) => {
   // Ctrl+B (Windows/Linux) or Cmd+B (Mac)
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
@@ -747,33 +746,8 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
-//update cache
-function registerServiceWorker() {
-  if (!('serviceWorker' in navigator)) return;
 
-  navigator.serviceWorker.register('/kumonrrl/sw.js', { updateViaCache: 'none' })
-    .then(reg => {
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        newWorker.addEventListener('statechange', () => {
-          // If a new version installed while an old one is active, force activation
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            newWorker.postMessage({ type: 'SKIP_WAITING' });
-          }
-        });
-      });
-    })
-    .catch(console.warn);
-
-  // ✅ SAFE RELOAD: Only trigger when the active controller actually changes
-  let isFirstLoad = true;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (isFirstLoad) { isFirstLoad = false; return; } // Skip initial registration
-    window.location.reload();
-  });
-}
-
-// script.js - Add at the bottom
+//Search ctrl + f
 document.addEventListener('keydown', (e) => {
   // Ctrl+F (Windows/Linux) or Cmd+F (Mac)
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {

@@ -510,6 +510,11 @@ function openBookDetail(bookId) {
 const book = books.find(b => b.id === bookId);
 if (!book) return;
 selectedBookId = bookId;
+  // ✅ Hide arrows if only 1 book is visible
+  const filtered = getFilteredAndSortedBooks();
+  document.querySelectorAll('.nav-arrow').forEach(btn => 
+    btn.style.display = filtered.length <= 1 ? 'none' : 'flex'
+  );
 const coverEl = document.getElementById('detailCoverFull');
 coverEl.innerHTML = book.coverImage ? `<img src="${book.coverImage}" alt="${escapeHtml(book.title)}">` : '<span class="placeholder-large">📘</span>';
 document.getElementById('detailTitle').textContent = book.title;

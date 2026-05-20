@@ -442,3 +442,43 @@ body.admin-mode .btn-fab.admin-only { display: flex !important; }
     color: var(--text-muted);
 }
 
+/* ✅ Navigation Arrows for Book Detail Modal */
+.nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  z-index: 20;
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(4px);
+}
+.nav-arrow:hover {
+  background: var(--text-white);
+  box-shadow: var(--shadow-lg);
+  color: var(--primary);
+  transform: translateY(-50%) scale(1.1);
+}
+.prev-book { left: 1.25rem; }
+.next-book { right: 1.25rem; }
+
+@media (max-width: 768px) {
+  .nav-arrow {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.7);
+  }
+  .prev-book { left: 0.5rem; }
+  .next-book { right: 0.5rem; }
+}

@@ -451,7 +451,7 @@ body.admin-mode .btn-fab.admin-only { display: flex !important; }
   height: 44px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.55); /* ✅ Updated: Slightly more transparent */
   color: var(--text-primary);
   font-size: 1.25rem;
   cursor: pointer;

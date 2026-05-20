@@ -418,3 +418,27 @@ body.admin-mode .btn-fab.admin-only { display: flex !important; }
   display: none; /* Hidden by default, shown via JS */
 }
 
+/* ✅ Description Textarea Styling */
+.modal-form textarea {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    transition: var(--transition);
+    font-family: var(--font-family);
+    resize: vertical;
+    min-height: 90px;
+    width: 100%;
+}
+.modal-form textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: var(--bg-card);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+.modal-form textarea::placeholder {
+    color: var(--text-muted);
+}
+

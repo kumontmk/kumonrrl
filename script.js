@@ -2,14 +2,14 @@
 // Kumon RRL Online Library - Firebase Realtime Version
 // ═══════════════════════════════════════════════════════════
 const firebaseConfig = {
-apiKey: "AIzaSyBo0DXOWKztyMXUXfPhNyoFo9P_Fu-MEn4",
-authDomain: "kumon-library.firebaseapp.com",
-databaseURL: "https://kumon-library-default-rtdb.asia-southeast1.firebasedatabase.app",
-projectId: "kumon-library",
-storageBucket: "kumon-library.firebasestorage.app",
-messagingSenderId: "479472870788",
-appId: "1:479472870788:web:624ae89b2ce853beac29d1",
-measurementId: "G-V4BJ8FP9QR"
+  apiKey: "AIzaSyBo0DXOWKztyMXUXfPhNyoFo9P_Fu-MEn4",
+  authDomain: "kumon-library.firebaseapp.com",
+  databaseURL: "https://kumon-library-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "kumon-library",
+  storageBucket: "kumon-library.firebasestorage.app",
+  messagingSenderId: "479472870788",
+  appId: "1:479472870788:web:624ae89b2ce853beac29d1",
+  measurementId: "G-V4BJ8FP9QR"
 };
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
@@ -26,160 +26,175 @@ let selectedRating = 0;
 let html5QrCode = null;
 let isScanning = false;
 let pendingBookDescription = ''; // ✅ NEW: Temp storage for fetched description
+let isInitialLoad = true; // ✅ NEW: Flag to prevent saving during initial load
+let initialLoadComplete = false; // ✅ NEW: Track if first sync completed
 
 // ═══════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
 // ═══════════════════════════════════════════════════════════
 function escapeHtml(text) {
-if (!text) return '';
-const div = document.createElement('div');
-div.textContent = text;
-return div.innerHTML;
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
+
 async function compressImage(file, maxWidth = 300, quality = 0.2) {
-return new Promise((resolve, reject) => {
-const canvas = document.createElement('canvas');
-const ctx = canvas.getContext('2d');
-const img = new Image();
-img.onload = () => {
-let width = img.width, height = img.height;
-if (width > maxWidth) { height = Math.round((maxWidth / width) * height); width = maxWidth; }
-canvas.width = width; canvas.height = height;
-ctx.drawImage(img, 0, 0, width, height);
-const compressed = canvas.toDataURL('image/jpeg', quality);
-URL.revokeObjectURL(img.src);
-resolve(compressed);
-};
-img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('Image load failed')); };
-img.src = URL.createObjectURL(file);
-});
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      let width = img.width, height = img.height;
+      if (width > maxWidth) { height = Math.round((maxWidth / width) * height); width = maxWidth; }
+      canvas.width = width; canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      const compressed = canvas.toDataURL('image/jpeg', quality);
+      URL.revokeObjectURL(img.src);
+      resolve(compressed);
+    };
+    img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('Image load failed')); };
+    img.src = URL.createObjectURL(file);
+  });
 }
+
 function saveSession() {
-localStorage.setItem(SESSION_KEY, JSON.stringify({ isAdmin: true, loginTime: new Date().toISOString() }));
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ isAdmin: true, loginTime: new Date().toISOString() }));
 }
+
 function checkSession() {
-try { return JSON.parse(localStorage.getItem(SESSION_KEY))?.isAdmin === true; }
-catch { return false; }
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY))?.isAdmin === true; }
+  catch { return false; }
 }
+
 function clearSession() { localStorage.removeItem(SESSION_KEY); }
+
 function setAdminMode(active) {
-isAdmin = active;
-document.body.classList.toggle('admin-mode', active);
-if (active) hasUnsavedChanges = false;
-const indicators = ['modeIndicator', 'mobileModeIndicator'];
-indicators.forEach(id => {
-const el = document.getElementById(id);
-if (el) {
-el.textContent = active ? '🔐 Admin Mode' : '👥 Public View';
-el.classList.toggle('admin', active);
+  isAdmin = active;
+  document.body.classList.toggle('admin-mode', active);
+  if (active) hasUnsavedChanges = false;
+  const indicators = ['modeIndicator', 'mobileModeIndicator'];
+  indicators.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = active ? '🔐 Admin Mode' : '👥 Public View';
+      el.classList.toggle('admin', active);
+    }
+  });
+  updateUnsavedIndicator();
+  updateDetailModalVisibility();
 }
-});
-updateUnsavedIndicator();
-updateDetailModalVisibility();
-}
+
 function updateUnsavedIndicator() {
-const show = isAdmin && hasUnsavedChanges;
-['unsavedIndicator', 'mobileUnsavedIndicator'].forEach(id => {
-const el = document.getElementById(id);
-if (el) el.classList.toggle('show', show);
-});
+  const show = isAdmin && hasUnsavedChanges;
+  ['unsavedIndicator', 'mobileUnsavedIndicator'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('show', show);
+  });
 }
+
 function setUnsavedChanges(state) {
-hasUnsavedChanges = state;
-updateUnsavedIndicator();
+  hasUnsavedChanges = state;
+  updateUnsavedIndicator();
 }
+
 function updateDetailModalVisibility() {
-if (selectedBookId) openBookDetail(selectedBookId);
+  if (selectedBookId) openBookDetail(selectedBookId);
 }
+
 function logout() {
-clearSession();
-setAdminMode(false);
-closeMobileMenu();
-renderBooks();
-updateDetailModalVisibility();
-showToast('Logged out - now in Public View', 'info');
+  clearSession();
+  setAdminMode(false);
+  closeMobileMenu();
+  renderBooks();
+  updateDetailModalVisibility();
+  showToast('Logged out - now in Public View', 'info');
 }
+
 // ═══════════════════════════════════════════════════════════
 // BARCODE SCANNER & COVER SEARCH
 // ═══════════════════════════════════════════════════════════
 async function startBarcodeScanner() {
-const readerDiv = document.getElementById('barcode-reader');
-const stopBtn = document.getElementById('stopScanBtn');
-const startBtn = document.getElementById('startScanBtn');
-if (isScanning) return;
-readerDiv.style.display = 'block';
-stopBtn.style.display = 'inline-block';
-startBtn.style.display = 'none';
-try {
-html5QrCode = new Html5Qrcode("barcode-reader");
-await html5QrCode.start(
-{ facingMode: "environment" },
-{ fps: 10, qrbox: { width: 250, height: 150 } },
-onScanSuccess,
-onScanFailure
-);
-isScanning = true;
-showToast('📷 Camera started. Point at ISBN barcode.', 'info');
-} catch (err) {
-console.error("Failed to start scanner", err);
-showToast('❌ Failed to start camera. Check permissions.', 'error');
-stopBarcodeScanner();
+  const readerDiv = document.getElementById('barcode-reader');
+  const stopBtn = document.getElementById('stopScanBtn');
+  const startBtn = document.getElementById('startScanBtn');
+  if (isScanning) return;
+  readerDiv.style.display = 'block';
+  stopBtn.style.display = 'inline-block';
+  startBtn.style.display = 'none';
+  try {
+    html5QrCode = new Html5Qrcode("barcode-reader");
+    await html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 150 } },
+      onScanSuccess,
+      onScanFailure
+    );
+    isScanning = true;
+    showToast('📷 Camera started. Point at ISBN barcode.', 'info');
+  } catch (err) {
+    console.error("Failed to start scanner", err);
+    showToast('❌ Failed to start camera. Check permissions.', 'error');
+    stopBarcodeScanner();
+  }
 }
-}
+
 function stopBarcodeScanner() {
-if (html5QrCode && isScanning) {
-html5QrCode.stop().then(() => {
-html5QrCode.clear();
-html5QrCode = null;
-isScanning = false;
-document.getElementById('barcode-reader').style.display = 'none';
-document.getElementById('stopScanBtn').style.display = 'none';
-document.getElementById('startScanBtn').style.display = 'inline-block';
-}).catch(err => console.error("Failed to stop scanner", err));
+  if (html5QrCode && isScanning) {
+    html5QrCode.stop().then(() => {
+      html5QrCode.clear();
+      html5QrCode = null;
+      isScanning = false;
+      document.getElementById('barcode-reader').style.display = 'none';
+      document.getElementById('stopScanBtn').style.display = 'none';
+      document.getElementById('startScanBtn').style.display = 'inline-block';
+    }).catch(err => console.error("Failed to stop scanner", err));
+  }
 }
-}
+
 function onScanSuccess(decodedText, decodedResult) {
-const match = decodedText.match(/\d{10,13}/);
-const isbn = match ? match[0] : decodedText.replace(/[-\s]/g, '');
-if (isbn.match(/^\d{10,13}$/)) {
-stopBarcodeScanner();
-showToast(`✅ Scanned ISBN: ${isbn}`, 'success');
-fetchBookByISBN(isbn);
-} else {
-showToast('⚠️ Not a valid ISBN barcode', 'error');
+  const match = decodedText.match(/\d{10,13}/);
+  const isbn = match ? match[0] : decodedText.replace(/[-\s]/g, '');
+  if (isbn.match(/^\d{10,13}$/)) {
+    stopBarcodeScanner();
+    showToast(`✅ Scanned ISBN: ${isbn}`, 'success');
+    fetchBookByISBN(isbn);
+  } else {
+    showToast('⚠️ Not a valid ISBN barcode', 'error');
+  }
 }
-}
+
 function onScanFailure(error) { /* Ignore continuous failures */ }
+
 async function fetchBookByISBN(isbn) {
-showToast('🔍 Searching free book databases...', 'info');
-let data = await fetchFromGoogleBooks(isbn);
-if (data) { fillBookForm(data); showToast('✅ Found via Google Books', 'success'); return; }
-data = await fetchFromOpenLibrary(isbn);
-if (data) { fillBookForm(data); showToast('✅ Found via Open Library', 'success'); return; }
-showToast('📖 Book not found. Please fill in details manually.', 'info');
+  showToast('🔍 Searching free book databases...', 'info');
+  let data = await fetchFromGoogleBooks(isbn);
+  if (data) { fillBookForm(data); showToast('✅ Found via Google Books', 'success'); return; }
+  data = await fetchFromOpenLibrary(isbn);
+  if (data) { fillBookForm(data); showToast('✅ Found via Open Library', 'success'); return; }
+  showToast('📖 Book not found. Please fill in details manually.', 'info');
 }
-// ✅ UPDATED: Google Books fetcher now returns description
+
 async function fetchFromGoogleBooks(isbn) {
-try {
-const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
-const json = await res.json();
-if (json.totalItems > 0) {
-const info = json.items[0].volumeInfo;
-// Sanitize HTML tags from description
-const rawDesc = info.description || '';
-const cleanDesc = rawDesc.replace(/<[^>]*>/g, '').trim();
-return {
-title: info.title || '',
-authors: info.authors || [],
-categories: info.categories || [],
-thumbnail: (info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail)?.replace('http:', 'https:') || null,
-description: cleanDesc
-};
+  try {
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    const json = await res.json();
+    if (json.totalItems > 0) {
+      const info = json.items[0].volumeInfo;
+      const rawDesc = info.description || '';
+      const cleanDesc = rawDesc.replace(/<[^>]*>/g, '').trim();
+      return {
+        title: info.title || '',
+        authors: info.authors || [],
+        categories: info.categories || [],
+        thumbnail: (info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail)?.replace('http:', 'https:') || null,
+        description: cleanDesc
+      };
+    }
+  } catch (e) { console.warn('Google Books API failed', e); }
+  return null;
 }
-} catch (e) { console.warn('Google Books API failed', e); }
-return null;
-}
-// ✅ UPDATED: Open Library fetcher now returns description
+
 async function fetchFromOpenLibrary(isbn) {
   try {
     const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
@@ -187,14 +202,12 @@ async function fetchFromOpenLibrary(isbn) {
     const key = `ISBN:${isbn}`;
     if (json[key]) {
       const info = json[key];
-      // ✅ Try description first, then fall back to excerpts
       let rawDesc = '';
       if (typeof info.description === 'string') {
         rawDesc = info.description;
       } else if (info.description?.value) {
         rawDesc = info.description.value;
       } else if (info.excerpts?.[0]?.text) {
-        // ✅ FALLBACK: Use first excerpt if no description
         rawDesc = info.excerpts[0].text;
       }
       const cleanDesc = rawDesc.replace(/<[^>]*>/g, '').trim();
@@ -209,549 +222,587 @@ async function fetchFromOpenLibrary(isbn) {
   } catch (e) { console.warn('Open Library API failed', e); }
   return null;
 }
-// ✅ UPDATED: fillBookForm now stores description
+
 function fillBookForm(data) {
-document.getElementById('newBookTitle').value = data.title;
-document.getElementById('newBookAuthor').value = data.authors.join(', ');
-pendingBookDescription = data.description || ''; // ✅ Store fetched description
-let genre = '';
-if (data.categories && data.categories.length > 0) {
-const cat = data.categories[0];
-genre = typeof cat === 'string' ? cat : (cat.name || cat.title || String(cat));
+  document.getElementById('newBookTitle').value = data.title;
+  document.getElementById('newBookAuthor').value = data.authors.join(', ');
+  pendingBookDescription = data.description || ''; 
+  let genre = '';
+  if (data.categories && data.categories.length > 0) {
+    const cat = data.categories[0];
+    genre = typeof cat === 'string' ? cat : (cat.name || cat.title || String(cat));
+  }
+  document.getElementById('newBookGenre').value = genre;
+  if (data.thumbnail) { fetchAndSetCover(data.thumbnail); }
 }
-document.getElementById('newBookGenre').value = genre;
-if (data.thumbnail) { fetchAndSetCover(data.thumbnail); }
-}
-// ✅ ENHANCED: Multi-API Cover Search with Better Fallbacks
+
 async function searchBookCovers() {
-    const title = document.getElementById('newBookTitle').value.trim();
-    if (!title) { 
-        showToast('Please enter a book title first', 'error'); 
-        return; 
-    }
-    
-    const resultsDiv = document.getElementById('coverSearchResults');
-    resultsDiv.style.display = 'block';
-    resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">🔍 Searching multiple sources...</p>';
-    
-    const allCovers = new Map(); // Use Map to avoid duplicates
-    
-    try {
-        // Try multiple APIs in parallel for faster results
-        const apiPromises = [
-            searchGoogleBooks(title),
-            searchOpenLibrary(title),
-            searchiTunesBooks(title)
-        ];
-        
-        const results = await Promise.allSettled(apiPromises);
-        
-        // Collect all unique covers from all sources
-        results.forEach((result, index) => {
-            if (result.status === 'fulfilled' && result.value) {
-                const apiName = ['Google Books', 'Open Library', 'iTunes'][index];
-                result.value.forEach(cover => {
-                    if (!allCovers.has(cover.url)) {
-                        allCovers.set(cover.url, { ...cover, source: apiName });
-                    }
-                });
-            }
+  const title = document.getElementById('newBookTitle').value.trim();
+  if (!title) { 
+    showToast('Please enter a book title first', 'error'); 
+    return; 
+  }
+  const resultsDiv = document.getElementById('coverSearchResults');
+  resultsDiv.style.display = 'block';
+  resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">🔍 Searching multiple sources...</p>';
+  const allCovers = new Map(); 
+  try {
+    const apiPromises = [searchGoogleBooks(title), searchOpenLibrary(title), searchiTunesBooks(title)];
+    const results = await Promise.allSettled(apiPromises);
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value) {
+        const apiName = ['Google Books', 'Open Library', 'iTunes'][index];
+        result.value.forEach(cover => {
+          if (!allCovers.has(cover.url)) {
+            allCovers.set(cover.url, { ...cover, source: apiName });
+          }
         });
-        
-        if (allCovers.size === 0) {
-            resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">No covers found. Try a different title or upload manually.</p>';
-            return;
-        }
-
-        let html = '<div class="cover-search-grid">';
-        Array.from(allCovers.values()).forEach((cover) => {
-            html += `<div class="cover-search-item" onclick="selectCoverFromSearch('${cover.url}')" title="Source: ${cover.source}">
-                <img src="${cover.url}" alt="${cover.title}" loading="lazy">
-                <div style="font-size:0.65rem;text-align:center;padding:0.2rem;background:rgba(0,0,0,0.6);color:#fff;">${cover.source}</div>
-            </div>`;
-        });
-        html += '</div>';
-
-        resultsDiv.innerHTML = html;
-        showToast(`✅ Found ${allCovers.size} cover(s)`, 'success');
-        
-    } catch (err) {
-        console.error('Cover search error:', err);
-        resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--danger);">Search failed. Check your internet connection.</p>';
+      }
+    });
+    if (allCovers.size === 0) {
+      resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--text-muted);">No covers found. Try a different title or upload manually.</p>';
+      return;
     }
+    let html = '<div class="cover-search-grid">';
+    Array.from(allCovers.values()).forEach((cover) => {
+      html += `<div class="cover-search-item" onclick="selectCoverFromSearch('${cover.url}')" title="Source: ${cover.source}">
+        <img src="${cover.url}" alt="${cover.title}" loading="lazy">
+        <div style="font-size:0.65rem;text-align:center;padding:0.2rem;background:rgba(0,0,0,0.6);color:#fff;">${cover.source}</div>
+      </div>`;
+    });
+    html += '</div>';
+    resultsDiv.innerHTML = html;
+    showToast(`✅ Found ${allCovers.size} cover(s)`, 'success');
+  } catch (err) {
+    console.error('Cover search error:', err);
+    resultsDiv.innerHTML = '<p style="text-align:center;padding:0.5rem;color:var(--danger);">Search failed. Check your internet connection.</p>';
+  }
 }
 
-// Google Books API - Enhanced with API key and better query
 async function searchGoogleBooks(title) {
-    try {
-        const query = encodeURIComponent(`intitle:"${title}"`);
-        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=8&printType=books&key=AIzaSyBo0DXOWKztyMXUXfPhNyoFo9P_Fu-MEn4`);
-        if (!res.ok) throw new Error('Google Books API error');
-        const data = await res.json();
-        
-        if (!data.items) return [];
-        
-        return data.items
-            .map(book => {
-                const links = book.volumeInfo?.imageLinks;
-                const url = links?.large || links?.thumbnail || links?.smallThumbnail;
-                return url ? {
-                    url: url.replace('http:', 'https:'),
-                    title: book.volumeInfo?.title || 'Unknown',
-                    source: 'Google Books'
-                } : null;
-            })
-            .filter(Boolean);
-    } catch (e) {
-        console.warn('Google Books search failed:', e);
-        return [];
-    }
+  try {
+    const query = encodeURIComponent(`intitle:"${title}"`);
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=8&printType=books&key=AIzaSyBo0DXOWKztyMXUXfPhNyoFo9P_Fu-MEn4`);
+    if (!res.ok) throw new Error('Google Books API error');
+    const data = await res.json();
+    if (!data.items) return [];
+    return data.items.map(book => {
+      const links = book.volumeInfo?.imageLinks;
+      const url = links?.large || links?.thumbnail || links?.smallThumbnail;
+      return url ? { url: url.replace('http:', 'https:'), title: book.volumeInfo?.title || 'Unknown', source: 'Google Books' } : null;
+    }).filter(Boolean);
+  } catch (e) { console.warn('Google Books search failed:', e); return []; }
 }
 
-// Open Library API - NEW fallback source
 async function searchOpenLibrary(title) {
-    try {
-        const query = encodeURIComponent(`title:"${title}"`);
-        const res = await fetch(`https://openlibrary.org/search.json?q=${query}&limit=8`);
-        if (!res.ok) throw new Error('Open Library API error');
-        const data = await res.json();
-        
-        if (!data.docs) return [];
-        
-        return data.docs
-            .map(book => {
-                if (book.cover_i) {
-                    return {
-                        url: `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`,
-                        title: book.title || 'Unknown',
-                        source: 'Open Library'
-                    };
-                }
-                return null;
-            })
-            .filter(Boolean);
-    } catch (e) {
-        console.warn('Open Library search failed:', e);
-        return [];
-    }
+  try {
+    const query = encodeURIComponent(`title:"${title}"`);
+    const res = await fetch(`https://openlibrary.org/search.json?q=${query}&limit=8`);
+    if (!res.ok) throw new Error('Open Library API error');
+    const data = await res.json();
+    if (!data.docs) return [];
+    return data.docs.map(book => {
+      if (book.cover_i) {
+        return { url: `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`, title: book.title || 'Unknown', source: 'Open Library' };
+      }
+      return null;
+    }).filter(Boolean);
+  } catch (e) { console.warn('Open Library search failed:', e); return []; }
 }
 
-// iTunes Books API - NEW fallback source
 async function searchiTunesBooks(title) {
-    try {
-        const query = encodeURIComponent(`${title} ebook`);
-        const res = await fetch(`https://itunes.apple.com/search?term=${query}&media=ebook&limit=8`);
-        if (!res.ok) throw new Error('iTunes API error');
-        const data = await res.json();
-        
-        if (!data.results) return [];
-        
-        return data.results
-            .map(book => {
-                let url = book.artworkUrl100;
-                if (url) {
-                    // Replace 100x100 with 600x600 for better quality
-                    url = url.replace('100x100bb', '600x600bb');
-                    return {
-                        url: url,
-                        title: book.trackName || 'Unknown',
-                        source: 'iTunes Books'
-                    };
-                }
-                return null;
-            })
-            .filter(Boolean);
-    } catch (e) {
-        console.warn('iTunes Books search failed:', e);
-        return [];
-    }
+  try {
+    const query = encodeURIComponent(`${title} ebook`);
+    const res = await fetch(`https://itunes.apple.com/search?term=${query}&media=ebook&limit=8`);
+    if (!res.ok) throw new Error('iTunes API error');
+    const data = await res.json();
+    if (!data.results) return [];
+    return data.results.map(book => {
+      let url = book.artworkUrl100;
+      if (url) {
+        url = url.replace('100x100bb', '600x600bb');
+        return { url: url, title: book.trackName || 'Unknown', source: 'iTunes Books' };
+      }
+      return null;
+    }).filter(Boolean);
+  } catch (e) { console.warn('iTunes Books search failed:', e); return []; }
 }
 
 async function selectCoverFromSearch(url) {
-showToast('⬇️ Downloading cover...', 'info');
-try {
-const res = await fetch(url);
-const blob = await res.blob();
-const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
-const dt = new DataTransfer();
-dt.items.add(file);
-document.getElementById('newBookCover').files = dt.files;
-document.getElementById('coverSearchResults').style.display = 'none';
-showToast('✅ Cover selected!', 'success');
-} catch (e) { showToast('❌ Failed to load cover.', 'error'); }
+  showToast('⬇️ Downloading cover...', 'info');
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('newBookCover').files = dt.files;
+    document.getElementById('coverSearchResults').style.display = 'none';
+    showToast('✅ Cover selected!', 'success');
+  } catch (e) { showToast('❌ Failed to load cover.', 'error'); }
 }
+
 async function fetchAndSetCover(url) {
-try {
-const res = await fetch(url);
-const blob = await res.blob();
-const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
-const dt = new DataTransfer();
-dt.items.add(file);
-document.getElementById('newBookCover').files = dt.files;
-const warningEl = document.getElementById('imageSizeWarning');
-if (file.size > 500 * 1024) {
-warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress on save.`;
-warningEl.classList.add('show');
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('newBookCover').files = dt.files;
+    const warningEl = document.getElementById('imageSizeWarning');
+    if (file.size > 500 * 1024) {
+      warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress on save.`;
+      warningEl.classList.add('show');
+    }
+  } catch (e) { console.warn('Cover fetch blocked.', e); }
 }
-} catch (e) { console.warn('Cover fetch blocked.', e); }
-}
+
 // ═══════════════════════════════════════════════════════════
 // MOBILE MENU & CAROUSEL
 // ═══════════════════════════════════════════════════════════
 function toggleMobileMenu() { document.getElementById('mobileMenu')?.classList.toggle('show'); }
 function closeMobileMenu() { document.getElementById('mobileMenu')?.classList.remove('show'); }
 document.addEventListener('click', (e) => {
-const menu = document.getElementById('mobileMenu');
-const hamburger = document.querySelector('.hamburger-btn');
-if (menu?.classList.contains('show') && !menu.contains(e.target) && !hamburger?.contains(e.target)) closeMobileMenu();
+  const menu = document.getElementById('mobileMenu');
+  const hamburger = document.querySelector('.hamburger-btn');
+  if (menu?.classList.contains('show') && !menu.contains(e.target) && !hamburger?.contains(e.target)) closeMobileMenu();
 });
+
 let currentSlide = 0, carouselInterval;
 function initCarousel() {
-const slides = document.querySelectorAll('.carousel-slide');
-const dotsContainer = document.querySelector('.carousel-dots');
-slides.forEach((_, index) => {
-const dot = document.createElement('div');
-dot.classList.add('dot');
-if (index === 0) dot.classList.add('active');
-dot.onclick = () => goToSlide(index);
-dotsContainer.appendChild(dot);
-});
-startCarouselAutoPlay();
+  const slides = document.querySelectorAll('.carousel-slide');
+  const dotsContainer = document.querySelector('.carousel-dots');
+  slides.forEach((_, index) => {
+    const dot = document.createElement('div');
+    dot.classList.add('dot');
+    if (index === 0) dot.classList.add('active');
+    dot.onclick = () => goToSlide(index);
+    dotsContainer.appendChild(dot);
+  });
+  startCarouselAutoPlay();
 }
+
 function updateCarousel() {
-document.querySelector('.carousel-track').style.transform = `translateX(-${currentSlide * 100}%)`;
-document.querySelectorAll('.dot').forEach((dot, index) => dot.classList.toggle('active', index === currentSlide));
+  document.querySelector('.carousel-track').style.transform = `translateX(-${currentSlide * 100}%)`;
+  document.querySelectorAll('.dot').forEach((dot, index) => dot.classList.toggle('active', index === currentSlide));
 }
+
 function moveSlide(direction) {
-const slides = document.querySelectorAll('.carousel-slide');
-currentSlide = (currentSlide + direction + slides.length) % slides.length;
-updateCarousel(); resetCarouselAutoPlay();
+  const slides = document.querySelectorAll('.carousel-slide');
+  currentSlide = (currentSlide + direction + slides.length) % slides.length;
+  updateCarousel(); resetCarouselAutoPlay();
 }
+
 function goToSlide(index) { currentSlide = index; updateCarousel(); resetCarouselAutoPlay(); }
 function startCarouselAutoPlay() { carouselInterval = setInterval(() => moveSlide(1), 5000); }
 function resetCarouselAutoPlay() { clearInterval(carouselInterval); startCarouselAutoPlay(); }
 document.querySelector('.banner-carousel')?.addEventListener('mouseenter', () => clearInterval(carouselInterval));
 document.querySelector('.banner-carousel')?.addEventListener('mouseleave', () => startCarouselAutoPlay());
+
 // ═══════════════════════════════════════════════════════════
 // RATING SYSTEM & MODALS
 // ═══════════════════════════════════════════════════════════
 function getAverageRating(ratings) {
-if (!ratings || ratings.length === 0) return 0;
-return (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1);
+  if (!ratings || ratings.length === 0) return 0;
+  return (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1);
 }
+
 function selectRating(val) {
-selectedRating = val;
-document.querySelectorAll('#detailStars .star-btn').forEach((btn, index) => btn.classList.toggle('active', index < val));
+  selectedRating = val;
+  document.querySelectorAll('#detailStars .star-btn').forEach((btn, index) => btn.classList.toggle('active', index < val));
 }
+
 async function submitRating() {
-if (selectedRating === 0) { showToast('Please select a rating', 'error'); return; }
-const book = books.find(b => b.id === selectedBookId);
-if (book) {
-book.ratings = book.ratings || [];
-book.ratings.push(selectedRating);
-if (await saveBooksToFirebase()) {
-showToast('Rating submitted!', 'success');
-openBookDetail(selectedBookId); renderBooks();
+  if (selectedRating === 0) { showToast('Please select a rating', 'error'); return; }
+  const book = books.find(b => b.id === selectedBookId);
+  if (book) {
+    book.ratings = book.ratings || [];
+    book.ratings.push(selectedRating);
+    if (await saveBooksToFirebase()) {
+      showToast('Rating submitted!', 'success');
+      openBookDetail(selectedBookId); renderBooks();
+    }
+  }
 }
-}
-}
+
 window.addEventListener('beforeunload', (e) => { if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; } });
+
 function openLoginModal() { document.getElementById('loginOverlay').classList.add('show'); document.getElementById('passwordInput').focus(); }
 function closeLoginModal() { document.getElementById('loginOverlay').classList.remove('show'); document.getElementById('loginError').style.display = 'none'; }
+
 function openBorrowModal(bookId, bookTitle) {
-if (!isAdmin) { openVisitorBorrowModal(bookId, bookTitle); return; }
-pendingBorrowBookId = bookId;
-document.getElementById('borrowBookTitle').textContent = `"${bookTitle}"`;
-['borrowerName','borrowerGrade','borrowerLevel'].forEach(id => document.getElementById(id).value = '');
-document.getElementById('borrowerPhone').value = '';
-document.getElementById('borrowerCenter').value = '';
-document.getElementById('borrowModal').classList.add('show');
-document.getElementById('borrowerName').focus();
-setUnsavedChanges(true);
+  if (!isAdmin) { openVisitorBorrowModal(bookId, bookTitle); return; }
+  pendingBorrowBookId = bookId;
+  document.getElementById('borrowBookTitle').textContent = `"${bookTitle}"`;
+  ['borrowerName','borrowerGrade','borrowerLevel'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('borrowerPhone').value = '';
+  document.getElementById('borrowerCenter').value = '';
+  document.getElementById('borrowModal').classList.add('show');
+  document.getElementById('borrowerName').focus();
+  setUnsavedChanges(true);
 }
+
 function closeBorrowModal() { document.getElementById('borrowModal').classList.remove('show'); pendingBorrowBookId = null; setUnsavedChanges(false); }
 function openVisitorBorrowModal(bookId, bookTitle) { pendingBorrowBookId = bookId; document.getElementById('visitorBorrowModal').classList.add('show'); }
 function closeVisitorBorrowModal() { document.getElementById('visitorBorrowModal').classList.remove('show'); pendingBorrowBookId = null; }
 function openLoginModalFromVisitor() { closeVisitorBorrowModal(); openLoginModal(); }
+
 function openAddBookModal() {
-if (!isAdmin) { openLoginModal(); return; }
-['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-document.getElementById('imageSizeWarning').classList.remove('show');
-document.getElementById('barcode-reader').style.display = 'none';
-document.getElementById('coverSearchResults').style.display = 'none';
-stopBarcodeScanner();
-document.getElementById('addBookModal').classList.add('show');
-document.getElementById('newBookTitle').focus();
-setUnsavedChanges(true);
+  if (!isAdmin) { openLoginModal(); return; }
+  ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL','newBookCover'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('imageSizeWarning').classList.remove('show');
+  document.getElementById('barcode-reader').style.display = 'none';
+  document.getElementById('coverSearchResults').style.display = 'none';
+  stopBarcodeScanner();
+  document.getElementById('addBookModal').classList.add('show');
+  document.getElementById('newBookTitle').focus();
+  setUnsavedChanges(true);
 }
+
 function closeAddBookModal() { stopBarcodeScanner(); document.getElementById('addBookModal').classList.remove('show'); document.getElementById('coverSearchResults').style.display = 'none'; setUnsavedChanges(false); }
+
 function openEditModal(bookId) {
-if (!isAdmin) { openLoginModal(); return; }
-const book = books.find(b => b.id === bookId);
-if (!book) return;
-document.getElementById('editBookId').value = book.id;
-document.getElementById('editBookTitle').value = book.title;
-document.getElementById('editBookAuthor').value = book.author;
-document.getElementById('editBookGenre').value = book.genre || '';
-document.getElementById('editBookLocation').value = book.location;
-document.getElementById('editBookRRL').value = book.rrlLevel || '';
-document.getElementById('editBookCover').value = '';
-document.getElementById('editImageSizeWarning').classList.remove('show');
-document.getElementById('editBookModal').classList.add('show');
-document.getElementById('editBookTitle').focus();
-setUnsavedChanges(true);
+  if (!isAdmin) { openLoginModal(); return; }
+  const book = books.find(b => b.id === bookId);
+  if (!book) return;
+  document.getElementById('editBookId').value = book.id;
+  document.getElementById('editBookTitle').value = book.title;
+  document.getElementById('editBookAuthor').value = book.author;
+  document.getElementById('editBookGenre').value = book.genre || '';
+  document.getElementById('editBookLocation').value = book.location;
+  document.getElementById('editBookRRL').value = book.rrlLevel || '';
+  document.getElementById('editBookCover').value = '';
+  document.getElementById('editImageSizeWarning').classList.remove('show');
+  document.getElementById('editBookModal').classList.add('show');
+  document.getElementById('editBookTitle').focus();
+  setUnsavedChanges(true);
 }
+
 function closeEditBookModal() { document.getElementById('editBookModal').classList.remove('show'); setUnsavedChanges(false); }
 function openRRLInfoModal() { document.getElementById('rrlInfoModal').classList.add('show'); document.body.style.overflow = 'hidden'; }
 function closeRRLInfoModal() { document.getElementById('rrlInfoModal').classList.remove('show'); document.body.style.overflow = ''; }
-// ✅ UPDATED: openBookDetail now displays description
+
 function openBookDetail(bookId) {
-const book = books.find(b => b.id === bookId);
-if (!book) return;
-selectedBookId = bookId;
-const coverEl = document.getElementById('detailCoverFull');
-coverEl.innerHTML = book.coverImage ? `<img src="${book.coverImage}" alt="${escapeHtml(book.title)}">` : '<span class="placeholder-large">📘</span>';
-document.getElementById('detailTitle').textContent = book.title;
-document.getElementById('detailAuthor').textContent = `by ${book.author}`;
-document.getElementById('detailGenre').textContent = book.genre || 'Uncategorized';
-document.getElementById('detailLocation').textContent = book.location;
-document.getElementById('detailRRL').textContent = book.rrlLevel || 'N/A';
-document.getElementById('detailID').textContent = `#${book.id}`;
-const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
-const statusEl = document.getElementById('detailStatus');
-statusEl.textContent = isBorrowed ? '📤 Borrowed' : '✓ Available';
-statusEl.className = `detail-status ${isBorrowed ? 'borrowed' : 'available'}`;
-const borrowerSection = document.getElementById('detailBorrowerSection');
-if (isBorrowed && book.borrower && isAdmin) {
-borrowerSection.style.display = 'block';
-document.getElementById('detailBorrowerName').textContent = book.borrower;
-document.getElementById('detailBorrowerGrade').textContent = book.borrowerGrade || '-';
-document.getElementById('detailBorrowerLevel').textContent = book.borrowerLevel || '-';
-document.getElementById('detailBorrowerPhone').textContent = book.borrowerPhone || '-';
-document.getElementById('detailBorrowerCenter').textContent = book.borrowerCenter || 'No Center';
-document.getElementById('detailBorrowDate').textContent = book.borrowDate || '-';
-} else { borrowerSection.style.display = 'none'; }
-selectedRating = 0;
-document.querySelectorAll('#detailStars .star-btn').forEach(btn => btn.classList.remove('active'));
-const avg = getAverageRating(book.ratings);
-const count = (book.ratings || []).length;
-document.getElementById('detailRatingSummary').textContent = count > 0 ? `Overall: ⭐ ${avg} (${count} ratings)` : 'No ratings yet';
-// ✅ Display description if available
-const descEl = document.getElementById('detailDescription');
-if (descEl) {
-if (book.description && book.description.trim()) {
-descEl.textContent = book.description;
-descEl.style.display = 'block';
-} else {
-descEl.style.display = 'none';
+  const book = books.find(b => b.id === bookId);
+  if (!book) return;
+  selectedBookId = bookId;
+  const coverEl = document.getElementById('detailCoverFull');
+  coverEl.innerHTML = book.coverImage ? `<img src="${book.coverImage}" alt="${escapeHtml(book.title)}">` : '<span class="placeholder-large">📘</span>';
+  document.getElementById('detailTitle').textContent = book.title;
+  document.getElementById('detailAuthor').textContent = `by ${book.author}`;
+  document.getElementById('detailGenre').textContent = book.genre || 'Uncategorized';
+  document.getElementById('detailLocation').textContent = book.location;
+  document.getElementById('detailRRL').textContent = book.rrlLevel || 'N/A';
+  document.getElementById('detailID').textContent = `#${book.id}`;
+  const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
+  const statusEl = document.getElementById('detailStatus');
+  statusEl.textContent = isBorrowed ? '📤 Borrowed' : '✓ Available';
+  statusEl.className = `detail-status ${isBorrowed ? 'borrowed' : 'available'}`;
+  const borrowerSection = document.getElementById('detailBorrowerSection');
+  if (isBorrowed && book.borrower && isAdmin) {
+    borrowerSection.style.display = 'block';
+    document.getElementById('detailBorrowerName').textContent = book.borrower;
+    document.getElementById('detailBorrowerGrade').textContent = book.borrowerGrade || '-';
+    document.getElementById('detailBorrowerLevel').textContent = book.borrowerLevel || '-';
+    document.getElementById('detailBorrowerPhone').textContent = book.borrowerPhone || '-';
+    document.getElementById('detailBorrowerCenter').textContent = book.borrowerCenter || 'No Center';
+    document.getElementById('detailBorrowDate').textContent = book.borrowDate || '-';
+  } else { borrowerSection.style.display = 'none'; }
+  selectedRating = 0;
+  document.querySelectorAll('#detailStars .star-btn').forEach(btn => btn.classList.remove('active'));
+  const avg = getAverageRating(book.ratings);
+  const count = (book.ratings || []).length;
+  document.getElementById('detailRatingSummary').textContent = count > 0 ? `Overall: ⭐ ${avg} (${count} ratings)` : 'No ratings yet';
+  const descEl = document.getElementById('detailDescription');
+  if (descEl) {
+    if (book.description && book.description.trim()) {
+      descEl.textContent = book.description;
+      descEl.style.display = 'block';
+    } else {
+      descEl.style.display = 'none';
+    }
+  }
+  document.getElementById('detailReturnBtn').style.setProperty('display', isBorrowed ? 'flex' : 'none', 'important');
+  document.getElementById('detailBorrowBtn').style.setProperty('display', isBorrowed ? 'none' : 'flex', 'important');
+  document.getElementById('detailModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
 }
-}
-document.getElementById('detailReturnBtn').style.setProperty('display', isBorrowed ? 'flex' : 'none', 'important');
-document.getElementById('detailBorrowBtn').style.setProperty('display', isBorrowed ? 'none' : 'flex', 'important');
-document.getElementById('detailModal').classList.add('show');
-document.body.style.overflow = 'hidden';
-}
+
 function closeDetailModal() { document.getElementById('detailModal').classList.remove('show'); document.body.style.overflow = ''; selectedBookId = null; }
 function handleDetailBorrow() { if (selectedBookId) { const book = books.find(b => b.id === selectedBookId); if (book) { closeDetailModal(); openBorrowModal(book.id, book.title); } } }
 function handleDetailReturn() { if (selectedBookId) { returnBook(selectedBookId); closeDetailModal(); } }
-// ✅ FIXED: Edit button handler restored & race condition fixed
 function handleDetailEdit() { if (selectedBookId) { const bookId = selectedBookId; closeDetailModal(); openEditModal(bookId); } }
 function handleDetailRemove() {
-if (selectedBookId) {
-const book = books.find(b => b.id === selectedBookId);
-if (book && confirm(`Remove "${book.title}"?`)) { removeBook(selectedBookId); closeDetailModal(); }
+  if (selectedBookId) {
+    const book = books.find(b => b.id === selectedBookId);
+    if (book && confirm(`Remove "${book.title}"?`)) { removeBook(selectedBookId); closeDetailModal(); }
+  }
 }
-}
+
 // ═══════════════════════════════════════════════════════════
 // AUTH & FIREBASE
 // ═══════════════════════════════════════════════════════════
 function login() {
-const password = document.getElementById('passwordInput').value;
-if (password === '1111') {
-saveSession(); setAdminMode(true); renderBooks(); closeLoginModal(); closeMobileMenu();
-document.getElementById('passwordInput').value = '';
-if (pendingBorrowBookId) { const book = books.find(b => b.id === pendingBorrowBookId); if (book) openBorrowModal(book.id, book.title); pendingBorrowBookId = null; }
-if (pendingReturnBookId) { returnBook(pendingReturnBookId); pendingReturnBookId = null; }
-showToast('✅ Admin mode activated', 'success');
-} else { document.getElementById('loginError').style.display = 'block'; setTimeout(() => { document.getElementById('loginError').style.display = 'none'; }, 2000); }
+  const password = document.getElementById('passwordInput').value;
+  if (password === '1111') {
+    saveSession(); setAdminMode(true); renderBooks(); closeLoginModal(); closeMobileMenu();
+    document.getElementById('passwordInput').value = '';
+    if (pendingBorrowBookId) { const book = books.find(b => b.id === pendingBorrowBookId); if (book) openBorrowModal(book.id, book.title); pendingBorrowBookId = null; }
+    if (pendingReturnBookId) { returnBook(pendingReturnBookId); pendingReturnBookId = null; }
+    showToast('✅ Admin mode activated', 'success');
+  } else { document.getElementById('loginError').style.display = 'block'; setTimeout(() => { document.getElementById('loginError').style.display = 'none'; }, 2000); }
 }
+
 function startRealtimeSync() {
-BOOKS_REF.on('value', (snapshot) => {
-const data = snapshot.val();
-if (data) {
-books = Object.values(data).map(b => { b.ratings = b.ratings || []; return b; });
-books.sort((a, b) => b.id - a.id);
-nextId = Math.max(...books.map(b => b.id), 0) + 1;
-} else { books = []; nextId = 1; }
-updateStats(); renderBooks();
-document.getElementById('loadingState').style.display = 'none';
-setUnsavedChanges(false);
-}, (error) => { console.error('Firebase sync error:', error); showToast('Connection lost. Retrying...', 'error'); });
+  isInitialLoad = true; 
+  BOOKS_REF.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      books = Object.values(data).map(b => { b.ratings = b.ratings || []; return b; });
+      books.sort((a, b) => b.id - a.id);
+      nextId = Math.max(...books.map(b => b.id), 0) + 1;
+    } else { 
+      if (!initialLoadComplete) {
+        books = []; 
+        nextId = 1;
+        console.log('📚 Database is empty - starting fresh');
+      } else {
+        console.warn('⚠️ Firebase returned null after initial load - keeping local data');
+        showToast('⚠️ Sync issue - keeping local data', 'warning');
+        return; 
+      }
+    }
+    if (isInitialLoad) {
+      isInitialLoad = false;
+      initialLoadComplete = true;
+      console.log('✅ Initial load complete -', books.length, 'books loaded');
+    }
+    updateStats(); 
+    renderBooks();
+    document.getElementById('loadingState').style.display = 'none';
+    setUnsavedChanges(false);
+  }, (error) => { 
+    console.error('Firebase sync error:', error); 
+    showToast('Connection lost. Retrying...', 'error'); 
+  });
 }
+
 async function saveBooksToFirebase() {
-try {
-const booksObj = {}; books.forEach(book => { booksObj[book.id] = book; });
-await BOOKS_REF.set(booksObj);
-return true;
-} catch (error) { console.error('Save error:', error); showToast(`Save failed: ${error.message}`, 'error'); return false; }
+  if (books.length === 0 && !isInitialLoad) {
+    console.warn('⚠️ Prevented saving empty books array - this would delete all books!');
+    showToast('⚠️ Save cancelled: No books to save', 'error');
+    return false;
+  }
+  if (isInitialLoad && !initialLoadComplete) {
+    console.warn('⚠️ Save blocked: Initial load not complete');
+    return false;
+  }
+  try {
+    const booksObj = {}; 
+    books.forEach(book => { 
+      if (book && book.id) { 
+        booksObj[book.id] = book; 
+      }
+    });
+    if (Object.keys(booksObj).length === 0 && books.length > 0) {
+      console.error('❌ All books have invalid IDs - aborting save');
+      showToast('❌ Save failed: Invalid book data', 'error');
+      return false;
+    }
+    await BOOKS_REF.set(booksObj);
+    return true;
+  } catch (error) { 
+    console.error('Save error:', error); 
+    showToast(`Save failed: ${error.message}`, 'error'); 
+    return false; 
+  }
 }
+
 function updateStats() {
-document.getElementById('totalBooks').textContent = books.length;
-document.getElementById('availableBooks').textContent = books.filter(b => b.status === 'available').length;
-document.getElementById('borrowedBooks').textContent = books.filter(b => b.status === 'borrowed').length;
+  document.getElementById('totalBooks').textContent = books.length;
+  document.getElementById('availableBooks').textContent = books.filter(b => b.status === 'available').length;
+  document.getElementById('borrowedBooks').textContent = books.filter(b => b.status === 'borrowed').length;
 }
+
 function showToast(message, type = 'success') {
-const toast = document.getElementById('toast');
-toast.textContent = message;
-toast.className = `toast ${type} show`;
-setTimeout(() => toast.classList.remove('show'), 3000);
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.className = `toast ${type} show`;
+  setTimeout(() => toast.classList.remove('show'), 3000);
 }
+
 // ═══════════════════════════════════════════════════════════
 // BOOK MANAGEMENT & RENDERING
 // ═══════════════════════════════════════════════════════════
 async function processAddBook() {
-const btn = document.getElementById('addBookBtn');
-const warningEl = document.getElementById('imageSizeWarning');
-const title = document.getElementById('newBookTitle').value.trim();
-const author = document.getElementById('newBookAuthor').value.trim();
-const genre = document.getElementById('newBookGenre').value.trim();
-const location = document.getElementById('newBookLocation').value.trim();
-const rrlLevel = document.getElementById('newBookRRL').value;
-if (!title || !author || !location) { showToast('Please fill in title, author, and location', 'error'); return; }
-btn.disabled = true; btn.textContent = 'Saving...'; warningEl.classList.remove('show');
-const file = document.getElementById('newBookCover').files[0];
-try {
-let coverImage = null;
-if (file) {
-if (file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; warningEl.classList.add('show'); }
-coverImage = await compressImage(file, 300, 0.2);
+  const btn = document.getElementById('addBookBtn');
+  const warningEl = document.getElementById('imageSizeWarning');
+  const title = document.getElementById('newBookTitle').value.trim();
+  const author = document.getElementById('newBookAuthor').value.trim();
+  const genre = document.getElementById('newBookGenre').value.trim();
+  const location = document.getElementById('newBookLocation').value.trim();
+  const rrlLevel = document.getElementById('newBookRRL').value;
+  if (!title || !author || !location) { showToast('Please fill in title, author, and location', 'error'); return; }
+  btn.disabled = true; btn.textContent = 'Saving...'; warningEl.classList.remove('show');
+  const file = document.getElementById('newBookCover').files[0];
+  try {
+    let coverImage = null;
+    if (file) {
+      if (file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; warningEl.classList.add('show'); }
+      coverImage = await compressImage(file, 300, 0.2);
+    }
+    await addBookToSystem(title, author, genre, location, rrlLevel, coverImage, pendingBookDescription);
+    closeAddBookModal();
+  } catch (error) {
+    console.error('Image error:', error);
+    showToast(`Image error. Adding without image.`, 'error');
+    await addBookToSystem(title, author, genre, location, rrlLevel, null, pendingBookDescription);
+    closeAddBookModal();
+  } finally { 
+    btn.disabled = false; 
+    btn.textContent = 'Save Book'; 
+    warningEl.classList.remove('show');
+    pendingBookDescription = ''; 
+  }
 }
-// ✅ Pass pendingBookDescription to addBookToSystem
-await addBookToSystem(title, author, genre, location, rrlLevel, coverImage, pendingBookDescription);
-closeAddBookModal();
-} catch (error) {
-console.error('Image error:', error);
-showToast(`Image error. Adding without image.`, 'error');
-// ✅ Also pass description on fallback
-await addBookToSystem(title, author, genre, location, rrlLevel, null, pendingBookDescription);
-closeAddBookModal();
-} finally { 
-btn.disabled = false; 
-btn.textContent = 'Save Book'; 
-warningEl.classList.remove('show');
-pendingBookDescription = ''; // ✅ Clear temp storage
-}
-}
-// ✅ UPDATED: addBookToSystem accepts description parameter
+
 async function addBookToSystem(title, author, genre, location, rrlLevel, coverImage, description = '') {
-const newBook = {
-id: nextId++, title, author, genre: genre || 'Uncategorized', location, rrlLevel: rrlLevel || 'N/A', 
-coverImage, description: description || '', status: 'available',
-ratings: [], borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null, borrowerPhone: null, borrowerCenter: null
-};
-books.unshift(newBook);
-if (await saveBooksToFirebase()) { updateStats(); renderBooks(); showToast(`"${title}" added successfully`, 'success'); setUnsavedChanges(false); }
+  const newBook = {
+    id: nextId++, title, author, genre: genre || 'Uncategorized', location, rrlLevel: rrlLevel || 'N/A', 
+    coverImage, description: description || '', status: 'available',
+    ratings: [], borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null, borrowerPhone: null, borrowerCenter: null
+  };
+  books.unshift(newBook);
+  if (await saveBooksToFirebase()) { updateStats(); renderBooks(); showToast(`"${title}" added successfully`, 'success'); setUnsavedChanges(false); }
 }
+
 async function processEditBook() {
-const btn = document.getElementById('editBookBtn');
-const warningEl = document.getElementById('editImageSizeWarning');
-const id = parseInt(document.getElementById('editBookId').value);
-const title = document.getElementById('editBookTitle').value.trim();
-const author = document.getElementById('editBookAuthor').value.trim();
-const genre = document.getElementById('editBookGenre').value.trim();
-const location = document.getElementById('editBookLocation').value.trim();
-const rrlLevel = document.getElementById('editBookRRL').value;
-const fileInput = document.getElementById('editBookCover');
-if (!title || !author || !location) { showToast('Please fill in title, author, and location', 'error'); return; }
-const book = books.find(b => b.id === id);
-if (!book) return;
-btn.disabled = true; btn.textContent = 'Saving...'; warningEl.classList.remove('show');
-try {
-let coverImage = book.coverImage;
-const file = fileInput.files[0];
-if (file) {
-if (file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; warningEl.classList.add('show'); }
-coverImage = await compressImage(file, 300, 0.2);
+  const btn = document.getElementById('editBookBtn');
+  const warningEl = document.getElementById('editImageSizeWarning');
+  const id = parseInt(document.getElementById('editBookId').value);
+  const title = document.getElementById('editBookTitle').value.trim();
+  const author = document.getElementById('editBookAuthor').value.trim();
+  const genre = document.getElementById('editBookGenre').value.trim();
+  const location = document.getElementById('editBookLocation').value.trim();
+  const rrlLevel = document.getElementById('editBookRRL').value;
+  const fileInput = document.getElementById('editBookCover');
+  if (!title || !author || !location) { showToast('Please fill in title, author, and location', 'error'); return; }
+  const book = books.find(b => b.id === id);
+  if (!book) return;
+  btn.disabled = true; btn.textContent = 'Saving...'; warningEl.classList.remove('show');
+  try {
+    let coverImage = book.coverImage;
+    const file = fileInput.files[0];
+    if (file) {
+      if (file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; warningEl.classList.add('show'); }
+      coverImage = await compressImage(file, 300, 0.2);
+    }
+    book.title = title; book.author = author; book.genre = genre || 'Uncategorized'; book.location = location; book.rrlLevel = rrlLevel || 'N/A'; book.coverImage = coverImage;
+    if (await saveBooksToFirebase()) { closeEditBookModal(); renderBooks(); openBookDetail(id); showToast(`"${title}" updated successfully`, 'success'); setUnsavedChanges(false); }
+  } catch (error) { console.error('Edit error:', error); showToast(`Error updating book: ${error.message}`, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Update Book'; warningEl.classList.remove('show'); }
 }
-book.title = title; book.author = author; book.genre = genre || 'Uncategorized'; book.location = location; book.rrlLevel = rrlLevel || 'N/A'; book.coverImage = coverImage;
-// Note: description is not editable via UI (system-generated only)
-if (await saveBooksToFirebase()) { closeEditBookModal(); renderBooks(); openBookDetail(id); showToast(`"${title}" updated successfully`, 'success'); setUnsavedChanges(false); }
-} catch (error) { console.error('Edit error:', error); showToast(`Error updating book: ${error.message}`, 'error'); }
-finally { btn.disabled = false; btn.textContent = 'Update Book'; warningEl.classList.remove('show'); }
+
+async function removeBook(id) { 
+  const book = books.find(b => b.id === id); 
+  if (book && confirm(`Remove "${book.title}"?`)) { 
+    books = books.filter(b => b.id !== id); 
+    if (books.length === 0) {
+      if (!confirm('⚠️ This will remove ALL books. Are you absolutely sure?')) {
+        books.unshift(book);
+        return;
+      }
+    }
+    if (await saveBooksToFirebase()) { 
+      updateStats(); 
+      renderBooks(); 
+      showToast(`"${book.title}" removed`, 'success'); 
+      setUnsavedChanges(false); 
+    } else {
+      books.unshift(book);
+      books.sort((a, b) => b.id - a.id);
+      renderBooks();
+    }
+  } 
 }
-async function removeBook(id) { const book = books.find(b => b.id === id); if (book && confirm(`Remove "${book.title}"?`)) { books = books.filter(b => b.id !== id); if (await saveBooksToFirebase()) { updateStats(); renderBooks(); showToast(`"${book.title}" removed`, 'success'); setUnsavedChanges(false); } } }
+
+// ✅ FIXED: Missing function declaration restored!
 async function confirmBorrow() {
-const name = document.getElementById('borrowerName').value.trim();
-const grade = document.getElementById('borrowerGrade').value.trim();
-const level = document.getElementById('borrowerLevel').value.trim();
-const phoneInput = document.getElementById('borrowerPhone').value.trim().replace(/\D/g, '');
-const center = document.getElementById('borrowerCenter').value;
-if (!name || !grade || !level) { showToast('Please fill in all fields', 'error'); return; }
-if (!phoneInput || phoneInput.length < 6) { showToast('Please enter a valid phone number', 'error'); return; }
-const book = books.find(b => b.id === pendingBorrowBookId);
-if (book) {
-book.status = 'borrowed'; book.borrower = name; book.borrowerGrade = grade; book.borrowerLevel = level; book.borrowerPhone = `+853 ${phoneInput}`; book.borrowerCenter = center || null; book.borrowDate = new Date().toISOString().split('T')[0];
-if (await saveBooksToFirebase()) { closeBorrowModal(); renderBooks(); updateStats(); showToast(`"${book.title}" borrowed by ${name}`, 'success'); setUnsavedChanges(false); }
+  const name = document.getElementById('borrowerName').value.trim();
+  const grade = document.getElementById('borrowerGrade').value.trim();
+  const level = document.getElementById('borrowerLevel').value.trim();
+  const phoneInput = document.getElementById('borrowerPhone').value.trim().replace(/\D/g, '');
+  const center = document.getElementById('borrowerCenter').value;
+  if (!name || !grade || !level) { showToast('Please fill in all fields', 'error'); return; }
+  if (!phoneInput || phoneInput.length < 6) { showToast('Please enter a valid phone number', 'error'); return; }
+  const book = books.find(b => b.id === pendingBorrowBookId);
+  if (book) {
+    book.status = 'borrowed'; book.borrower = name; book.borrowerGrade = grade; book.borrowerLevel = level; book.borrowerPhone = `+853 ${phoneInput}`; book.borrowerCenter = center || null; book.borrowDate = new Date().toISOString().split('T')[0];
+    if (await saveBooksToFirebase()) { closeBorrowModal(); renderBooks(); updateStats(); showToast(`"${book.title}" borrowed by ${name}`, 'success'); setUnsavedChanges(false); }
+  }
 }
-}
+
 async function returnBook(id) {
-if (!isAdmin) { pendingReturnBookId = id; openLoginModal(); return; }
-const book = books.find(b => b.id === id);
-if (book) {
-const info = `${book.borrower} (${book.borrowerGrade}, ${book.borrowerLevel})`;
-book.status = 'available'; book.borrower = null; book.borrowerGrade = null; book.borrowerLevel = null; book.borrowerPhone = null; book.borrowerCenter = null; book.borrowDate = null;
-if (await saveBooksToFirebase()) { renderBooks(); updateStats(); showToast(`✅ "${book.title}" returned by ${info}`, 'success'); setUnsavedChanges(false); }
+  if (!isAdmin) { pendingReturnBookId = id; openLoginModal(); return; }
+  const book = books.find(b => b.id === id);
+  if (book) {
+    const info = `${book.borrower} (${book.borrowerGrade}, ${book.borrowerLevel})`;
+    book.status = 'available'; book.borrower = null; book.borrowerGrade = null; book.borrowerLevel = null; book.borrowerPhone = null; book.borrowerCenter = null; book.borrowDate = null;
+    if (await saveBooksToFirebase()) { renderBooks(); updateStats(); showToast(`✅ "${book.title}" returned by ${info}`, 'success'); setUnsavedChanges(false); }
+  }
 }
-}
+
 function getFilteredAndSortedBooks() {
-const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-const filterStatus = document.getElementById('filterStatus').value;
-const filterRRL = document.getElementById('filterRRL').value;
-const sortBy = document.getElementById('sortBy').value;
-let filtered = books.filter(book => {
-const matchesSearch = book.title.toLowerCase().includes(searchTerm) || book.author.toLowerCase().includes(searchTerm) || book.location.toLowerCase().includes(searchTerm);
-return matchesSearch && (filterStatus === 'all' || book.status === filterStatus) && (filterRRL === '' || book.rrlLevel === filterRRL);
-});
-filtered.sort((a, b) => {
-if (sortBy === 'title') return a.title.localeCompare(b.title);
-if (sortBy === 'author') return a.author.localeCompare(b.author);
-if (sortBy === 'status') return a.status.localeCompare(b.status);
-if (sortBy === 'rrl') return (a.rrlLevel || 'Z').toUpperCase().localeCompare((b.rrlLevel || 'Z').toUpperCase(), undefined, { numeric: true });
-return 0;
-});
-return filtered;
+  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  const filterStatus = document.getElementById('filterStatus').value;
+  const filterRRL = document.getElementById('filterRRL').value;
+  const sortBy = document.getElementById('sortBy').value;
+  let filtered = books.filter(book => {
+    const matchesSearch = book.title.toLowerCase().includes(searchTerm) || book.author.toLowerCase().includes(searchTerm) || book.location.toLowerCase().includes(searchTerm);
+    return matchesSearch && (filterStatus === 'all' || book.status === filterStatus) && (filterRRL === '' || book.rrlLevel === filterRRL);
+  });
+  filtered.sort((a, b) => {
+    if (sortBy === 'title') return a.title.localeCompare(b.title);
+    if (sortBy === 'author') return a.author.localeCompare(b.author);
+    if (sortBy === 'status') return a.status.localeCompare(b.status);
+    if (sortBy === 'rrl') return (a.rrlLevel || 'Z').toUpperCase().localeCompare((b.rrlLevel || 'Z').toUpperCase(), undefined, { numeric: true });
+    return 0;
+  });
+  return filtered;
 }
-// ✅ FIXED: Syntax error in map function corrected
+
 function renderBooks() {
-const grid = document.getElementById('booksGrid');
-const emptyState = document.getElementById('emptyState');
-const filteredBooks = getFilteredAndSortedBooks();
-if (filteredBooks.length === 0 && books.length > 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = 'No matching books'; emptyState.querySelector('p').textContent = 'Try adjusting your search or filter'; return; }
-if (books.length === 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = '📚 Library is empty'; emptyState.querySelector('p').textContent = isAdmin ? 'Click ➕ to add your first book' : 'Check back soon!'; return; }
-emptyState.style.display = 'none';
-grid.innerHTML = filteredBooks.map(book => {
-const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
-const avg = getAverageRating(book.ratings);
-const totalRatings = (book.ratings || []).length;
-const ratingDisplay = totalRatings > 0 ? `<div class="book-rating">⭐ ${avg} <span class="rating-count">(${totalRatings})</span></div>` : '';
-return `
-  <div class="book-card ${isBorrowed ? 'borrowed' : 'available'}" onclick="openBookDetail(${book.id})">
-  ${book.coverImage ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` : `<div class="book-cover">📘</div>`}
-    <div class="book-title">${escapeHtml(book.title)}</div>
-    <div class="book-author">by ${escapeHtml(book.author)}</div>
-    <div class="book-location">📍 ${escapeHtml(book.location)}</div>
-    <div class="book-meta"><span>${escapeHtml(book.genre)}</span><span>•</span><span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span><span>•</span><span>ID: ${book.id}</span></div>
-  ${ratingDisplay}
-    <span class="status-badge ${isBorrowed ? 'borrowed' : 'available'}">${isBorrowed ? '📤 Borrowed' : '✓ Available'}</span>
-  ${isBorrowed ? `<div style="margin-top:0.5rem;">${isAdmin ? `<span class="borrower-badge">${escapeHtml(book.borrower)}</span><br><small style="color:#64748b;display:block;margin-top:0.25rem">Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><small style="color:#64748b;display:block;margin-top:0.15rem">Phone: ${escapeHtml(book.borrowerPhone || 'N/A')}</small><small style="color:#64748b;display:block;margin-top:0.15rem">Center: ${escapeHtml(book.borrowerCenter || 'No Center')}</small><small style="color:#94a3b8;display:block;margin-top:0.15rem">Since: ${book.borrowDate}</small>` : '<small style="color:#64748b">Currently borrowed</small>'}</div>` : ''}
-    <div class="book-actions" onclick="event.stopPropagation()">
-    ${!isBorrowed ? `<button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` : `<button class="btn btn-success" onclick="returnBook(${book.id})">✅ Return</button>`}
-      <button class="btn btn-primary btn-small admin-only" onclick="openEditModal(${book.id})" style="background:#7c3aed">✏️ Edit</button>
-      <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">🗑 Remove</button>
-    </div>
-  </div>`;
-}).join('');
+  const grid = document.getElementById('booksGrid');
+  const emptyState = document.getElementById('emptyState');
+  const filteredBooks = getFilteredAndSortedBooks();
+  if (filteredBooks.length === 0 && books.length > 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = 'No matching books'; emptyState.querySelector('p').textContent = 'Try adjusting your search or filter'; return; }
+  if (books.length === 0) { grid.innerHTML = ''; emptyState.style.display = 'block'; emptyState.querySelector('h2').textContent = '📚 Library is empty'; emptyState.querySelector('p').textContent = isAdmin ? 'Click ➕ to add your first book' : 'Check back soon!'; return; }
+  emptyState.style.display = 'none';
+  grid.innerHTML = filteredBooks.map(book => {
+    const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
+    const avg = getAverageRating(book.ratings);
+    const totalRatings = (book.ratings || []).length;
+    const ratingDisplay = totalRatings > 0 ? `<div class="book-rating">⭐ ${avg} <span class="rating-count">(${totalRatings})</span></div>` : '';
+    return `
+      <div class="book-card ${isBorrowed ? 'borrowed' : 'available'}" onclick="openBookDetail(${book.id})">
+        ${book.coverImage ? `<img src="${book.coverImage}" class="book-cover" alt="${escapeHtml(book.title)}" onerror="this.parentElement.innerHTML='<div class=\\'book-cover\\'>📘</div>'">` : `<div class="book-cover">📘</div>`}
+        <div class="book-title">${escapeHtml(book.title)}</div>
+        <div class="book-author">by ${escapeHtml(book.author)}</div>
+        <div class="book-location">📍 ${escapeHtml(book.location)}</div>
+        <div class="book-meta"><span>${escapeHtml(book.genre)}</span><span>•</span><span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span><span>•</span><span>ID: ${book.id}</span></div>
+        ${ratingDisplay}
+        <span class="status-badge ${isBorrowed ? 'borrowed' : 'available'}">${isBorrowed ? '📤 Borrowed' : '✓ Available'}</span>
+        ${isBorrowed ? `<div style="margin-top:0.5rem;">${isAdmin ? `<span class="borrower-badge">${escapeHtml(book.borrower)}</span><br><small style="color:#64748b;display:block;margin-top:0.25rem">Grade: ${escapeHtml(book.borrowerGrade)} • Level: ${escapeHtml(book.borrowerLevel)}</small><small style="color:#64748b;display:block;margin-top:0.15rem">Phone: ${escapeHtml(book.borrowerPhone || 'N/A')}</small><small style="color:#64748b;display:block;margin-top:0.15rem">Center: ${escapeHtml(book.borrowerCenter || 'No Center')}</small><small style="color:#94a3b8;display:block;margin-top:0.15rem">Since: ${book.borrowDate}</small>` : '<small style="color:#64748b">Currently borrowed</small>'}</div>` : ''}
+        <div class="book-actions" onclick="event.stopPropagation()">
+          ${!isBorrowed ? `<button class="btn btn-primary" onclick="openBorrowModal(${book.id}, '${escapeHtml(book.title).replace(/'/g, "\\'")}')">📚 Borrow</button>` : `<button class="btn btn-success" onclick="returnBook(${book.id})">✅ Return</button>`}
+          <button class="btn btn-primary btn-small admin-only" onclick="openEditModal(${book.id})" style="background:#7c3aed">✏️ Edit</button>
+          <button class="btn btn-danger btn-small admin-only" onclick="removeBook(${book.id})">🗑 Remove</button>
+        </div>
+      </div>`;
+  }).join('');
 }
+
 // ═══════════════════════════════════════════════════════════
 // CLEAN SWIPE NAVIGATION FOR DETAIL MODAL
 // ═══════════════════════════════════════════════════════════
@@ -759,87 +810,69 @@ let touchStartX = 0, touchStartY = 0;
 const SWIPE_THRESHOLD = 60;
 
 function initSwipeNavigation() {
-    const modal = document.getElementById('detailModal');
-    if (!modal) return;
-
-    modal.addEventListener('touchstart', (e) => {
-        if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
-        touchStartX = e.changedTouches[0].screenX;
-        touchStartY = e.changedTouches[0].screenY;
-    }, { passive: true });
-
-    modal.addEventListener('touchend', (e) => {
-        if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
-        const touchEndX = e.changedTouches[0].screenX;
-        const touchEndY = e.changedTouches[0].screenY;
-        const deltaX = touchEndX - touchStartX;
-        const deltaY = touchEndY - touchStartY;
-
-        // Only trigger on clear horizontal movement
-        if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
-            // deltaX < 0 = finger moved left → Next book
-            // deltaX > 0 = finger moved right → Previous book
-            navigateBookModal(deltaX < 0 ? 1 : -1);
-        }
-    }, { passive: true });
+  const modal = document.getElementById('detailModal');
+  if (!modal) return;
+  modal.addEventListener('touchstart', (e) => {
+    if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+  modal.addEventListener('touchend', (e) => {
+    if (e.target.closest('button, input, select, a, .star-btn, .book-actions, textarea')) return;
+    const touchEndX = e.changedTouches[0].screenX;
+    const touchEndY = e.changedTouches[0].screenY;
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
+      navigateBookModal(deltaX < 0 ? 1 : -1);
+    }
+  }, { passive: true });
 }
 
 function navigateBookModal(direction) {
-    const content = document.querySelector('.detail-content');
-    if (!content) return;
-
-    const filtered = getFilteredAndSortedBooks();
-    const currentIndex = filtered.findIndex(b => b.id === selectedBookId);
-    let newIndex = currentIndex + direction;
-
-    // Boundary check
-    if (newIndex < 0 || newIndex >= filtered.length) {
-        showToast(direction > 0 ? '📖 Last book in list' : '📖 First book in list', 'info');
-        return;
-    }
-
-    // 1. Animate out
-    content.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
-    content.style.transform = `translateX(${direction * 100}vw)`;
+  const content = document.querySelector('.detail-content');
+  if (!content) return;
+  const filtered = getFilteredAndSortedBooks();
+  const currentIndex = filtered.findIndex(b => b.id === selectedBookId);
+  let newIndex = currentIndex + direction;
+  if (newIndex < 0 || newIndex >= filtered.length) {
+    showToast(direction > 0 ? '📖 Last book in list' : '📖 First book in list', 'info');
+    return;
+  }
+  content.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+  content.style.transform = `translateX(${direction * 100}vw)`;
+  content.style.opacity = '0';
+  setTimeout(() => {
+    openBookDetail(filtered[newIndex].id);
+    content.style.transition = 'none';
+    content.style.transform = `translateX(${-direction * 100}vw)`;
     content.style.opacity = '0';
-
-    // 2. Update content & prepare entrance
-    setTimeout(() => {
-        openBookDetail(filtered[newIndex].id);
-
-        // Reset transition, set off-screen start position
-        content.style.transition = 'none';
-        content.style.transform = `translateX(${-direction * 100}vw)`;
-        content.style.opacity = '0';
-        void content.offsetWidth; // Force browser reflow
-
-        // 3. Animate in
-        requestAnimationFrame(() => {
-            content.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease';
-            content.style.transform = 'translateX(0)';
-            content.style.opacity = '1';
-        });
-
-        // 4. Clean inline styles after animation completes
-        content.addEventListener('transitionend', () => {
-            content.style.transform = '';
-            content.style.opacity = '';
-            content.style.transition = '';
-        }, { once: true });
-    }, 250);
+    void content.offsetWidth; 
+    requestAnimationFrame(() => {
+      content.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease';
+      content.style.transform = 'translateX(0)';
+      content.style.opacity = '1';
+    });
+    content.addEventListener('transitionend', () => {
+      content.style.transform = '';
+      content.style.opacity = '';
+      content.style.transition = '';
+    }, { once: true });
+  }, 250);
 }
 
 // ═══════════════════════════════════════════════════════════
 // INITIALIZATION
 // ═══════════════════════════════════════════════════════════
 function initApp() {
-if (checkSession()) { setAdminMode(true); showToast('✅ Admin session restored', 'info'); } else { setAdminMode(false); }
-    startRealtimeSync(); 
-    initCarousel(); 
-    initSwipeNavigation();
-    window.history.pushState(null, null, window.location.href);
-window.addEventListener('popstate', function () { if (confirm('Are you sure you want to exit?')) { window.history.back(); } else { window.history.pushState(null, null, window.location.href); } });
+  if (checkSession()) { setAdminMode(true); showToast('✅ Admin session restored', 'info'); } else { setAdminMode(false); }
+  startRealtimeSync(); 
+  initCarousel(); 
+  initSwipeNavigation();
+  window.history.pushState(null, null, window.location.href);
+  window.addEventListener('popstate', function () { if (confirm('Are you sure you want to exit?')) { window.history.back(); } else { window.history.pushState(null, null, window.location.href); } });
 }
+
 document.addEventListener('DOMContentLoaded', initApp);
 document.getElementById('passwordInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
 document.getElementById('searchInput')?.addEventListener('input', renderBooks);
@@ -847,21 +880,18 @@ document.getElementById('filterStatus')?.addEventListener('change', renderBooks)
 document.getElementById('filterRRL')?.addEventListener('change', renderBooks);
 document.getElementById('sortBy')?.addEventListener('change', renderBooks);
 document.getElementById('newBookCover')?.addEventListener('change', function(e) {
-const file = e.target.files[0]; const warningEl = document.getElementById('imageSizeWarning');
-if (file && file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress.`; warningEl.classList.add('show'); }
-else { warningEl.classList.remove('show'); }
+  const file = e.target.files[0]; const warningEl = document.getElementById('imageSizeWarning');
+  if (file && file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Will compress.`; warningEl.classList.add('show'); }
+  else { warningEl.classList.remove('show'); }
 });
 ['newBookTitle','newBookAuthor','newBookGenre','newBookLocation','newBookRRL'].forEach(id => document.getElementById(id)?.addEventListener('keypress', e => { if (e.key === 'Enter') processAddBook(); }));
 ['editBookTitle','editBookAuthor','editBookGenre','editBookLocation','editBookRRL'].forEach(id => document.getElementById(id)?.addEventListener('keypress', e => { if (e.key === 'Enter') processEditBook(); }));
 ['loginOverlay','borrowModal','addBookModal','editBookModal','visitorBorrowModal','detailModal','rrlInfoModal'].forEach(id => document.getElementById(id)?.addEventListener('click', e => { if (e.target.id === id) { if(id==='loginOverlay')closeLoginModal(); if(id==='borrowModal')closeBorrowModal(); if(id==='addBookModal')closeAddBookModal(); if(id==='editBookModal')closeEditBookModal(); if(id==='visitorBorrowModal')closeVisitorBorrowModal(); if(id==='detailModal')closeDetailModal(); if(id==='rrlInfoModal')closeRRLInfoModal(); }}));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDetailModal(); closeRRLInfoModal(); closeMobileMenu(); } });
 
-// script.js - ctrl + b 
 document.addEventListener('keydown', (e) => {
-  // Ctrl+B (Windows/Linux) or Cmd+B (Mac)
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
-    e.preventDefault(); // Prevent browser default (e.g., bookmarking)
-    // Only trigger if user is not actively typing in a form field
+    e.preventDefault(); 
     const activeTag = document.activeElement?.tagName;
     if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) {
       openAddBookModal();
@@ -869,18 +899,15 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-//Search ctrl + f
 document.addEventListener('keydown', (e) => {
-  // Ctrl+F (Windows/Linux) or Cmd+F (Mac)
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
-    e.preventDefault(); // Prevents browser's default find-in-page bar
+    e.preventDefault(); 
     const activeTag = document.activeElement?.tagName;
-    // Only trigger if user isn't already typing in a form field
     if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) {
       const searchInput = document.getElementById('searchInput');
       if (searchInput) {
         searchInput.focus();
-        searchInput.select(); // Highlights existing text for instant overwriting
+        searchInput.select(); 
       }
     }
   }

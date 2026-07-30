@@ -463,70 +463,70 @@ function openAddBookModal() {
 function closeAddBookModal() { stopBarcodeScanner(); document.getElementById('addBookModal').classList.remove('show'); document.getElementById('coverSearchResults').style.display = 'none'; setUnsavedChanges(false); }
 
 function openEditModal(bookId) {
-  if (!isAdmin) { openLoginModal(); return; }
-  const book = books.find(b => b.id === bookId);
-  if (!book) return;
-  document.getElementById('editBookId').value = book.id;
-  document.getElementById('editBookTitle').value = book.title;
-  document.getElementById('editBookAuthor').value = book.author;
-  document.getElementById('editBookGenre').value = book.genre || '';
-  document.getElementById('editBookLocation').value = book.location;
-  document.getElementById('editBookRRL').value = book.rrlLevel || '';
-  document.getElementById('editBookCover').value = '';
-  document.getElementById('editImageSizeWarning').classList.remove('show');
-  document.getElementById('editBookModal').classList.add('show');
-  document.getElementById('editBookTitle').focus();
-  setUnsavedChanges(true);
+if (!isAdmin) { openLoginModal(); return; }
+const book = books.find(b => b.id === bookId);
+if (!book) return;
+document.getElementById('editBookId').value = book.id;
+document.getElementById('editBookTitle').value = book.title;
+document.getElementById('editBookAuthor').value = book.author;
+document.getElementById('editBookGenre').value = book.genre || '';
+document.getElementById('editBookLocation').value = book.location;
+document.getElementById('editBookRRL').value = book.rrlLevel || '';
+document.getElementById('editBookCover').value = '';
+document.getElementById('editImageSizeWarning').classList.remove('show');
+document.getElementById('editBookModal').classList.add('show');
+document.getElementById('editBookTitle').focus();
+setUnsavedChanges(true);
 }
-
 function closeEditBookModal() { document.getElementById('editBookModal').classList.remove('show'); setUnsavedChanges(false); }
 function openRRLInfoModal() { document.getElementById('rrlInfoModal').classList.add('show'); document.body.style.overflow = 'hidden'; }
 function closeRRLInfoModal() { document.getElementById('rrlInfoModal').classList.remove('show'); document.body.style.overflow = ''; }
 
 function openBookDetail(bookId) {
-  const book = books.find(b => b.id === bookId);
-  if (!book) return;
-  selectedBookId = bookId;
-  const coverEl = document.getElementById('detailCoverFull');
-  coverEl.innerHTML = book.coverImage ? `<img src="${book.coverImage}" alt="${escapeHtml(book.title)}">` : '<span class="placeholder-large">📘</span>';
-  document.getElementById('detailTitle').textContent = book.title;
-  document.getElementById('detailAuthor').textContent = `by ${book.author}`;
-  document.getElementById('detailGenre').textContent = book.genre || 'Uncategorized';
-  document.getElementById('detailLocation').textContent = book.location;
-  document.getElementById('detailRRL').textContent = book.rrlLevel || 'N/A';
-  document.getElementById('detailID').textContent = `#${book.id}`;
-  const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
-  const statusEl = document.getElementById('detailStatus');
-  statusEl.textContent = isBorrowed ? '📤 Borrowed' : '✓ Available';
-  statusEl.className = `detail-status ${isBorrowed ? 'borrowed' : 'available'}`;
-  const borrowerSection = document.getElementById('detailBorrowerSection');
-  if (isBorrowed && book.borrower && isAdmin) {
-    borrowerSection.style.display = 'block';
-    document.getElementById('detailBorrowerName').textContent = book.borrower;
-    document.getElementById('detailBorrowerGrade').textContent = book.borrowerGrade || '-';
-    document.getElementById('detailBorrowerLevel').textContent = book.borrowerLevel || '-';
-    document.getElementById('detailBorrowerPhone').textContent = book.borrowerPhone || '-';
-    document.getElementById('detailBorrowerCenter').textContent = book.borrowerCenter || 'No Center';
-    document.getElementById('detailBorrowDate').textContent = book.borrowDate || '-';
-  } else { borrowerSection.style.display = 'none'; }
-  selectedRating = 0;
-  document.querySelectorAll('#detailStars .star-btn').forEach(btn => btn.classList.remove('active'));
-  const avg = getAverageRating(book.ratings);
-  const count = (book.ratings || []).length;
-  document.getElementById('detailRatingSummary').textContent = count > 0 ? `Overall: ⭐ ${avg} (${count} ratings)` : 'No ratings yet';
-  const descEl = document.getElementById('detailDescription');
-  if (descEl) {
-    if (book.description && book.description.trim()) {
-      descEl.textContent = book.description;
-      descEl.style.display = 'block';
-    } else {
-      descEl.style.display = 'none';
-    }
-  }
-  document.getElementById('detailReturnBtn').style.setProperty('display', isBorrowed ? 'flex' : 'none', 'important');
-  document.getElementById('detailBorrowBtn').style.setProperty('display', isBorrowed ? 'none' : 'flex', 'important');
-  document.getElementById('detailModal').classList.add('show');
-  document.body.style.overflow = 'hidden';
+const book = books.find(b => b.id === bookId);
+if (!book) return;
+selectedBookId = bookId;
+const coverEl = document.getElementById('detailCoverFull');
+coverEl.innerHTML = book.coverImage ? `<img src="${book.coverImage}" alt="${escapeHtml(book.title)}">` : '<span class="placeholder-large">📘</span>';
+document.getElementById('detailTitle').textContent = book.title;
+document.getElementById('detailAuthor').textContent = `by ${book.author}`;
+document.getElementById('detailGenre').textContent = book.genre || 'Uncategorized';
+document.getElementById('detailLocation').textContent = book.location;
+document.getElementById('detailRRL').textContent = book.rrlLevel || 'N/A';
+document.getElementById('detailID').textContent = `#${book.id}`;
+const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
+const statusEl = document.getElementById('detailStatus');
+statusEl.textContent = isBorrowed ? '📤 Borrowed' : '✓ Available';
+statusEl.className = `detail-status ${isBorrowed ? 'borrowed' : 'available'}`;
+const borrowerSection = document.getElementById('detailBorrowerSection');
+if (isBorrowed && book.borrower && isAdmin) {
+borrowerSection.style.display = 'block';
+document.getElementById('detailBorrowerName').textContent = book.borrower;
+document.getElementById('detailBorrowerGrade').textContent = book.borrowerGrade || '-';
+document.getElementById('detailBorrowerLevel').textContent = book.borrowerLevel || '-';
+document.getElementById('detailBorrowerPhone').textContent = book.borrowerPhone || '-';
+document.getElementById('detailBorrowerCenter').textContent = book.borrowerCenter || 'No Center';
+document.getElementById('detailBorrowDate').textContent = book.borrowDate || '-';
+} else { borrowerSection.style.display = 'none'; }
+selectedRating = 0;
+document.querySelectorAll('#detailStars .star-btn').forEach(btn => btn.classList.remove('active'));
+const avg = getAverageRating(book.ratings);
+const count = (book.ratings || []).length;
+document.getElementById('detailRatingSummary').textContent = count > 0 ? `Overall: ⭐ ${avg} (${count} ratings)` : 'No ratings yet';
+// ✅ Display description if available
+const descEl = document.getElementById('detailDescription');
+if (descEl) {
+if (book.description && book.description.trim()) {
+descEl.textContent = book.description;
+descEl.style.display = 'block';
+} else {
+descEl.style.display = 'none';
+}
+}
+document.getElementById('detailReturnBtn').style.setProperty('display', isBorrowed ? 'flex' : 'none', 'important');
+document.getElementById('detailBorrowBtn').style.setProperty('display', isBorrowed ? 'none' : 'flex', 'important');
+document.getElementById('detailModal').classList.add('show');
+document.body.style.overflow = 'hidden';
 }
 
 function closeDetailModal() { document.getElementById('detailModal').classList.remove('show'); document.body.style.overflow = ''; selectedBookId = null; }
@@ -678,30 +678,31 @@ async function addBookToSystem(title, author, genre, location, rrlLevel, coverIm
 }
 
 async function processEditBook() {
-  const btn = document.getElementById('editBookBtn');
-  const warningEl = document.getElementById('editImageSizeWarning');
-  const id = parseInt(document.getElementById('editBookId').value);
-  const title = document.getElementById('editBookTitle').value.trim();
-  const author = document.getElementById('editBookAuthor').value.trim();
-  const genre = document.getElementById('editBookGenre').value.trim();
-  const location = document.getElementById('editBookLocation').value.trim();
-  const rrlLevel = document.getElementById('editBookRRL').value;
-  const fileInput = document.getElementById('editBookCover');
-  if (!title || !author || !location) { showToast('Please fill in title, author, and location', 'error'); return; }
-  const book = books.find(b => b.id === id);
-  if (!book) return;
-  btn.disabled = true; btn.textContent = 'Saving...'; warningEl.classList.remove('show');
-  try {
-    let coverImage = book.coverImage;
-    const file = fileInput.files[0];
-    if (file) {
-      if (file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; warningEl.classList.add('show'); }
-      coverImage = await compressImage(file, 300, 0.2);
-    }
-    book.title = title; book.author = author; book.genre = genre || 'Uncategorized'; book.location = location; book.rrlLevel = rrlLevel || 'N/A'; book.coverImage = coverImage;
-    if (await saveBooksToFirebase()) { closeEditBookModal(); renderBooks(); openBookDetail(id); showToast(`"${title}" updated successfully`, 'success'); setUnsavedChanges(false); }
-  } catch (error) { console.error('Edit error:', error); showToast(`Error updating book: ${error.message}`, 'error'); }
-  finally { btn.disabled = false; btn.textContent = 'Update Book'; warningEl.classList.remove('show'); }
+const btn = document.getElementById('editBookBtn');
+const warningEl = document.getElementById('editImageSizeWarning');
+const id = parseInt(document.getElementById('editBookId').value);
+const title = document.getElementById('editBookTitle').value.trim();
+const author = document.getElementById('editBookAuthor').value.trim();
+const genre = document.getElementById('editBookGenre').value.trim();
+const location = document.getElementById('editBookLocation').value.trim();
+const rrlLevel = document.getElementById('editBookRRL').value;
+const fileInput = document.getElementById('editBookCover');
+if (!title || !author || !location) { showToast('Please fill in title, author, and location', 'error'); return; }
+const book = books.find(b => b.id === id);
+if (!book) return;
+btn.disabled = true; btn.textContent = 'Saving...'; warningEl.classList.remove('show');
+try {
+let coverImage = book.coverImage;
+const file = fileInput.files[0];
+if (file) {
+if (file.size > 500 * 1024) { warningEl.textContent = `⚠️ Image is ${(file.size/1024/1024).toFixed(1)}MB. Auto-compressing...`; warningEl.classList.add('show'); }
+coverImage = await compressImage(file, 300, 0.2);
+}
+book.title = title; book.author = author; book.genre = genre || 'Uncategorized'; book.location = location; book.rrlLevel = rrlLevel || 'N/A'; book.coverImage = coverImage;
+// Note: description is not editable via UI (system-generated only)
+if (await saveBooksToFirebase()) { closeEditBookModal(); renderBooks(); openBookDetail(id); showToast(`"${title}" updated successfully`, 'success'); setUnsavedChanges(false); }
+} catch (error) { console.error('Edit error:', error); showToast(`Error updating book: ${error.message}`, 'error'); }
+finally { btn.disabled = false; btn.textContent = 'Update Book'; warningEl.classList.remove('show'); }
 }
 
 async function removeBook(id) { 

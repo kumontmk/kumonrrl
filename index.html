@@ -190,6 +190,7 @@
         <input type="text" id="editBookGenre" placeholder="Genre">
         <input type="text" id="editBookLocation" placeholder="Location">
         <select id="editBookRRL"><option value="Read Together">Read Together</option><option value="2A">2A</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option><option value="H">H</option><option value="I">I</option><option value="Further Reading">Further Reading</option><option value="N/A">N/A</option></select>
+        <textarea id="editBookDescription" placeholder="Book description (optional)"></textarea>
         <input type="file" id="editBookCover" accept="image/*">
         <p id="editImageSizeWarning" class="image-warning"></p>
         <p class="camera-hint">Leave empty to keep current cover image.</p>
@@ -204,6 +205,9 @@
   <div class="detail-modal-overlay" id="detailModal" onclick="if(event.target===this)closeDetailModal()">
     <div class="detail-modal">
       <button class="close-detail-btn" onclick="closeDetailModal()">✕</button>
+      <!--arrow left and right books info-->
+        <button class="nav-arrow prev-book" onclick="navigateBookModal(-1)">❮</button>
+        <button class="nav-arrow next-book" onclick="navigateBookModal(1)">❯</button>
       <div class="detail-content">
         <div class="detail-cover-full" id="detailCoverFull"></div>
         <div class="detail-info">

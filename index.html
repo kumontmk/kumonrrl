@@ -74,6 +74,7 @@
       <input type="text" id="searchInput" placeholder="Search by title, author or location..." data-tr-placeholder="searchPh">
       <select id="filterStatus"></select>
       <select id="filterRRL"></select>
+      <select id="filterLanguage"></select>
       <select id="sortBy"></select>
     </section>
 
@@ -167,6 +168,7 @@
         <input type="text" id="newBookAuthor" placeholder="Author *" data-tr-placeholder="authorPh">
         <input type="text" id="newBookGenre" placeholder="Genre" data-tr-placeholder="genrePh">
         <input type="text" id="newBookLocation" placeholder="Location *" data-tr-placeholder="locationPh">
+        <select id="newBookLanguage"></select>
         <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
           <button type="button" class="btn btn-small btn-primary" id="startScanBtn" onclick="startBarcodeScanner()" data-tr="scanIsbn">📷 Scan ISBN Barcode</button>
           <button type="button" class="btn btn-small btn-danger" id="stopScanBtn" onclick="stopBarcodeScanner()" style="display:none" data-tr="stop">⏹ Stop</button>
@@ -196,6 +198,7 @@
         <input type="text" id="editBookAuthor" placeholder="Author *" data-tr-placeholder="authorPh">
         <input type="text" id="editBookGenre" placeholder="Genre" data-tr-placeholder="genrePh">
         <input type="text" id="editBookLocation" placeholder="Location *" data-tr-placeholder="locationPh">
+        <select id="editBookLanguage"></select>
         <select id="editBookRRL"></select>
         <label for="editBookCover" class="camera-hint" data-tr="keepCoverHint">Leave empty to keep current cover image.</label>
         <input type="file" id="editBookCover" accept="image/*">
@@ -225,6 +228,7 @@
             <div class="detail-meta-item"><span class="meta-label" data-tr="location">Location</span><span class="meta-value" id="detailLocation"></span></div>
             <div class="detail-meta-item"><span class="meta-label" data-tr="rrlLevel">RRL Level</span><span class="meta-value" id="detailRRL"></span></div>
             <div class="detail-meta-item"><span class="meta-label" data-tr="bookId">Book ID</span><span class="meta-value" id="detailID"></span></div>
+            <div class="detail-meta-item"><span class="meta-label" data-tr="language">Language</span><span class="meta-value" id="detailLanguage"></span></div>
           </div>
           <p class="detail-description" id="detailDescription"></p>
           <div class="rating-section">

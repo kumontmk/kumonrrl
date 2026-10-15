@@ -30,6 +30,7 @@ let isScanning = false;
 let pendingBookDescription = ''; // ✅ Temp storage for fetched description
 let isInitialLoad = true;        // ✅ Flag to prevent saving during initial load
 let initialLoadComplete = false; // ✅ Track if first sync completed
+let addFormLangTouched = false;  // ✅ True when admin manually picks book language in Add form
 
 // ═══════════════════════════════════════════════════════════
 // 🌐 I18N — TRANSLATION LAYER (same pattern as parent-request)
@@ -45,6 +46,8 @@ const I18N = {
     searchPh: 'Search by title, author or location...',
     allBooks: 'All Books', availableOnly: 'Available Only', borrowedOnly: 'Borrowed Only',
     allRRL: 'All RRL Levels', rrlReadTogether: 'Read Together', rrlFurther: 'Further Reading',
+    allLanguages: 'All Languages', englishBooks: 'English Books', chineseBooks: 'Chinese Books',
+    language: 'Language', langEnglish: 'English', langChinese: 'Chinese',
     sortByNewest: 'Sort by Newest', sortByTitle: 'Sort by Title', sortByAuthor: 'Sort by Author',
     sortByStatus: 'Sort by Status', sortByRRL: 'Sort by RRL Level',
     loading: 'Loading books from Firebase...',
@@ -150,6 +153,8 @@ const I18N = {
     searchPh: '搜尋書名、作者或位置...',
     allBooks: '全部書籍', availableOnly: '僅可借閱', borrowedOnly: '僅已借出',
     allRRL: '所有RRL級別', rrlReadTogether: '一起閱讀', rrlFurther: '延伸閱讀',
+    allLanguages: '全部語言', englishBooks: '英文書', chineseBooks: '中文書',
+    language: '語言', langEnglish: '英文', langChinese: '中文',
     sortByNewest: '按最新排序', sortByTitle: '按書名排序', sortByAuthor: '按作者排序',
     sortByStatus: '按狀態排序', sortByRRL: '按RRL級別排序',
     loading: '正在載入書籍...',
@@ -267,6 +272,33 @@ const CENTER_OPTIONS = [
   { value: 'Kumon Tap Siac', label: 'Kumon Tap Siac 塔石' }
 ];
 
+// ═══════════════════════════════════════════════════════════
+// 📚 BOOK LANGUAGE (English / Chinese)
+// Books without an explicit `language` field are auto-detected
+// from the title: any Chinese character => Chinese book.
+// ═══════════════════════════════════════════════════════════
+function detectBookLanguage(title) {
+  return /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(title || '') ? 'chinese' : 'english';
+}
+function getBookLanguage(book) {
+  if (book.language === 'english' || book.language === 'chinese') return book.language;
+  return detectBookLanguage(book.title);
+}
+function langDisplayLabel(bookLang) {
+  return bookLang === 'chinese' ? tr('langChinese') : tr('langEnglish');
+}
+// Auto-pick language in the Add form while typing (unless admin chose manually)
+function autoDetectAddLanguage() {
+  const sel = document.getElementById('newBookLanguage');
+  if (!sel) return;
+  const title = document.getElementById('newBookTitle')?.value || '';
+  if (detectBookLanguage(title) === 'chinese') {
+    sel.value = 'chinese';
+  } else if (!addFormLangTouched) {
+    sel.value = 'english';
+  }
+}
+
 function applyLang() {
   document.documentElement.lang = lang === 'zh-TW' ? 'zh-TW' : 'en';
   const toggleLabel = lang === 'en' ? '中文' : 'EN';
@@ -302,6 +334,11 @@ function rebuildSelects() {
     ...RRL_CODES.map(c => [c, c]),
     ['Further Reading', tr('rrlFurther')]
   ]);
+  fillSelect(document.getElementById('filterLanguage'), [
+    ['', tr('allLanguages')],
+    ['english', tr('englishBooks')],
+    ['chinese', tr('chineseBooks')]
+  ]);
   fillSelect(document.getElementById('sortBy'), [
     ['newest', tr('sortByNewest')], ['title', tr('sortByTitle')], ['author', tr('sortByAuthor')],
     ['status', tr('sortByStatus')], ['rrl', tr('sortByRRL')]
@@ -315,6 +352,12 @@ function rebuildSelects() {
   ];
   fillSelect(document.getElementById('newBookRRL'), rrlFormOptions);
   fillSelect(document.getElementById('editBookRRL'), rrlFormOptions);
+  const langFormOptions = [
+    ['english', tr('langEnglish')],
+    ['chinese', tr('langChinese')]
+  ];
+  fillSelect(document.getElementById('newBookLanguage'), langFormOptions);
+  fillSelect(document.getElementById('editBookLanguage'), langFormOptions);
   fillSelect(document.getElementById('borrowerCenter'), [
     ['', tr('noCenter')],
     ...CENTER_OPTIONS.map(c => [c.value, c.label])
@@ -537,6 +580,7 @@ function fillBookForm(data) {
     genre = typeof cat === 'string' ? cat : (cat.name || cat.title || String(cat));
   }
   document.getElementById('newBookGenre').value = genre;
+  autoDetectAddLanguage(); // ✅ Set language from fetched title
   if (data.thumbnail) { fetchAndSetCover(data.thumbnail); }
 }
 
@@ -749,6 +793,10 @@ function openLoginModalFromVisitor() { closeVisitorBorrowModal(); openLoginModal
 function openAddBookModal() {
   if (!isAdmin) { openLoginModal(); return; }
   ['newBookTitle', 'newBookAuthor', 'newBookGenre', 'newBookLocation', 'newBookRRL', 'newBookCover'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  // ✅ Reset book language to default English + re-enable auto-detect
+  addFormLangTouched = false;
+  const langSel = document.getElementById('newBookLanguage');
+  if (langSel) langSel.value = 'english';
   document.getElementById('imageSizeWarning').classList.remove('show');
   document.getElementById('barcode-reader').style.display = 'none';
   document.getElementById('coverSearchResults').style.display = 'none';
@@ -768,6 +816,7 @@ function openEditModal(bookId) {
   document.getElementById('editBookAuthor').value = book.author;
   document.getElementById('editBookGenre').value = book.genre || '';
   document.getElementById('editBookLocation').value = book.location;
+  document.getElementById('editBookLanguage').value = getBookLanguage(book);
   document.getElementById('editBookRRL').value = book.rrlLevel || '';
   document.getElementById('editBookCover').value = '';
   document.getElementById('editImageSizeWarning').classList.remove('show');
@@ -792,6 +841,7 @@ function openBookDetail(bookId) {
   document.getElementById('detailLocation').textContent = book.location;
   document.getElementById('detailRRL').textContent = book.rrlLevel || 'N/A';
   document.getElementById('detailID').textContent = `#${book.id}`;
+  document.getElementById('detailLanguage').textContent = langDisplayLabel(getBookLanguage(book));
   const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
   const statusEl = document.getElementById('detailStatus');
   statusEl.textContent = isBorrowed ? tr('borrowed') : tr('available');
@@ -944,6 +994,7 @@ async function processAddBook() {
   const genre = document.getElementById('newBookGenre').value.trim();
   const location = document.getElementById('newBookLocation').value.trim();
   const rrlLevel = document.getElementById('newBookRRL').value;
+  const language = document.getElementById('newBookLanguage').value;
   if (!title || !author || !location) { showToast(tr('fillRequired'), 'error'); return; }
   btn.disabled = true; btn.textContent = tr('saving'); warningEl.classList.remove('show');
   const file = document.getElementById('newBookCover').files[0];
@@ -956,12 +1007,12 @@ async function processAddBook() {
       }
       coverImage = await compressImage(file, 300, 0.2);
     }
-    await addBookToSystem(title, author, genre, location, rrlLevel, coverImage, pendingBookDescription);
+    await addBookToSystem(title, author, genre, location, rrlLevel, coverImage, pendingBookDescription, language);
     closeAddBookModal();
   } catch (error) {
     console.error('Image error:', error);
     showToast(tr('imgErrorNoImg'), 'error');
-    await addBookToSystem(title, author, genre, location, rrlLevel, null, pendingBookDescription);
+    await addBookToSystem(title, author, genre, location, rrlLevel, null, pendingBookDescription, language);
     closeAddBookModal();
   } finally {
     btn.disabled = false;
@@ -971,9 +1022,10 @@ async function processAddBook() {
   }
 }
 
-async function addBookToSystem(title, author, genre, location, rrlLevel, coverImage, description = '') {
+async function addBookToSystem(title, author, genre, location, rrlLevel, coverImage, description = '', language = '') {
   const newBook = {
     id: nextId++, title, author, genre: genre || 'Uncategorized', location, rrlLevel: rrlLevel || 'N/A',
+    language: (language === 'english' || language === 'chinese') ? language : detectBookLanguage(title),
     coverImage, description: description || '', status: 'available',
     ratings: [], borrower: null, borrowDate: null, borrowerGrade: null, borrowerLevel: null, borrowerPhone: null, borrowerCenter: null
   };
@@ -990,6 +1042,7 @@ async function processEditBook() {
   const genre = document.getElementById('editBookGenre').value.trim();
   const location = document.getElementById('editBookLocation').value.trim();
   const rrlLevel = document.getElementById('editBookRRL').value;
+  const language = document.getElementById('editBookLanguage').value;
   const fileInput = document.getElementById('editBookCover');
   if (!title || !author || !location) { showToast(tr('fillRequired'), 'error'); return; }
   const book = books.find(b => b.id === id);
@@ -1006,6 +1059,8 @@ async function processEditBook() {
       coverImage = await compressImage(file, 300, 0.2);
     }
     book.title = title; book.author = author; book.genre = genre || 'Uncategorized'; book.location = location; book.rrlLevel = rrlLevel || 'N/A'; book.coverImage = coverImage;
+    // ✅ Editing always persists an explicit language (fixes any wrong auto-detect)
+    book.language = (language === 'english' || language === 'chinese') ? language : detectBookLanguage(title);
     // Note: description is not editable via UI (system-generated only)
     if (await saveBooksToFirebase()) { closeEditBookModal(); renderBooks(); openBookDetail(id); showToast(tr('bookUpdated', { title }), 'success'); setUnsavedChanges(false); }
   } catch (error) { console.error('Edit error:', error); showToast(tr('updateError', { msg: error.message }), 'error'); }
@@ -1064,10 +1119,12 @@ function getFilteredAndSortedBooks() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
   const filterStatus = document.getElementById('filterStatus').value;
   const filterRRL = document.getElementById('filterRRL').value;
+  const filterLanguage = document.getElementById('filterLanguage')?.value || '';
   const sortBy = document.getElementById('sortBy').value;
   let filtered = books.filter(book => {
     const matchesSearch = book.title.toLowerCase().includes(searchTerm) || book.author.toLowerCase().includes(searchTerm) || book.location.toLowerCase().includes(searchTerm);
-    return matchesSearch && (filterStatus === 'all' || book.status === filterStatus) && (filterRRL === '' || book.rrlLevel === filterRRL);
+    const matchesLanguage = filterLanguage === '' || getBookLanguage(book) === filterLanguage;
+    return matchesSearch && (filterStatus === 'all' || book.status === filterStatus) && (filterRRL === '' || book.rrlLevel === filterRRL) && matchesLanguage;
   });
   filtered.sort((a, b) => {
     if (sortBy === 'title') return a.title.localeCompare(b.title);
@@ -1098,6 +1155,8 @@ function renderBooks() {
   emptyState.style.display = 'none';
   grid.innerHTML = filteredBooks.map(book => {
     const isBorrowed = (book.status || '').toLowerCase().trim() === 'borrowed';
+    const bookLang = getBookLanguage(book);
+    const langBadge = `<span class="lang-badge lang-${bookLang}">${bookLang === 'chinese' ? '中' : 'EN'}</span>`;
     const avg = getAverageRating(book.ratings);
     const totalRatings = (book.ratings || []).length;
     const ratingDisplay = totalRatings > 0 ? `<div class="book-rating">⭐ ${avg} <span class="rating-count">(${totalRatings})</span></div>` : '';
@@ -1106,7 +1165,7 @@ function renderBooks() {
       <div class="book-title">${escapeHtml(book.title)}</div>
       <div class="book-author">${tr('by')} ${escapeHtml(book.author)}</div>
       <div class="book-location">📍 ${escapeHtml(book.location)}</div>
-      <div class="book-meta"><span>${escapeHtml(book.genre)}</span><span>•</span><span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span><span>•</span><span>ID: ${book.id}</span></div>
+      <div class="book-meta"><span>${escapeHtml(book.genre)}</span><span>•</span><span class="rrl-badge">RRL: ${escapeHtml(book.rrlLevel || 'N/A')}</span><span>•</span>${langBadge}<span>•</span><span>ID: ${book.id}</span></div>
       ${ratingDisplay}
       <span class="status-badge ${isBorrowed ? 'borrowed' : 'available'}">${isBorrowed ? tr('borrowed') : tr('available')}</span>
       ${isBorrowed ? `<div style="margin-top:0.5rem;">${isAdmin ? `<span class="borrower-badge">${escapeHtml(book.borrower)}</span><br><small style="color:#64748b;display:block;margin-top:0.25rem">${tr('grade')}: ${escapeHtml(book.borrowerGrade)} • ${tr('level')}: ${escapeHtml(book.borrowerLevel)}</small><small style="color:#64748b;display:block;margin-top:0.15rem">${tr('phone')}: ${escapeHtml(book.borrowerPhone || 'N/A')}</small><small style="color:#64748b;display:block;margin-top:0.15rem">${tr('center')}: ${escapeHtml(book.borrowerCenter || tr('noCenter'))}</small><small style="color:#94a3b8;display:block;margin-top:0.15rem">${tr('since')}: ${book.borrowDate}</small>` : `<small style="color:#64748b">${tr('currentlyBorrowed')}</small>`}</div>` : ''}
@@ -1201,7 +1260,12 @@ document.getElementById('passwordInput')?.addEventListener('keypress', e => { if
 document.getElementById('searchInput')?.addEventListener('input', renderBooks);
 document.getElementById('filterStatus')?.addEventListener('change', renderBooks);
 document.getElementById('filterRRL')?.addEventListener('change', renderBooks);
+document.getElementById('filterLanguage')?.addEventListener('change', renderBooks);
 document.getElementById('sortBy')?.addEventListener('change', renderBooks);
+
+// ✅ Book language auto-detect while typing in the Add form
+document.getElementById('newBookTitle')?.addEventListener('input', autoDetectAddLanguage);
+document.getElementById('newBookLanguage')?.addEventListener('change', () => { addFormLangTouched = true; });
 
 document.getElementById('newBookCover')?.addEventListener('change', function(e) {
   const file = e.target.files[0]; const warningEl = document.getElementById('imageSizeWarning');

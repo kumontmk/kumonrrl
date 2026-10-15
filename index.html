@@ -2,228 +2,233 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#87CEEB">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kumon Recommended Reading List Online Library</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="icon" type="image/png" href="favicon.png">
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
+  <!-- ═══════════ HEADER ═══════════ -->
   <header>
     <div class="header-left">
-      <img src="icon-192.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
-      <h1>Kumon Recommended Reading List Online Library</h1>
+      <button class="hamburger-btn" onclick="toggleMobileMenu()" aria-label="Menu">☰</button>
+      <img src="logo.png" alt="Kumon" class="header-logo" onerror="this.style.display='none'">
+      <h1 data-tr="pageTitle">Kumon Recommended Reading List Online Library</h1>
     </div>
-    <button class="hamburger-btn" onclick="toggleMobileMenu()" aria-label="Menu">☰</button>
     <div class="header-actions desktop-actions">
-      <span class="mode-indicator" id="modeIndicator">👥 Public View</span>
-      <span class="unsaved-indicator" id="unsavedIndicator" style="display:none;">● Unsaved changes</span>
-      <button class="btn btn-logout admin-only" onclick="logout()">🚪 Logout</button>
-      <button class="btn btn-login public-only" onclick="openLoginModal()">🔐 Admin Login</button>
+      <span id="modeIndicator" class="mode-indicator" data-tr="publicView">👥 Public View</span>
+      <span id="unsavedIndicator" class="unsaved-indicator" data-tr="unsaved">● Unsaved changes</span>
+      <button id="langToggle" class="btn btn-small btn-logout" type="button">中文</button>
+      <button class="btn btn-small btn-logout admin-only" onclick="logout()" data-tr="logout">🚪 Logout</button>
+      <button class="btn btn-small btn-login public-only" onclick="openLoginModal()" data-tr="adminLogin">🔐 Admin Login</button>
     </div>
     <div class="mobile-menu" id="mobileMenu">
       <div class="mobile-menu-content">
-        <span class="mode-indicator" id="mobileModeIndicator">👥 Public View</span>
-        <span class="unsaved-indicator" id="mobileUnsavedIndicator" style="display:none;">● Unsaved changes</span>
-        <button class="btn btn-logout admin-only" onclick="logout()">🚪 Logout</button>
-        <button class="btn btn-login public-only" onclick="openLoginModal()">🔐 Admin Login</button>
+        <span id="mobileModeIndicator" class="mode-indicator" data-tr="publicView">👥 Public View</span>
+        <span id="mobileUnsavedIndicator" class="unsaved-indicator" data-tr="unsaved">● Unsaved changes</span>
+        <button id="mobileLangToggle" class="btn btn-small btn-logout" type="button">中文</button>
+        <button class="btn btn-small btn-logout admin-only" onclick="logout()" data-tr="logout">🚪 Logout</button>
+        <button class="btn btn-small btn-login public-only" onclick="openLoginModal()" data-tr="adminLogin">🔐 Admin Login</button>
       </div>
     </div>
   </header>
 
-  <div class="banner-carousel">
+  <!-- ═══════════ BANNER CAROUSEL ═══════════ -->
+  <section class="banner-carousel">
     <div class="carousel-track">
-      <div class="carousel-slide"><img src="banner1.jpg" alt="Read" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #87CEEB 0%, #4A90E2 100%)';"><div class="carousel-caption">Read • Grow • Learn</div></div>
-      <div class="carousel-slide"><img src="banner2.jpg" alt="Explore" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #A8E6CF 0%, #3B82F6 100%)';"><div class="carousel-caption">Explore our Collection</div></div>
-      <div class="carousel-slide"><img src="banner3.jpg" alt="Journey" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #FFD166 0%, #06D6A0 100%)';"><div class="carousel-caption">Start Your Journey</div></div>
+      <div class="carousel-slide">
+        <img src="banner1.jpg" alt="" onerror="this.style.display='none'">
+        <div class="carousel-caption" data-tr="caption1">Read • Grow • Learn</div>
+      </div>
+      <div class="carousel-slide">
+        <img src="banner2.jpg" alt="" onerror="this.style.display='none'">
+        <div class="carousel-caption" data-tr="caption2">Explore our Collection</div>
+      </div>
+      <div class="carousel-slide">
+        <img src="banner3.jpg" alt="" onerror="this.style.display='none'">
+        <div class="carousel-caption" data-tr="caption3">Start Your Journey</div>
+      </div>
     </div>
     <button class="carousel-btn prev-btn" onclick="moveSlide(-1)">❮</button>
     <button class="carousel-btn next-btn" onclick="moveSlide(1)">❯</button>
     <div class="carousel-dots"></div>
-  </div>
+  </section>
 
-  <div class="container">
-    <div class="stats admin-only">
-      <div class="stat-card"><h3>Total Books</h3><div class="number" id="totalBooks">0</div></div>
-      <div class="stat-card"><h3>Available</h3><div class="number" id="availableBooks">0</div></div>
-      <div class="stat-card"><h3>Borrowed</h3><div class="number" id="borrowedBooks">0</div></div>
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main class="container">
+
+    <section class="stats">
+      <div class="stat-card"><h3 data-tr="statTotal">Total Books</h3><div class="number" id="totalBooks">0</div></div>
+      <div class="stat-card"><h3 data-tr="statAvailable">Available</h3><div class="number" id="availableBooks">0</div></div>
+      <div class="stat-card"><h3 data-tr="statBorrowed">Borrowed</h3><div class="number" id="borrowedBooks">0</div></div>
+    </section>
+
+    <!-- Bilingual notice: already EN + ZH, shown as-is -->
+    <section class="public-notice">
+      <p>📚 What is the Kumon Recommended Reading List? The Kumon Recommended Reading List (RRL) is a list of books intended to help Kumon students find books that they will enjoy reading, and to encourage them to read books from a wide range of genres and styles.</p>
+      <p>📚 什麼是公文式推薦閱讀書單？ 公文式推薦閱讀書單（RRL）是一份書籍清單，旨在幫助公文式學生找到他們感興趣的書籍，並鼓勵他們發掘不同體裁和風格的作品。</p>
+      <button class="btn btn-primary" onclick="openRRLInfoModal()" data-tr="knowMore">📖 Know more about the RRL</button>
+    </section>
+
+    <section class="controls">
+      <input type="text" id="searchInput" placeholder="Search by title, author or location..." data-tr-placeholder="searchPh">
+      <select id="filterStatus"></select>
+      <select id="filterRRL"></select>
+      <select id="sortBy"></select>
+    </section>
+
+    <div id="loadingState" class="loading">
+      <div class="spinner"></div>
+      <span data-tr="loading">Loading books from Firebase...</span>
     </div>
 
-    <div class="public-notice">
-      <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0 0 1rem; line-height: 1.6;">
-        <strong>📚 What is the Kumon Recommended Reading List?</strong><br>
-        The Kumon Recommended Reading List (RRL) is a list of books intended to help Kumon students find books that they will enjoy reading, and to encourage them to read books from a wide range of genres and styles.<br><br>
-        <strong>📚 什麼是公文式推薦閱讀書單？</strong><br>
-        公文式推薦閱讀書單（RRL）是一份書籍清單，旨在幫助公文式學生找到他們感興趣的書籍，並鼓勵他們發掘不同體裁和風格的作品。
-      </p>
-      <button class="btn btn-primary btn-small" onclick="openRRLInfoModal()">📖 Know more about the RRL</button>
+    <div id="emptyState" class="empty-state" style="display:none">
+      <h2>📚 Library is empty</h2>
+      <p>Try adjusting your search or filter criteria</p>
     </div>
 
-    <div class="controls">
-      <input type="text" id="searchInput" placeholder="Search by title, author, or location...">
-      <select id="filterStatus"><option value="all">All Books</option><option value="available">Available Only</option><option value="borrowed">Borrowed Only</option></select>
-      <select id="filterRRL"><option value="">All RRL Levels</option><option value="Read Together">Read Together</option><option value="2A">2A</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option><option value="H">H</option><option value="I">I</option><option value="Further Reading">Further Reading</option></select>
-      <select id="sortBy"><option value="id">Sort by Newest</option><option value="title">Sort by Title</option><option value="author">Sort by Author</option><option value="status">Sort by Status</option><option value="rrl">Sort by RRL Level</option></select>
-    </div>
-
-    <div id="loadingState" class="loading"><div class="spinner"></div>Loading books from Firebase...</div>
     <div id="booksGrid" class="books-grid"></div>
-    <div id="emptyState" class="empty-state" style="display:none;"><h2>📚 Library is empty</h2><p>Try adjusting your search or filter criteria</p></div>
-  </div>
+  </main>
 
-  <button class="btn btn-fab btn-primary admin-only" onclick="openAddBookModal()">➕</button>
+  <button class="btn btn-fab admin-only" onclick="openAddBookModal()" aria-label="Add Book">➕</button>
 
-  <footer class="site-footer"><div class="footer-content"><p>📚 Kumon Taipa Mei Keng • 📞 <a href="tel:+85328831773">2883 1773</a></p></div></footer>
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <p>📚 Kumon Taipa Mei Keng • 📞 <a href="tel:+85328831773">2883 1773</a></p>
+    </div>
+  </footer>
 
-  <div class="login-overlay" id="loginOverlay" onclick="if(event.target===this)closeLoginModal()">
+  <!-- ═══════════ ADMIN LOGIN OVERLAY ═══════════ -->
+  <div class="login-overlay" id="loginOverlay">
     <div class="login-box">
-      <h2>🔐 Admin Login</h2>
-      <p>Enter password to manage library</p>
-      <input type="password" id="passwordInput" placeholder="Enter password">
-      <p id="loginError" style="display:none;color:var(--danger);margin-bottom:1rem;">Invalid password</p>
+      <h2 data-tr="loginTitle">🔐 Admin Login</h2>
+      <p data-tr="loginHint">Enter password to manage library</p>
+      <p id="loginError" style="display:none; color: var(--danger); font-weight: 600; margin-bottom: 1rem;" data-tr="loginErrorMsg">Invalid password</p>
+      <input type="password" id="passwordInput" placeholder="Password" data-tr-placeholder="passwordPh">
       <div class="modal-actions">
-        <button class="btn btn-login" onclick="login()">Login as Admin</button>
-        <button class="btn btn-primary public-only" onclick="closeLoginModal()">Continue as Visitor</button>
+        <button class="btn btn-primary btn-large" onclick="login()" data-tr="loginBtn">Login as Admin</button>
+        <button class="btn btn-logout btn-large" onclick="closeLoginModal()" data-tr="continueVisitor">Continue as Visitor</button>
       </div>
     </div>
   </div>
 
-  <div class="modal-overlay" id="borrowModal" onclick="if(event.target===this)closeBorrowModal()">
+  <!-- ═══════════ BORROW MODAL (ADMIN) ═══════════ -->
+  <div class="modal-overlay" id="borrowModal">
     <div class="modal">
-      <h3>📚 Borrow Book</h3>
-      <p>Borrowing: <strong id="borrowBookTitle"></strong></p>
+      <h3 data-tr="borrowTitle">📚 Borrow Book</h3>
+      <p style="margin-bottom: 1rem; color: var(--text-secondary);"><span data-tr="borrowing">Borrowing:</span> <strong id="borrowBookTitle"></strong></p>
       <div class="modal-form">
-        <input type="text" id="borrowerName" placeholder="Student Name">
-        <input type="text" id="borrowerGrade" placeholder="Grade (e.g. P3)">
-        <input type="text" id="borrowerLevel" placeholder="Kumon Level (e.g. D)">
+        <label for="borrowerName" data-tr="name">Name</label>
+        <input type="text" id="borrowerName">
+        <label for="borrowerGrade" data-tr="grade">Grade</label>
+        <input type="text" id="borrowerGrade">
+        <label for="borrowerLevel" data-tr="level">Level</label>
+        <input type="text" id="borrowerLevel">
+        <label for="borrowerPhone" data-tr="phone">Phone</label>
         <div class="phone-input-group">
           <span class="phone-prefix">+853</span>
-          <input type="tel" id="borrowerPhone" placeholder="6123 4567">
+          <input type="tel" id="borrowerPhone">
         </div>
-        <select id="borrowerCenter">
-          <option value="">No Center</option>
-          <option value="Kumon Taipa Mei Keng">Kumon Taipa Mei Keng</option>
-          <option value="Kumon Taipa Pac Tat">Kumon Taipa Pac Tat</option>
-          <option value="Kumon Champs">Kumon Champs</option>
-          <option value="Kumon Tap Siac">Kumon Tap Siac</option>
-        </select>
+        <label for="borrowerCenter" data-tr="center">Center</label>
+        <select id="borrowerCenter"></select>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-primary" id="confirmBorrowBtn" onclick="confirmBorrow()">Confirm Borrow</button>
-        <button class="btn" onclick="closeBorrowModal()" style="background:var(--bg-input);color:var(--text-secondary)">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmBorrow()" data-tr="confirmBorrow">Confirm Borrow</button>
+        <button class="btn btn-logout" onclick="closeBorrowModal()" data-tr="cancel">Cancel</button>
       </div>
     </div>
   </div>
 
-  <div class="modal-overlay" id="visitorBorrowModal" onclick="if(event.target===this)closeVisitorBorrowModal()">
+  <!-- ═══════════ VISITOR BORROW MODAL ═══════════ -->
+  <div class="modal-overlay" id="visitorBorrowModal">
     <div class="modal">
-      <h3>📚 Borrow a Book</h3>
-      <p>To borrow books from our library, please:</p>
+      <h3 data-tr="visitorTitle">📚 Borrow a Book</h3>
+      <p style="margin-bottom: 1rem; color: var(--text-secondary);" data-tr="visitorHint">To borrow books from our library, please:</p>
       <div class="contact-info">
-        <h4>📞 Visit or Call Us</h4>
-        <p><strong>Kumon Taipa Mei Keng</strong><br>📞 <a href="tel:+85328831773">+853 2883 1773</a><br>🏠 澳門仔柯維納馬路美景花園美德閣地下AU座</p>
+        <h4 data-tr="visitCall">📞 Visit or Call Us</h4>
+        <p><strong>Kumon Taipa Mei Keng</strong><br>
+           📞 <a href="tel:+85328831773">+853 2883 1773</a><br>
+           🏠 澳門仔柯維納馬路美景花園美德閣地下AU座</p>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-login" onclick="openLoginModalFromVisitor()">🔐 Login as Admin</button>
-        <button class="btn" onclick="closeVisitorBorrowModal()" style="background:var(--bg-input);color:var(--text-secondary)">Close</button>
+        <button class="btn btn-login" onclick="openLoginModalFromVisitor()" data-tr="loginAsAdmin">🔐 Login as Admin</button>
+        <button class="btn btn-logout" onclick="closeVisitorBorrowModal()" data-tr="close">Close</button>
       </div>
     </div>
   </div>
 
-  <div class="modal-overlay" id="addBookModal" onclick="if(event.target===this)closeAddBookModal()">
+  <!-- ═══════════ ADD BOOK MODAL ═══════════ -->
+  <div class="modal-overlay" id="addBookModal">
     <div class="modal">
-      <h3>➕ Add New Book</h3>
-      
-      <!-- Barcode Scanner Section -->
-      <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem; flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="startBarcodeScanner()" id="startScanBtn">📷 Scan ISBN Barcode</button>
-        <button class="btn" onclick="stopBarcodeScanner()" id="stopScanBtn" style="display:none;background:var(--danger);color:white;">⏹ Stop</button>
-      </div>
-      <div id="barcode-reader" style="display:none; margin-bottom:0.75rem; background:var(--bg-card); border-radius:var(--radius-sm);"></div>
-
+      <h3 data-tr="addBookTitle">➕ Add New Book</h3>
       <div class="modal-form">
-        <input type="text" id="newBookTitle" placeholder="Book Title">
-        <input type="text" id="newBookAuthor" placeholder="Author">
-        <input type="text" id="newBookGenre" placeholder="Genre (e.g. Fiction)">
-        <input type="text" id="newBookLocation" placeholder="Location (e.g. Shelf A3)">
-        <select id="newBookRRL">
-          <option value="">Select RRL Level</option>
-          <option value="Read Together">Read Together</option>
-          <option value="2A">2A</option>
-          <option value="A">A</option>
-          <option value="B">B</option>
-          <option value="C">C</option>
-          <option value="D">D</option>
-          <option value="E">E</option>
-          <option value="F">F</option>
-          <option value="G">G</option>
-          <option value="H">H</option>
-          <option value="I">I</option>
-          <option value="Further Reading">Further Reading</option>
-          <option value="N/A">N/A</option>
-        </select>
+        <input type="text" id="newBookTitle" placeholder="Book Title *" data-tr-placeholder="titlePh">
+        <input type="text" id="newBookAuthor" placeholder="Author *" data-tr-placeholder="authorPh">
+        <input type="text" id="newBookGenre" placeholder="Genre" data-tr-placeholder="genrePh">
+        <input type="text" id="newBookLocation" placeholder="Location *" data-tr-placeholder="locationPh">
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button type="button" class="btn btn-small btn-primary" id="startScanBtn" onclick="startBarcodeScanner()" data-tr="scanIsbn">📷 Scan ISBN Barcode</button>
+          <button type="button" class="btn btn-small btn-danger" id="stopScanBtn" onclick="stopBarcodeScanner()" style="display:none" data-tr="stop">⏹ Stop</button>
+        </div>
+        <div id="barcode-reader" style="display:none"></div>
+        <select id="newBookRRL"></select>
+        <button type="button" class="btn btn-small btn-success" onclick="searchBookCovers()" data-tr="searchCover">🔍 Search Cover Online</button>
+        <div id="coverSearchResults" style="display:none"></div>
+        <label for="newBookCover" class="camera-hint" data-tr="cameraHint">📱 On mobile: tap to choose file OR take photo with camera</label>
         <input type="file" id="newBookCover" accept="image/*">
-        <button type="button" class="btn btn-small" onclick="searchBookCovers()" style="width:100%; background:var(--bg-input); color:var(--text-secondary); border:1px solid var(--border-light);">🔍 Search Cover Online</button>
-        <div id="coverSearchResults" style="display:none; margin-bottom:0.75rem; background:var(--bg-input); border-radius:var(--radius-sm); max-height:200px; overflow-y:auto;"></div>
-        <p id="imageSizeWarning" class="image-warning"></p>
-        <p class="camera-hint">📱 On mobile: tap to choose file OR take photo with camera</p>
+        <div id="imageSizeWarning" class="image-warning"></div>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()">Save Book</button>
-        <button class="btn" onclick="closeAddBookModal()" style="background:var(--bg-input);color:var(--text-secondary)">Cancel</button>
+        <button class="btn btn-primary" id="addBookBtn" onclick="processAddBook()" data-tr="saveBook">Save Book</button>
+        <button class="btn btn-logout" onclick="closeAddBookModal()" data-tr="cancel">Cancel</button>
       </div>
     </div>
   </div>
 
-  <div class="modal-overlay" id="editBookModal" onclick="if(event.target===this)closeEditBookModal()">
+  <!-- ═══════════ EDIT BOOK MODAL ═══════════ -->
+  <div class="modal-overlay" id="editBookModal">
     <div class="modal">
-      <h3>✏️ Edit Book</h3>
+      <h3 data-tr="editBookTitle">✏️ Edit Book</h3>
       <div class="modal-form">
         <input type="hidden" id="editBookId">
-        <input type="text" id="editBookTitle" placeholder="Book Title">
-        <input type="text" id="editBookAuthor" placeholder="Author">
-        <input type="text" id="editBookGenre" placeholder="Genre">
-        <input type="text" id="editBookLocation" placeholder="Location">
-        <select id="editBookRRL"><option value="Read Together">Read Together</option><option value="2A">2A</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option><option value="H">H</option><option value="I">I</option><option value="Further Reading">Further Reading</option><option value="N/A">N/A</option></select>
-        <textarea id="editBookDescription" placeholder="Book description (optional)"></textarea>
+        <input type="text" id="editBookTitle" placeholder="Book Title *" data-tr-placeholder="titlePh">
+        <input type="text" id="editBookAuthor" placeholder="Author *" data-tr-placeholder="authorPh">
+        <input type="text" id="editBookGenre" placeholder="Genre" data-tr-placeholder="genrePh">
+        <input type="text" id="editBookLocation" placeholder="Location *" data-tr-placeholder="locationPh">
+        <select id="editBookRRL"></select>
+        <label for="editBookCover" class="camera-hint" data-tr="keepCoverHint">Leave empty to keep current cover image.</label>
         <input type="file" id="editBookCover" accept="image/*">
-        <p id="editImageSizeWarning" class="image-warning"></p>
-        <p class="camera-hint">Leave empty to keep current cover image.</p>
+        <div id="editImageSizeWarning" class="image-warning"></div>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-primary" id="editBookBtn" onclick="processEditBook()">Update Book</button>
-        <button class="btn" onclick="closeEditBookModal()" style="background:var(--bg-input);color:var(--text-secondary)">Cancel</button>
+        <button class="btn btn-primary" id="editBookBtn" onclick="processEditBook()" data-tr="updateBook">Update Book</button>
+        <button class="btn btn-logout" onclick="closeEditBookModal()" data-tr="cancel">Cancel</button>
       </div>
     </div>
   </div>
 
-  <div class="detail-modal-overlay" id="detailModal" onclick="if(event.target===this)closeDetailModal()">
+  <!-- ═══════════ BOOK DETAIL MODAL ═══════════ -->
+  <div class="detail-modal-overlay" id="detailModal">
     <div class="detail-modal">
       <button class="close-detail-btn" onclick="closeDetailModal()">✕</button>
-      <!--arrow left and right books info-->
-        <button class="nav-arrow prev-book" onclick="navigateBookModal(-1)">❮</button>
-        <button class="nav-arrow next-book" onclick="navigateBookModal(1)">❯</button>
+      <button class="nav-arrow prev-book" onclick="navigateBookModal(-1)">❮</button>
+      <button class="nav-arrow next-book" onclick="navigateBookModal(1)">❯</button>
       <div class="detail-content">
         <div class="detail-cover-full" id="detailCoverFull"></div>
         <div class="detail-info">
-          <span class="detail-status available" id="detailStatus">✓ Available</span>
+          <span class="detail-status available" id="detailStatus" data-tr="available">✓ Available</span>
           <h2 class="detail-title" id="detailTitle"></h2>
           <p class="detail-author" id="detailAuthor"></p>
           <div class="detail-meta-grid">
-            <div class="detail-meta-item"><span class="meta-label">Genre</span><span class="meta-value" id="detailGenre"></span></div>
-            <div class="detail-meta-item"><span class="meta-label">Location</span><span class="meta-value" id="detailLocation"></span></div>
-            <div class="detail-meta-item"><span class="meta-label">RRL Level</span><span class="meta-value" id="detailRRL"></span></div>
-            <div class="detail-meta-item"><span class="meta-label">Book ID</span><span class="meta-value" id="detailID"></span></div>
+            <div class="detail-meta-item"><span class="meta-label" data-tr="genre">Genre</span><span class="meta-value" id="detailGenre"></span></div>
+            <div class="detail-meta-item"><span class="meta-label" data-tr="location">Location</span><span class="meta-value" id="detailLocation"></span></div>
+            <div class="detail-meta-item"><span class="meta-label" data-tr="rrlLevel">RRL Level</span><span class="meta-value" id="detailRRL"></span></div>
+            <div class="detail-meta-item"><span class="meta-label" data-tr="bookId">Book ID</span><span class="meta-value" id="detailID"></span></div>
           </div>
-          <!-- Synopsis) -->
-          <p id="detailDescription" class="detail-description"></p>
+          <p class="detail-description" id="detailDescription"></p>
           <div class="rating-section">
-            <h4>Rate this Book</h4>
+            <h4 data-tr="rateThisBook">Rate this Book</h4>
             <div class="stars-container" id="detailStars">
               <span class="star-btn" onclick="selectRating(1)">★</span>
               <span class="star-btn" onclick="selectRating(2)">★</span>
@@ -231,57 +236,104 @@
               <span class="star-btn" onclick="selectRating(4)">★</span>
               <span class="star-btn" onclick="selectRating(5)">★</span>
             </div>
-            <button class="btn btn-small btn-primary" onclick="submitRating()">Submit Rating</button>
-            <p id="detailRatingSummary" style="margin-top:0.5rem;font-size:0.9rem;color:var(--text-secondary)"></p>
+            <p id="detailRatingSummary" style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;" data-tr="noRatings">No ratings yet</p>
+            <button class="btn btn-primary btn-small" onclick="submitRating()" data-tr="submitRating">Submit Rating</button>
           </div>
-
-          <div class="borrower-section" id="detailBorrowerSection" style="display:none;">
-            <h4>📤 Borrower Information</h4>
+          <div class="borrower-section" id="detailBorrowerSection" style="display:none">
+            <h4 data-tr="borrowerInfo">📤 Borrower Information</h4>
             <div class="borrower-details">
-              <div class="borrower-row"><span class="borrower-label">Name</span><span class="borrower-value" id="detailBorrowerName"></span></div>
-              <div class="borrower-row"><span class="borrower-label">Grade</span><span class="borrower-value" id="detailBorrowerGrade"></span></div>
-              <div class="borrower-row"><span class="borrower-label">Level</span><span class="borrower-value" id="detailBorrowerLevel"></span></div>
-              <div class="borrower-row"><span class="borrower-label">Phone</span><span class="borrower-value" id="detailBorrowerPhone"></span></div>
-              <div class="borrower-row"><span class="borrower-label">Center</span><span class="borrower-value" id="detailBorrowerCenter"></span></div>
-              <div class="borrower-row"><span class="borrower-label">Borrowed</span><span class="borrower-value" id="detailBorrowDate"></span></div>
+              <div class="borrower-row"><span class="borrower-label" data-tr="name">Name</span><span class="borrower-value" id="detailBorrowerName"></span></div>
+              <div class="borrower-row"><span class="borrower-label" data-tr="grade">Grade</span><span class="borrower-value" id="detailBorrowerGrade"></span></div>
+              <div class="borrower-row"><span class="borrower-label" data-tr="level">Level</span><span class="borrower-value" id="detailBorrowerLevel"></span></div>
+              <div class="borrower-row"><span class="borrower-label" data-tr="phone">Phone</span><span class="borrower-value" id="detailBorrowerPhone"></span></div>
+              <div class="borrower-row"><span class="borrower-label" data-tr="center">Center</span><span class="borrower-value" id="detailBorrowerCenter"></span></div>
+              <div class="borrower-row"><span class="borrower-label" data-tr="borrowedOn">Borrowed</span><span class="borrower-value" id="detailBorrowDate"></span></div>
             </div>
           </div>
-
           <div class="detail-actions-full">
-            <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()">📚 Borrow Book</button>
-            <button class="btn btn-success btn-large" id="detailReturnBtn" onclick="handleDetailReturn()" style="display:none;">✅ Return Book</button>
-            <button class="btn btn-primary btn-large admin-only" onclick="handleDetailEdit()" style="background:#7c3aed">✏️ Edit</button>
-            <button class="btn btn-danger btn-large admin-only" onclick="handleDetailRemove()">🗑 Remove</button>
+            <button class="btn btn-primary btn-large" id="detailBorrowBtn" onclick="handleDetailBorrow()" data-tr="detailBorrow">📚 Borrow Book</button>
+            <button class="btn btn-success btn-large" id="detailReturnBtn" onclick="handleDetailReturn()" style="display:none" data-tr="detailReturn">✅ Return Book</button>
+            <button class="btn btn-login btn-large admin-only" onclick="handleDetailEdit()" data-tr="edit">✏️ Edit</button>
+            <button class="btn btn-danger btn-large admin-only" onclick="handleDetailRemove()" data-tr="remove">🗑 Remove</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="modal-overlay" id="rrlInfoModal" onclick="if(event.target===this)closeRRLInfoModal()">
-    <div class="modal" style="max-width:700px;">
-      <h3 style="text-align: center;">📖 Introduction to the Kumon Recommended Reading List</h3>
+  <!-- ═══════════ RRL INFO MODAL ═══════════ -->
+  <div class="modal-overlay" id="rrlInfoModal">
+    <div class="modal">
+      <h3 data-tr="rrlInfoTitle">📖 Introduction to the Kumon Recommended Reading List</h3>
       <div class="rrl-info-content">
-        <div class="rrl-section"><h3>📚 What is the Kumon Recommended Reading List?</h3><p>The Kumon Recommended Reading List (RRL) is a list of 380 books intended to help Kumon students find books that they will enjoy reading, and to encourage them to read books from a wide range of genres and styles.</p></div>
-        <div class="rrl-section"><h3>📋 How are the Books Chosen?</h3><p>The books on the RRL have been selected because they are popular, award winning, or recognised literary classics. They were all available from major online bookshops at the time of writing.</p></div>
-        <div class="rrl-section"><h3>📂 How are the Books Arranged?</h3><p>The books are divided into twelve sections, broadly corresponding to the levels of the Kumon English Programme. Each title includes a short blurb to help students choose books, and students can colour in stars to rate the books.</p></div>
-        <div class="rrl-section"><h3>👶 Read Together</h3><p>This section was created for children who haven't started reading independently yet.</p></div>
-        <div class="rrl-section"><h3>📖 Level 2A to Level I</h3><p>The thirty books in each level from Level 2A to Level I are listed in order of difficulty, with the easiest at number one.</p></div>
-        <div class="rrl-section"><h3>🌟 Further Reading</h3><p>These thirty books are recommended for more confident, mature readers. They include classics and seminal works from a range of genres and periods.</p></div>
-        <div class="rrl-section"><h3>📚 A Wide Range of Books for a Wide Range of Readers!</h3><p>The RRL contains something for everyone. Not every book will be appropriate for every student, but everyone will find something they will enjoy!</p></div>
-        <div class="rrl-section"><h3>👨‍👩‍👧 Information for Parents</h3><p>The following information is intended to help parents make the best use of the Recommended Reading List (RRL), and to give ideas on how to help inspire in children a lifelong love of reading.</p></div>
-        <div class="rrl-section"><h3>🏠 Creating a 'Reading-Friendly' Environment at Home</h3><p>Store your child's books within reach. Create a reading corner. Visit the library together. Take an active interest in what your child is reading.</p></div>
-        <div class="rrl-section"><h3>📚 Recommending Books</h3><p>Children should read books that match their ability and interests, which may not correspond to their age or school year.</p></div>
-        <div class="rrl-section"><h3>🗣️ Reading Aloud to Your Child</h3><p>The stories you read aloud are their first introduction to the world of books. Let your child choose, read at their pace, and talk about the story.</p></div>
-        <div class="rrl-section"><h3>🚀 Encouraging Independent Reading</h3><p>Children feel achievement when reading a whole book. Listen, give encouragement, and start with simple books.</p></div>
-        <div class="rrl-section"><h3>⭐ More Confident Readers</h3><p>Continue to recommend books. Use genre icons to explore. Don't force reading choices; keep it fun and satisfying.</p></div>
-        <div class="rrl-section" style="border-bottom:none;margin-bottom:0;padding-bottom:0;"><p style="font-weight:600;color:var(--primary);">📖 The Kumon Recommended Reading List helps students discover the joy of reading!</p></div>
+        <div class="rrl-section">
+          <h3 data-tr="rrlWhatH">📚 What is the Kumon Recommended Reading List?</h3>
+          <p data-tr="rrlWhatP">The Kumon Recommended Reading List (RRL) is a list of 380 books intended to help Kumon students find books that they will enjoy reading, and to encourage them to read books from a wide range of genres and styles.</p>
+        </div>
+        <div class="rrl-section">
+          <h3 data-tr="rrlChosenH">📋 How are the Books Chosen?</h3>
+          <p data-tr="rrlChosenP">The books on the RRL have been selected because they are popular, award winning, or recognised literary classics. They were all available from major online bookshops at the time of writing.</p>
+        </div>
+        <div class="rrl-section">
+          <h3 data-tr="rrlArrangedH">📂 How are the Books Arranged?</h3>
+          <p data-tr="rrlArrangedP">The books are divided into twelve sections, broadly corresponding to the levels of the Kumon English Programme. Each title includes a short blurb to help students choose books, and students can colour in stars to rate the books.</p>
+        </div>
+        <div class="rrl-section">
+          <h3 data-tr="rrlRTH">👶 Read Together</h3>
+          <p data-tr="rrlRTP">This section was created for children who haven't started reading independently yet.</p>
+        </div>
+        <div class="rrl-section">
+          <h3 data-tr="rrl2AH">📖 Level 2A to Level I</h3>
+          <p data-tr="rrl2AP">The thirty books in each level from Level 2A to Level I are listed in order of difficulty, with the easiest at number one.</p>
+        </div>
+        <div class="rrl-section">
+          <h3 data-tr="rrlFRH">🌟 Further Reading</h3>
+          <p data-tr="rrlFRP">These thirty books are recommended for more confident, mature readers. They include classics and seminal works from a range of genres and periods.</p>
+        </div>
+        <div class="rrl-section">
+          <h3 data-tr="rrlWideH">📚 A Wide Range of Books for a Wide Range of Readers!</h3>
+          <p data-tr="rrlWideP">The RRL contains something for everyone. Not every book will be appropriate for every student, but everyone will find something they will enjoy!</p>
+        </div>
+        <div class="rrl-section">
+          <h3 data-tr="rrlParentsH">👨‍👩‍👧 Information for Parents</h3>
+          <p data-tr="rrlParentsP">The following information is intended to help parents make the best use of the Recommended Reading List (RRL), and to give ideas on how to help inspire in children a lifelong love of reading.</p>
+        </div>
+        <div class="rrl-section">
+          <h3 data-tr="rrlHomeH">🏠 Creating a 'Reading-Friendly' Environment at Home</h3>
+          <p data-tr="rrlHomeP">Store your child's books within reach. Create a reading corner. Visit the library together. Take an active interest in what your child is reading.</p>
+        </div>
+        <div class="rrl-section">
+          <h3 data-tr="rrlRecH">📚 Recommending Books</h3>
+          <p data-tr="rrlRecP">Children should read books that match their ability and interests, which may not correspond to their age or school year.</p>
+        </div>
+        <div class="rrl-section">
+          <h3 data-tr="rrlAloudH">🗣️ Reading Aloud to Your Child</h3>
+          <p data-tr="rrlAloudP">The stories you read aloud are their first introduction to the world of books. Let your child choose, read at their pace, and talk about the story.</p>
+        </div>
+        <div class="rrl-section">
+          <h3 data-tr="rrlIndH">🚀 Encouraging Independent Reading</h3>
+          <p data-tr="rrlIndP">Children feel achievement when reading a whole book. Listen, give encouragement, and start with simple books.</p>
+        </div>
+        <div class="rrl-section">
+          <h3 data-tr="rrlConfH">⭐ More Confident Readers</h3>
+          <p data-tr="rrlConfP">Continue to recommend books. Use genre icons to explore. Don't force reading choices; keep it fun and satisfying.</p>
+        </div>
+        <div class="rrl-section">
+          <p data-tr="rrlClosing" style="font-weight:600;">📖 The Kumon Recommended Reading List helps students discover the joy of reading!</p>
+        </div>
       </div>
-      <div class="modal-actions"><button class="btn" onclick="closeRRLInfoModal()" style="width:100%;background:var(--bg-input);color:var(--text-secondary)">Close</button></div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="closeRRLInfoModal()" data-tr="close">Close</button>
+      </div>
     </div>
   </div>
 
+  <!-- ═══════════ TOAST ═══════════ -->
   <div id="toast" class="toast"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
